@@ -1,0 +1,81 @@
+<html>
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<CENTER>
+	<div id="menu_body">
+	<table>
+	 <tr><CENTER>
+	  <td nowrap>
+		<a href="cvs_modules.php" class="DataTD">CVS Modules</a>
+	  </td>
+	  <td nowrap>
+		|&nbsp;<a href="cvs_warnings" class="DataTD">CVS Warnings</a>
+	  </td>
+	  <td nowrap>
+		|&nbsp;<a href="./cvs_logger" class="DataTD">CVS Logger</a>
+	  </td>
+	  </CENTER>
+	 </tr>
+	</table>
+	</div>
+</CENTER>
+<br/>
+
+<table class="FormTABLE" border="0" width="100%">
+	<tr>
+		<td class="FormHeaderTD" colspan="4">
+			<font class="FormHeaderFONT">CVS Modules</font></a>
+		</td>
+	</tr>
+	<tr align="center">
+    	<td class="DataRow1">Project</td>
+		<td class="DataRow1">Url</td>
+        <td class="DataRow1">Module</td>
+        <td class="DataRow1">&nbsp;</td>
+	</tr>
+	<!-- BEGIN module -->
+	<tr>
+		<td class="{colorrow}" nowrap>{project_title}</td>
+		<td class="{colorrow}" nowrap>{project_url}</td>
+		<td class="{colorrow}" nowrap>{cvs_module}</td>
+		<td class="{colorrow}" nowrap>
+			<a href="https://monitor.sayu.co.uk/edit_project.php?project_id={project_id}">Edit</a>
+		</td>
+
+	</tr>
+    <!-- END module -->
+</table>
+<br/>
+
+ <!-- BEGIN to_create_modules -->
+<table class="FormTABLE" border="0" width="100%">
+	<tr>
+		<td class="FormHeaderTD" colspan="3">
+			<font class="FormHeaderFONT">Need to Create Modules</font></a>
+		</td>
+	</tr>
+	<tr align="center">
+    	<td class="DataRow1">Project</td>
+		<td class="DataRow1">Url</td>
+		<td class="DataRow1">&nbsp;</td>
+	</tr>
+	<!-- BEGIN to_create_module -->
+	<tr>
+		<td class="{colorrow}" nowrap>{project_title}</td>
+		<td class="{colorrow}" nowrap>{project_url}</td>
+		<td class="{colorrow}" nowrap>
+			<a href="https://monitor.sayu.co.uk/edit_project.php?project_id={project_id}">Edit</a>
+		</td>
+
+	</tr>
+    <!-- END to_create_module -->
+</table>
+ <!-- END to_create_modules -->
+
+</body>
+</html>

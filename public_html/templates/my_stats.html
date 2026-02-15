@@ -1,0 +1,376 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.year_selected.value = "";
+		document.frmFilter.month_selected.value = "";
+	}
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<!--<div align="center">-->
+<br>
+<table width=800 border=0 align=center>
+<tr>
+	<td align=left>
+		<table>
+			<tr>
+				<td colspan="14">
+					<font class="ColumnFONT">
+					<a href="apply_for_vacation.php?for=1"><font class="ColumnFONT">Apply for Holiday</font></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+					<a href="apply_for_vacation.php?for=2"><font class="ColumnFONT">Apply for Overwork</font></a>&nbsp;&nbsp;&nbsp;
+					</font>
+				</td>
+			</tr>
+		</table>
+<br>
+	</td>
+	<td align=right>
+		<form name="frmFilter" action="my_stats.php">
+		<input type="hidden" name="user_id" value="{user_id}">
+		<table border=0>
+		<tr>
+			<td align="right">
+				Select year:
+			</td>
+			<td>
+				<select name="year_selected" style="width:150px">
+					<option value="">--------- Year ---------</option>
+					{years}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select month:
+			</td>
+			<td>
+				<select name="month_selected" style="width:150px">
+					<option value="">-------- Month --------</option>
+					{months}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>
+<!--/div-->
+	</td>
+</tr>
+<!--/table-->
+
+
+<!--table width=100% border=0-->
+<tr>
+<td align=left>
+<br>
+<table class="FormTABLE" align="left">
+    <tr>
+    	<td class="FormHeaderTD" colspan="9"><font class="FormHeaderFONT">Summary Report</font></td>
+    </tr>
+	<!-- BEGIN sum_report -->
+    <tr align="center">
+	    <td class="ColumnTD" align="left" nowrap><font class="ColumnFONT">Person</font></td>
+	    <td class="DataTD" nowrap  align="left"><font class="DataFONT">{user_name}</font></td>
+	    <td class="ColumnTD" nowrap  align="center"><font color=red><b>Normative</b></font></td>
+	</tr>
+	<tr align="center">
+	    <td class="ColumnTD" align="left" nowrap><font class="ColumnFONT">Spent hours</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{spent_hours}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{average_hours}</font></td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" align="left" nowrap><font class="ColumnFONT">Tasks</font></td>
+		<td class="DataTD" nowrap><font class="DataFONT"><a href="./tasks_report.php?year_selected={year_selected}&month_selected={month_selected}&person_selected={user_id}&team={team_selected}">{tasks}</a></font></td>
+		<td class="DataTD" nowrap><font class="DataFONT">{average_tasks}</font></td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" align="left" nowrap><font class="ColumnFONT">Time per task</font></td>
+		<td class="DataTD" nowrap><font class="DataFONT">{time_per_task}</font></td>
+		<td class="DataTD" nowrap><font class="DataFONT">{average_time_per_task}</font></td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" align="left" nowrap><font class="ColumnFONT">Hours per day</font></td>
+		<td class="DataTD" nowrap><font class="DataFONT">{hours_per_day}</font></td>
+		<td class="DataTD" nowrap><font class="DataFONT">{average_hours_per_day}</font></td>
+	</tr>
+	<tr align="center">
+	    <td class="ColumnTD" align="left" nowrap><font class="ColumnFONT">Working days</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{working_days}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{average_working_days}</font></td>
+	</tr>
+	<tr align="center">
+	    <td class="ColumnTD" align="left" nowrap><font class="ColumnFONT">Days off</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{days_off}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{average_days_off}</font></td>
+	</tr>
+
+	<!-- END sum_report -->
+
+
+	<!-- BEGIN no_sum_report -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No data for this period
+		</td>
+	</tr>
+	<!-- END no_sum_report -->
+</table>
+</td>
+<td align=right width="50%">
+<!-- BEGIN no_working-->
+<p align="right"><br>No working days for this period<b></b></p>
+<!-- END no_working-->
+
+<!-- BEGIN calendar -->
+<p align="center"><br>Attendance details for <b>{user_name}</b>:</p>
+<table style="border-style:solid; border-width:1">
+	<tr align="center" style="background-color:#7A96DF; color:#ffffff">
+		<td style="width:20px">M</td>
+		<td style="width:20px">T</td>
+		<td style="width:20px">W</td>
+		<td style="width:20px">T</td>
+		<td style="width:20px">F</td>
+		<td style="width:20px">S</td>
+		<td style="width:20px">S</td>
+		<td style="width:70px">Total hours</td>
+		<td style="width:70px">Hours/day</td>
+	</tr>
+	<!-- BEGIN week -->
+	<tr align="center">
+		<td style="background-color:{day_color1}">{day1}</td>
+		<td style="background-color:{day_color2}">{day2}</td>
+		<td style="background-color:{day_color3}">{day3}</td>
+		<td style="background-color:{day_color4}">{day4}</td>
+		<td style="background-color:{day_color5}">{day5}</td>
+		<td style="background-color:{day_color6}">{day6}</td>
+		<td style="background-color:{day_color7}">{day7}</td>
+		<td class="DataTD">{week_hours}</td>
+		<td class="DataTD">{w_hours_per_day}</td>
+	</tr>
+	<!-- END week -->
+	<tr class="DataTD">
+		<td colspan=7 align="right">Total</td>
+		<td align="center"><b>{month_hours}</b></td>
+		<td class="DataTD"></td>
+	</tr>
+</table>
+<!-- END calendar -->
+</td>
+</tr>
+<tr>
+<td align=center colspan=2>
+<br><br	>
+<table width="100%">
+<tr>
+   <td colspan="6" class="FormHeaderTD"><font class="FormHeaderFONT">WARNINGS</font></td>
+</tr>
+<!-- BEGIN no_warning -->
+<tr>
+   <td colspan="6">
+   No warnings for this period.
+   </td>
+</tr>
+<!-- END no_warning -->
+<!-- BEGIN warning_header -->
+<tr align="center">
+   <td class="ColumnTD">&nbsp;</td>
+   <td class="ColumnTD">User</td>
+   <td class="ColumnTD">Creator</td>
+   <td class="ColumnTD">Date Added</td>
+   <td class="ColumnTD">Notes</td>
+   <td class="ColumnTD">&nbsp;</td>
+</tr>
+<!-- END warning_header -->
+<!-- BEGIN warning_td -->
+<tr>
+   <td class="DataTD">&nbsp;</td>
+   <td class="DataTD">{user_name}</td>
+   <td class="DataTD">{creator}</td>
+   <td class="DataTD">{date_added}</td>
+   <td class="DataTD">{notes}</td>
+   <td class="DataTD">&nbsp;</td>
+</tr>
+<!-- END warning_td -->
+</table>
+<br><br>
+</td>
+</tr>
+ <tr>
+	<td colspan="2" align="left" valign=top width=100%>
+		<!-- BEGIN header_holiday_summary-->
+	   <table width=100%>
+	   <tr>
+	      <td class="FormHeaderTD" colspan="7"><font class="FormHeaderFONT">Holidays Summary</font></td>
+	   </tr>
+	   <tr>
+	      <td class="ColumnTD">Person</td>
+	      <td class="ColumnTD">Total days</td>
+	      <td class="ColumnTD">Used days</td>
+	      <td class="ColumnTD">Available  days</td>
+	      <td class="ColumnTD">Total days {this_year}</td>
+	      <td class="ColumnTD">Used  days {this_year}</td>
+	      <td class="ColumnTD">Start date</td>
+	   </tr>
+	   <!-- END header_holiday_summary-->
+	     <!-- BEGIN holiday_summary -->
+	   <tr>
+			   <td class="DataTD"><a href="view_vacations.php?show_user_id={show_user_id}">{hol_user_name}</a></td>
+			   <td class="DataTD"><a onClick="setDateField(document.frmFilter.start_date);
+	      top.newWin = window.open('total_vacations.php?user_id={show_user_id}','total','dependent=yes,width=230,height=230,screenX=200,screenY=300,titlebar=yes')" href="#">{total_holidays}</a></td>
+			   <td class="DataTD">{used_holidays}</td>
+			   <td class="DataTD"><b>{avail_holidays}</b></td>
+			   <td class="DataTD">{total_holidays_year}</td>
+			   <td class="DataTD">{used_holidays_year}</td>
+			   <td class="DataTD">{work_start}</td>
+	   </tr>
+	   <!-- END holiday_summary -->
+	    </table>
+	    <br><br>
+	  </td>
+</tr>
+<tr>
+<td colspan=2 align=center>
+<table width="100%">
+<tr>
+   <td colspan="8" class="FormHeaderTD"><font class="FormHeaderFONT">Holidays</font></td>
+</tr>
+<tr align="center">
+   <td class="ColumnTD">&nbsp;</td>
+   <td class="ColumnTD">User</td>
+   <td class="ColumnTD">Period Title</td>
+   <td class="ColumnTD">Reason Type</td>
+   <td class="ColumnTD">Start Date</td>
+   <td class="ColumnTD">End Date</td>
+   <td class="ColumnTD">Total Days</td>
+   <td class="ColumnTD">&nbsp;</td>
+</tr>
+<!-- BEGIN vacation_td -->
+<tr>
+   <td class="DataTD">&nbsp;</td>
+   <td class="DataTD">{user_name}</td>
+   <td class="DataTD">{period_title}</td>
+   <td class="DataTD">{reason_type}</td>
+   <td class="DataTD">{start_date}</td>
+   <td class="DataTD">{end_date}</td>
+   <td class="DataTD" align="center">{total_days}</td>
+   <td class="DataTD">&nbsp;</td>
+</tr>
+<!-- END vacation_td -->
+</table>
+<br><br>
+</td>
+</tr>
+<tr>
+<td align="center" colspan=2>
+<!-- BEGIN result_task_report -->
+<table class="FormTABLE" align="center" width="100%">
+
+    <tr>
+    	<td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Time Spending Report {for_person}</font></td>
+    </tr>
+<!-- BEGIN task_report_header -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Time Period</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Task Title</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Spent Hours</font></td>
+	</tr>
+<!-- END task_report_header -->
+<!-- BEGIN task_report -->
+	{day_hours_html}
+	{date_html}
+    <tr>
+	    <td class="DataTD" nowrap><font class="DataFONT">{time_period}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT"><a href="./edit_task.php?task_id={task_id}">{task_title}</a></font></td>
+	    <td class="DataTD" nowrap align="center" id="{report_id}"><font class="DataFONT">{spent_hours}</font></td>
+	</tr>
+
+<!-- END task_report -->
+
+{day_hours_html2}
+	<!-- BEGIN no_task_report -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No data for this period
+		</td>
+	</tr>
+	<!-- END no_task_report -->
+</table>
+<!-- END result_task_report -->
+</td>
+</tr>
+</table>
+
+<table class="FormTABLE" align="center" width = "70%">
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">List of bugs</font></td>
+    </tr>
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Task</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Created by</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Closed by</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Date Opened</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Date Resolved</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Resolved</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Declined</font></td>
+	</tr>
+
+    <!-- BEGIN records1 -->
+    <tr >
+	    <td style="background-color:#{color}" class="DataTD"><font class="DataFONT">{task_title}</font></td>
+	    <td style="background-color:#{color}" class="DataTD" nowrap><font class="DataFONT">{creator}</font></td>
+	    <td style="background-color:#{color}" class="DataTD" nowrap><font class="DataFONT">{closer}</font></td>
+	    <td style="background-color:#{color}" class="DataTD" nowrap><font class="DataFONT">{date_issued}</font></td>
+	    <td style="background-color:#{color}" class="DataTD" nowrap><font class="DataFONT">{date_resolved}</font></td>
+	    <td style="background-color:#{color}" class="DataTD" nowrap><font class="DataFONT">{is_resolved}</font></td>
+	    <td style="background-color:#{color}" class="DataTD" nowrap><font class="DataFONT">{is_declined}</font></td>
+	</tr>
+	<!-- END records1 -->
+
+	<!-- BEGIN no_records1 -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No bugs for this period or this project
+		</td>
+	</tr>
+	<!-- END no_records1 -->
+</table>
+<br><br>
+<table border="0" class="FormTABLE" align="center" width = "70%">
+	<tr>
+    	<td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Inventory</font></td>
+    </tr>
+	<tr>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Title</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Value</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Description</font></td>
+	</tr>
+	<!-- BEGIN inventory_list -->
+	<tr>
+		<td style="background-color:#{color}" class="{class}" nowrap><font class="DataFONT">{inventories}</font></td>
+		<td style="background-color:#{color}" class="{class}" nowrap><font class="DataFONT">{value}</font></td>
+		<td style="background-color:#{color}" class="{class}" nowrap><font class="DataFONT">{description}</font></td>
+	</tr>
+	<!-- END inventory_list -->
+
+	<!-- BEGIN no_inventory_list -->
+	<tr>
+		<td colspan="10" class="Headline">&nbsp;No inventories for this person</td>
+	</tr>
+	<!-- END no_inventory_list -->
+<table>
+</body>
+</html>

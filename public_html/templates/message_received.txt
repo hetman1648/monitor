@@ -1,0 +1,12 @@
+<style>
+BODY {font-family: Tahoma, Verdana,Helvetica;font-size:10pt}
+B {color:navy}
+</style>
+
+<body>
+There is a new message for the task <b>"{task_title}"</b><br/>
+Sent by: <b>{user_name}</b><br/>
+Assigned to: <b>{responsible_user_name}</b><br/>
+Task Status: <b>{task_status}</b><br/>
+Please <a href="https://monitor.sayu.co.uk/edit_task.php?task_id={task_id}">click here to view the task</a> .
+</body>

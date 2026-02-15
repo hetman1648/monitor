@@ -1,0 +1,196 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="templates/tasks.js"></SCRIPT>
+<SCRIPT LANGUAGE="JavaScript" >
+<!--
+var clockID = 0;
+var sort = '{sort}';
+
+function UpdateClock()
+{
+   if(clockID)
+   {
+      clearTimeout(clockID);
+      clockID  = 0;
+   }
+   
+   var tDate = new Date();
+   var tDiff = tDate.getTime() - tStart.getTime();
+   tDate.setTime(tDiff);
+   
+   if (activeTaskId) { 
+   		var months = tDate.getUTCMonth();
+   		var days = tDate.getUTCDay();
+   		   	
+  		var hours = parseInt(tDate.getTime()/3600000);
+  		var minutes = tDate.getUTCMinutes();  		
+  		var seconds = tDate.getUTCSeconds();
+
+  		if (seconds>30) {
+  			if (minutes<59) {
+  				minutes = minutes + 1;
+  			} else {
+  				hours = hours+1;
+  				minutes = "0";
+  			}
+  		}
+  		
+  		if (minutes<10) {
+  			minutes = "0"+minutes;
+  		}
+  		if (seconds<10) {
+  			seconds = "0"+seconds;
+  		}
+  		
+  		var taskTime = ""+hours+":"+minutes;/* + ":" + seconds*/
+  		if (document.getElementById("actual_{active_task_id}") &&
+  			document.getElementById("actual_{active_task_id}").innerHTML)
+  		{
+   			taskPrev = document.getElementById("actual_{active_task_id}").innerHTML;
+   			if (taskTime>taskPrev) {
+  			
+  				document.getElementById("actual_{active_task_id}").innerHTML = taskTime;
+   				if (document.getElementById("actual")) {
+   					document.getElementById("actual").innerHTML = taskTime;
+   				}
+   			}
+  		}
+   		clockID = setTimeout("UpdateClock()", 1000);
+   }
+}
+
+function StartClock()
+{
+   clockID = setTimeout("UpdateClock()", 1000); 
+   pageRefresh = setTimeout("IndexPageRefresh({session_user_id}, '"+sort+"')", 60000);
+}
+
+function KillClock()
+{
+   if(clockID)
+   {
+      clearTimeout(clockID);
+      clockID  = 0;
+   }
+}
+
+function GetXmlHttpObject()
+{
+	var xmlHttp = null;
+	try { xmlHttp=new XMLHttpRequest(); }
+	catch (e) {
+		try { 
+			xmlHttp=new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (e) {
+			xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+	}
+	return xmlHttp;
+}
+
+function stateChanged(userId, sort)
+{ 
+	if (xmlHttp.readyState == 4) {		
+		var responseText = xmlHttp.responseText;		
+		var tasksHTML = responseText.substring(responseText.indexOf("<tasksHTML><![CDATA[")+20,responseText.indexOf("]]></tasksHTML>"));
+		var lunchesHTML = responseText.substring(responseText.indexOf("<lunchesHTML><![CDATA[")+22,responseText.indexOf("]]></lunchesHTML>"));
+		var currentTaskHTML = responseText.substring(responseText.indexOf("<currentTaskHTML><![CDATA[")+26,responseText.indexOf("]]></currentTaskHTML>"));
+		var managerNoteHTML = responseText.substring(responseText.indexOf("<managerNoteHTML><![CDATA[")+26,responseText.indexOf("]]></managerNoteHTML>"));
+		var usersListHTML = responseText.substring(responseText.indexOf("<usersListHTML><![CDATA[")+24,responseText.indexOf("]]></usersListHTML>"));
+		
+		if (responseText && responseText.indexOf("<TITLE>404 Not Found</TITLE>")==-1 && responseText.indexOf("<tasksHTML><![CDATA[")) {
+			
+		tasksDiv = document.getElementById("tasks_div");
+		if (tasksDiv)
+		{
+			tasksDiv.innerHTML = tasksHTML;
+		}
+
+		lunchesDiv = document.getElementById("lunches_div");
+		if (lunchesDiv)
+		{
+			lunchesDiv.innerHTML = lunchesHTML;
+		}
+
+		currentTaskDiv = document.getElementById("current_task");
+		if (currentTaskDiv)
+		{
+			currentTaskDiv.innerHTML = currentTaskHTML;
+		}
+		
+		managerNoteDiv = document.getElementById("manager_note");
+		if (managerNoteDiv)
+		{
+			managerNoteDiv.innerHTML = managerNoteHTML;
+		}	
+		}
+	}
+}
+
+function IndexPageRefresh(userId, sort)
+{		
+	xmlHttp = GetXmlHttpObject()
+	if (xmlHttp == null) {
+		alert ("Your browser does not support AJAX!");		
+		return;
+	}
+	var url = "index_tasks_list.php" + "?user_id=" + userId + "&sort=" + sort;
+	if (url) {		
+		xmlHttp.onreadystatechange = function() { stateChanged(userId, sort);};  
+		xmlHttp.open("GET", url, true);
+		xmlHttp.send(null);
+		if (pageRefresh) {
+			clearTimeout(pageRefresh);
+		}
+		pageRefresh = setTimeout("IndexPageRefresh(" + userId + ", '" + sort + "')", 60000);
+	}
+}
+
+
+
+//-->
+</SCRIPT>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<table width=100% border="0" cellspacing="1" cellpadding="0">	
+	<tr><td colspan="3"></td><td colspan="2">
+	<div id="lunches_div">{ITEMPLATE=index_page_lunches.html}</div>
+	</td></tr>
+	<tr>
+		<td width="30%" valign="top"><font color="green">{birth_days}</font>
+		</td>
+		<td valign="top" align="right">  	
+  		<!-- BEGIN cur_projects -->
+		      <table cellspacing="0" cellpadding="0">
+		      <tr>
+		      <td valign="top">
+		      		<table style="border:1px solid #919B9C; background-color:#FCFFD5;">
+      				<tr><td colspan="2"><b>{project_title}</b></td></tr>
+      				<tr bgcolor="white"><td>Person</td><td>Opened</td></tr>
+		      		<!-- BEGIN users_list -->
+		      		<tr>
+						<td><a href="report_people.php?report_user_id={user_id}">{user_name}</a></td>
+						<td align="center">{opened_tasks}</td>
+			      	</tr>
+			      	<!-- END users_list -->
+      				</table>
+		      </td>
+	   		  </tr>
+	   		  </table>
+  		<!-- END cur_projects -->
+		</td>  	
+		<td valign="bottom"></td>
+		<td valign="top"><div id="manager_note">{ITEMPLATE=index_page_manager_notes.html}</div></td>
+		<td><div id="current_task">{ITEMPLATE=current_task.html}</div></td>      
+    </tr>
+</table>
+{ITEMPLATE=index_page_documents.html}
+<div id="tasks_div">
+{ITEMPLATE=index_page_tasks_list.html}
+</div>
+</body>
+</html>

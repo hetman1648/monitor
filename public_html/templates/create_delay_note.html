@@ -1,0 +1,78 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+
+<script Language=JavaScript>
+<!--
+
+	var nDay = new Array();
+	var i = 0;
+
+	function verify(isField){
+
+		splitDate = isField.value.split("-");
+		refDate = new Date(splitDate[0]+"/"+splitDate[1]+"/"+splitDate[2]);
+		nDay[i++] = refDate.getDay();
+		return refDate;
+	}
+
+
+
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<form name="frmFilter" action="create_delay_note.php" method="GET">
+<table border="0">
+	<tr>
+	 <td valign="top">
+	 	<table>
+	 		<tr>
+	 			<td>
+	 				<!-- BEGIN error --><div style="padding: 10px; background-color: red;"><font color=white>{err}</font></div><!-- END error -->
+	 			</td>
+	 		</tr>
+	 	</table>
+	 </td>
+	</tr>
+	<tr>
+	   <td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">{title_o}</font></td>
+	</tr>
+	<tr>
+	   <td class="FieldCaptionTD">Person</td>
+	   <td class="DataTD">
+	   	<select name="person_select">
+	   {person_option}
+	   </select></td>
+	</tr>
+	{tr_created_user_id}
+	<tr>
+	   <td class="FieldCaptionTD">Notes</td>
+	   <td class="DataTD"><textarea type="text" name="notes" cols="80" rows="10">{notes}</textarea></td>
+	</tr>
+	<tr>
+	   <td class="FieldCaptionTD">Note Date</td>
+	   <td class="DataTD"><input name="note_date" id="note_date" value="{note_date}">
+	      <A HREF="#" onClick="setDateField(document.frmFilter.note_date);
+	      top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+	      <IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+	   </td>
+	</tr>
+	<tr>
+	   <td><input type="submit" name="action" value="{action_value}">
+	   {delete_button}
+	   <input name="note_id" value="{note_id}" type="hidden">
+	   <input type="submit" name="action" value="Cancel"></td>
+	</tr>
+</table>
+</form>
+
+</body>
+</html>

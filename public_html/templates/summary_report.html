@@ -1,0 +1,196 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.year_selected.value = "";
+		document.frmFilter.month_selected.value = "";
+	}
+
+lastBG = "white";	
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+		<form name="frmFilter" action="summary_report.php">
+		<table border=0>
+		<tr>
+			<td align="right">
+				Select year:
+			</td>              
+			<td>
+				<select name="year_selected" style="width:150px">
+					<option value="">--------- Year ---------</option>
+					{years}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select month:
+			</td>              
+			<td>
+				<select name="month_selected" style="width:150px">
+					<option value="">-------- Month --------</option>
+					{months}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Hours multiplier (M):
+			</td>              
+			<td>
+				<input type="text" name="multiplier" value="{multiplier}" style="width:150px">
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Total ViArt:
+			</td>              
+			<td>
+				<input type="text" name="total_viart" value="{total_viart}" style="width:150px">
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Team: 
+			</td>
+			<td>
+				<select name="team" style="width:150px">
+				<option value="all" {aselected}>All teams</option>
+				<option value="viart" {vselected}>Sayu Kyiv</option>
+				<option value="yoonoo" {yselected}>Sayu Stockton</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>
+</div>
+
+
+<!-- BEGIN result -->
+<table class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="14"><font class="FormHeaderFONT">Summary Report</font></td>
+    </tr>
+	<!-- BEGIN records_header -->	
+    <tr align="center">
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Person</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Spent hours</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><acronym title="Time per task">Time/task</acronym></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><acronym title="Hours per day">Hours/day</acronym></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><acronym title="Working days">Working</acronym></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><acronym title="Working holidays">Wrk. hol.</acronym></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><acronym title="Warnings">Warn.</acronym></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><acronym title="Planned">Plan.</acronym></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><acronym title="Holidays">Hol.</acronym></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Total Paid</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">ViArt</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Sayu</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Total</font></td>
+	</tr>
+	<!-- END records_header -->
+	
+	<!-- BEGIN team_group-->
+	<!-- BEGIN teamname-->
+	<tr align="left">
+		<td class="{classrow}" nowrap align="left"><font class="DataFONT">{team_name}</font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_spent_hours}</i></font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_tasks}</i></font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_time_per_task}</i></font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_hours_per_day}</i></font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_working_days}</i></font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_working_holidays}</i></font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_warnings}</i></font></td>	   
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_working_days_planned}</i></font></td>	
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_holidays_total}</i></font></td>
+		<td class="{classrow}" nowrap align="center"><font class="DataFONT"><i>{team_total_paid}</i></font></td>	
+		<td class="{classrow}" nowrap align="right"><font class="DataFONT" size=+1><i>{team_viart_projects}</i></font></td>
+		<td class="{classrow}" nowrap align="right"><font class="DataFONT" size=+1><i>{team_sayu_projects}</i></font></td>
+		<td class="{classrow}" nowrap align="right"><font class="DataFONT" size=+1><i>{team_total_projects}</i></font></td>
+	</tr>
+	<!-- END teamname-->
+	<!-- BEGIN records -->
+    <tr align="center">
+		<td class="{classrow}" nowrap  align="left"><font class="DataFONT"><a href="./summary_report.php?year_selected={year_selected}&month_selected={month_selected}&submit=1&person_selected={user_id}&team={team_selected}&multiplier={multiplier}&total_viart={total_viart}" class="{class_user}">{user_name}</a>&nbsp;</font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT">{spent_hours}</font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT"><a href="./tasks_report.php?year_selected={year_selected}&month_selected={month_selected}&person_selected={user_id}&team={team_selected}">{tasks}</a></font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT">{time_per_task}</font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT">{hours_per_day}</font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT">{working_days}</font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT">{working_holidays}</font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT">{warnings}</font></td>	   
+		<td class="{classrow}" nowrap><font class="DataFONT">{working_days_planned}</font></td>	
+		<td class="{classrow}" nowrap><font class="DataFONT">{holidays_total}</font></td>
+		<td class="{classrow}" nowrap><font class="DataFONT">{total_paid}</font></td>	
+		<td class="{classrow}" nowrap align="right"><font class="DataFONT">{viart_projects}</font></td>
+		<td class="{classrow}" nowrap align="right"><font class="DataFONT">{sayu_projects}</font></td>
+		<td class="{classrow}" nowrap align="right"><font class="DataFONT">{total_projects}</font></td>
+	</tr>
+	<!-- END records -->
+	<!-- END team_group-->
+
+	<!-- BEGIN no_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No data for this period
+		</td>
+	</tr>
+	<!-- END no_records -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="14"><font class="FormHeaderFONT">&nbsp;</font></td>
+    </tr>
+</table>
+<!-- END result -->
+
+<!-- BEGIN calendar -->
+<p align="center"><br>Attendance details for <b>{user_name}</b>:</p>
+<table align="center" style="border-style:solid; border-width:1">
+	<tr align="center" style="background-color:#7A96DF; color:#ffffff">
+		<td style="width:20px">M</td>
+		<td style="width:20px">T</td>
+		<td style="width:20px">W</td>
+		<td style="width:20px">T</td>
+		<td style="width:20px">F</td>
+		<td style="width:20px">S</td>
+		<td style="width:20px">S</td>
+		<td style="width:70px">Total hours</td>
+		<td style="width:70px">Hours/day</td>
+	</tr>
+	<!-- BEGIN week -->
+	<tr align="center">
+		<td style="background-color:{day_color1}">{day1}</td>
+		<td style="background-color:{day_color2}">{day2}</td>
+		<td style="background-color:{day_color3}">{day3}</td>
+		<td style="background-color:{day_color4}">{day4}</td>
+		<td style="background-color:{day_color5}">{day5}</td>
+		<td style="background-color:{day_color6}">{day6}</td>
+		<td style="background-color:{day_color7}">{day7}</td>
+		<td class="DataTD">{week_hours}</td>
+		<td class="DataTD">{w_hours_per_day}</td>
+	</tr>
+	<!-- END week -->
+	<tr class="DataTD">
+		<td colspan=7 align="right">Total</td>
+		<td align="center"><b>{month_hours}</b></td>
+		<td class="DataTD"></td>
+	</tr>
+</table>
+<!-- END calendar -->
+</body>
+</html>

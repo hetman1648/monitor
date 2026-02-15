@@ -1,0 +1,329 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script type="text/javascript" src="templates/tasks.js"></script>
+<script>
+
+function closeTaskRep(task_id, title)
+{
+	var taskstr=(title ? "task "+title : "this task");
+	if (confirm("Are you sure you want to CLOSE "+taskstr+" ?"))
+	{
+		document.location = "report_people.php?action=close&task_id=" + task_id + "&rp={rp}";
+	}
+}
+
+function getPriorityObject(id, user_id)
+{
+		objPriority = document.getElementById("divTD2" + "_" + id + "_" + user_id);
+		txt = objPriority.innerHTML;
+		p = "divPriority_(\\d+)";
+		var exp = new RegExp(p,'g');
+		result = txt.match(exp);
+
+		if (result != null)
+		{
+			objPriority = document.getElementById(result[0]);
+			return objPriority;
+		}
+		else return null;
+}
+
+function changePriority(id, direction, user_id)
+{
+	numbColumns = 12;
+	//totalRows   = dicUsers.Item(user_id);
+	totalRows   = dicUsers[user_id];
+	if (totalRows > 1 && ((direction == "up" && id > 1) || (direction == "down" && id < totalRows)))
+	{
+		step = 1;
+		if (direction == "up") { step = -1;}
+		objPriorityFrom = getPriorityObject(id,user_id);
+		objPriorityTo   = getPriorityObject(id+step,user_id);
+
+		if (objPriorityFrom != null && objPriorityTo != null)
+		{
+			objPriorityFrom.value = id + step;
+			objPriorityTo.value   = id;
+		}
+
+		for (i = 1; i <= numbColumns; i++)
+		{
+			objFrom = document.getElementById("divTD" + i + "_" + id + "_" + user_id);
+			objTo   = document.getElementById("divTD" + i + "_" + (id + step) + "_" + user_id);
+			tmpHTML           = objTo.innerHTML;
+			objTo.innerHTML   = objFrom.innerHTML;
+			objFrom.innerHTML = tmpHTML;
+		}
+
+		trFrom = document.getElementById("divTR_"+id+"_"+user_id);
+		trTo = document.getElementById("divTR_"+(id+step)+"_"+user_id);
+		trTocn2   = catch2(trTo.className);
+		trFromcn2 = catch2(trFrom.className);
+		tmpSTYLE= trTo.className;
+		trTo.className	= trim2(trFrom.className)+trTocn2;
+		trFrom.className = trim2(tmpSTYLE)+trFromcn2;
+	}
+}
+
+function catch2 (sstr) {  if(sstr.substr(sstr.length-1)=="2") return "2"; else return ""; }
+function trim2 (sstr)  {  if(sstr.substr(sstr.length-1)=="2") return sstr.substr(0,sstr.length-1); else return sstr; }
+
+function doNothing()
+{
+	return false;
+}
+
+function confirmSubmit(operation)
+{
+	if (operation == "save_priorities")
+	{
+		if (confirm('Are you sure you want to submit priorities?'))
+		{
+			document.frmReport.operation.value = operation;
+			document.frmReport.submit();
+			return true;
+		}
+	} else {
+		if (confirm('Are you sure you want to submit estimates?'))
+		{
+			document.frmReport.operation.value = operation;
+			document.frmReport.submit();
+			return true;
+		}
+	}
+	return false;
+}
+
+lastBG = "white";
+
+function checkAll(elementsbase, fldinput, submitelement)
+{
+   i=0;
+   alltrue=true;
+
+   while(document.frmReport.elements[i])
+   {
+     if (document.frmReport.elements[i].name.substr(0,fldinput.length)==fldinput && document.frmReport.elements[i].name.substr(fldinput.length)>0)
+     {
+		task_id = document.frmReport.elements[i].name.substr(fldinput.length);
+		cAT=checkAdditionalTime(document.frmReport.elements[i],document.frmReport,document.frmReport.elements[i+1],null);
+		alltrue=(cAT?alltrue:false);
+     }
+     i++;
+   }
+   if (alltrue) { submitelement.disabled=false;} 
+   else { submitelement.disabled=true;}
+}
+
+function UpdateClock()
+{
+	var i=0;
+	var txt ="";
+	if(clockID)
+	{
+		clearTimeout(clockID);
+		clockID  = 0;
+	}	
+	for(i=0;i<activeTaskId.length;i++) 
+	{
+		TaskId = activeTaskId[i];
+		txt+="\n["+i+"]="+TaskId;		
+		if (TaskId)
+		{
+			var tDate = new Date();
+			txt+=" "+tDate.getTime()+" / "+tStart[TaskId].getTime();
+			var tDiff = tDate.getTime() - tStart[TaskId].getTime();
+			tDate.setTime(tDiff);			
+		
+   			var months = tDate.getUTCMonth();
+   			var days = tDate.getUTCDay();   		   	
+  			var hours = parseInt(tDate.getTime()/3600000);
+  			var minutes = tDate.getUTCMinutes();  		
+  			var seconds = tDate.getUTCSeconds();
+
+  			if (seconds>30) {
+  				if (minutes<59) {
+	  				minutes = minutes + 1;
+  				} else {
+  					hours = hours+1;
+  					minutes = "0";
+  				}
+  			}
+  		
+  			if (minutes<10) {
+  				minutes = "0"+minutes;
+  			}
+  			if (seconds<10) {
+  				seconds = "0"+seconds;
+  			}
+  		
+  			var taskTime = ""+hours+":"+minutes;
+  			if (document.getElementById("actual_"+TaskId) &&
+  				document.getElementById("actual_"+TaskId).innerHTML)
+  			{
+   				taskPrev = document.getElementById("actual_"+TaskId).innerHTML;
+   				if (taskTime>taskPrev) {
+  					document.getElementById("actual_"+TaskId).innerHTML = taskTime;
+   				}
+  			}   		
+		}
+	}
+	clockID = setTimeout("UpdateClock()", 1000);
+}
+
+function StartClock()
+{
+	//clockID = setTimeout("UpdateClock()", 1000);
+	//pageRefresh = setTimeout("ReportPageRefresh({report_user_id}, {is_viart}, '{rp}')", 60000);
+}
+
+function KillClock()
+{
+   if(clockID)
+   {
+      clearTimeout(clockID);
+      clockID  = 0;
+   }
+}
+
+function GetXmlHttpObject()
+{
+	var xmlHttp = null;
+	try { xmlHttp=new XMLHttpRequest(); }
+	catch (e) {
+		try { 
+			xmlHttp=new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (e) {
+			xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+	}
+	return xmlHttp;
+}
+
+function stateChanged(reportUserId, isViart)
+{ 
+
+	if (xmlHttp.readyState == 4)
+	{		
+		var responseText = xmlHttp.responseText;		
+		var reportTasksHTML = responseText.substring(responseText.indexOf("<reportTasksHTML><![CDATA[")+26,responseText.indexOf("]]></reportTasksHTML>"));
+		var managerNoteHTML = responseText.substring(responseText.indexOf("<managerNoteHTML><![CDATA[")+26,responseText.indexOf("]]></managerNoteHTML>"));
+		
+		if (responseText && responseText.indexOf("<TITLE>404 Not Found</TITLE>")==-1 && responseText.indexOf("<tasksHTML><![CDATA["))
+		{
+			tasksDiv = document.getElementById("tasks_list");
+			if (tasksDiv)
+			{
+				tasksDiv.innerHTML = reportTasksHTML;
+			}
+			SetEstimates();
+
+			managerNoteDiv = document.getElementById("manager_note");
+			if (managerNoteDiv)
+			{
+				managerNoteDiv.innerHTML = managerNoteHTML;
+			}				
+		}
+	}
+}
+
+function ReportPageRefresh(reportUserId, isViart, returnPage)
+{		
+	xmlHttp = GetXmlHttpObject()
+	if (xmlHttp == null) {
+		alert ("Your browser does not support AJAX!");		
+		return;
+	}
+
+	var url = "report_tasks_list.php";
+	url = url + "?report_user_id=" + reportUserId + "&is_viart=" + isViart + "&rp=" + returnPage;	
+	if (url) {			
+		GetEstimates();			
+		xmlHttp.onreadystatechange = function() { stateChanged(reportUserId, isViart);};  
+		xmlHttp.open("GET", url, true);
+		xmlHttp.send(null);
+		if (pageRefresh) {
+			clearTimeout(pageRefresh);
+		}
+		pageRefresh = setTimeout("ReportPageRefresh(" + reportUserId + ", " + isViart + ", '" + returnPage + "')", 60000);
+	}
+}
+
+var estimateValues = new Array();
+var estimateNames = new Array();
+var estimateUhours = new Array();
+var estimateFocus = 0;
+
+function GetEstimates()
+{
+	var txt = "";
+	estimateNames.length=0;
+	estimateValues.length=0;
+	j=0;
+	if (document.frmReport.elements)
+	{
+		for(i=0;i<document.frmReport.elements.length;i++)
+		{
+			if (document.frmReport.elements[i].name.indexOf("estimate_")!=-1)
+			{
+				var element = document.frmReport.elements[i];
+				estimateTaskId = parseInt(element.name.substr(element.name.indexOf("estimate_")+9));
+				
+				estimateNames[j] = element.name;
+				estimateValues[j] = element.value;
+				estimateUhours[j] = document.frmReport.elements["estimateuhours_"+estimateTaskId].value;
+				j++;
+				txt+="\n"+estimateTaskId+" : "+element.value;
+			}
+		}
+	}	
+}
+
+function SetEstimates()
+{
+/*	if (estimateValues && estimateNames && estimateValues.length && estimateNames.length)
+	{
+		for(i=0;i<estimateNames.length;i++)
+		{
+			elementname = estimateNames[i];
+			estimateTaskId = parseInt(elementname.substr(elementname.indexOf("estimate_")+9));
+			elementnameuhours = "estimateuhours_"+estimateTaskId;			
+			if (document.frmReport.elements[elementname]) {
+			document.frmReport.elements[elementname].value = estimateValues[i];			
+			}
+			if (document.frmReport.elements[elementnameuhours]) {
+			document.frmReport.elements[elementnameuhours].value = estimateUhours[i];
+			}
+		}		
+	}
+	*/
+	if (estimateFocus) {
+		document.frmReport.elements["estimate_"+estimateFocus].focus();
+	}
+}
+
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+	
+<span id="manager_note"><table cellpadding="0" cellspacing="1" border="0"><tr><td>{ITEMPLATE=index_page_manager_notes.html}</td><td>{ITEMPLATE=today_tasks_list.html}</td></tr></table></span>
+
+<!-- BEGIN timereport_link_user -->
+<a href="./time_report.php?period=1&submit=1&person_selected={r_user_id}">[Today Report]</a>
+<a href="./time_report.php?period=2&submit=1&person_selected={r_user_id}">[Yesterday Report]</a>
+<a href="./time_report.php?period=3&submit=1&person_selected={r_user_id}">[Weekly Report]</a>
+<a href="./time_report.php?period=5&submit=1&person_selected={r_user_id}">[Month Report]</a>
+<!-- END timereport_link_user -->
+
+<form name="frmReport" action="report_people.php?is_viart={is_viart}&report_user_id={report_user_id}" method="POST" onSubmit="confirmSubmit('save_estimates');">
+	<input type="hidden" name="operation" value="save_priorities">
+	<input type="hidden" name="is_viart" value="{is_viart}">
+	<input type="hidden" name="report_user_id" value="{report_user_id}">    
+	<span id="tasks_list">{ITEMPLATE=block_report_people_tasks.html}</span>
+</form>
+</body>
+</html>

@@ -1,0 +1,553 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="templates/tasks.js"></SCRIPT>
+<script>
+<!--
+
+var my_projects = new Array();
+var cl_projects = new Array();
+var cm_projects = new Array();
+
+<!-- BEGIN my_projects_array -->
+my_projects['{project_elem}'] = {project_user_id};<!-- END my_projects_array -->
+
+<!-- BEGIN cl_projects_array -->
+cl_projects['{project_elem}'] = {closed_project};<!-- END cl_projects_array -->
+
+<!-- BEGIN cm_projects_array -->
+cm_projects['{project_elem}'] = {completed_project};<!-- END cm_projects_array -->
+
+
+function approveVacation()
+{
+  var approve = document.getElementById("approve");
+  
+  if (confirm("Are you sure you want to approve this vacation/overwork?"))
+  {
+  	approve.value = "1";
+  	document.approve_vacation.submit();
+  }	else {
+  	approve.value = "0";
+  }
+}
+
+function declineVacation()
+{
+  var decline = document.getElementById("decline");  
+  if (confirm("Are you sure you want to decline this vacation/overwork?"))
+  {
+  	decline.value = "1";  	
+  	document.approve_vacation.submit();
+  }	else {
+  	decline.value = "0";
+  }
+}
+
+var clockID = 0;
+var sort = '{sort}';
+/*
+var userId = {session_user_id};
+var xmlHttp = GetXmlHttpObject();
+var url = "index_tasks_list.php" + "?user_id=" + userId + "&sort=" + sort;
+xmlHttp.onreadystatechange = function() { stateChanged(userId, sort);};
+*/
+function UpdateClock()
+{
+   if(clockID)
+   {
+      clearTimeout(clockID);
+      clockID  = 0;
+   }
+   
+   var tDate = new Date();
+   var tDiff = tDate.getTime() - tStart.getTime();
+   tDate.setTime(tDiff);
+   
+   if (activeTaskId) { 
+   		var months = tDate.getUTCMonth();
+   		var days = tDate.getUTCDay();
+   		   	
+  		var hours = parseInt(tDate.getTime()/3600000);
+  		var minutes = tDate.getUTCMinutes();  		
+  		var seconds = tDate.getUTCSeconds();
+
+  		if (seconds>30) {
+  			if (minutes<59) {
+  				minutes = minutes + 1;
+  			} else {
+  				hours = hours+1;
+  				minutes = "0";
+  			}
+  		}
+  		
+  		if (minutes<10) {
+  			minutes = "0"+minutes;
+  		}
+  		if (seconds<10) {
+  			seconds = "0"+seconds;
+  		}
+  		
+  		var taskTime = ""+hours+":"+minutes;/* + ":" + seconds*/
+  		if (document.getElementById("actual_{active_task_id}") &&
+  			document.getElementById("actual_{active_task_id}").innerHTML)
+  		{
+   			taskPrev = document.getElementById("actual_{active_task_id}").innerHTML;
+   			if (taskTime>taskPrev) {
+  			
+  				document.getElementById("actual_{active_task_id}").innerHTML = taskTime;
+   				if (document.getElementById("actual")) {
+   					document.getElementById("actual").innerHTML = taskTime;
+   				}
+   			}
+  		}
+   		clockID = setTimeout("UpdateClock()", 1000);
+   }
+}
+
+function StartClock()
+{
+   /*clockID = setTimeout("UpdateClock()", 1000);*/
+   pageRefresh = setTimeout("IndexPageRefresh({session_user_id}, '"+sort+"')", 60000);
+}
+
+function KillClock()
+{
+   if(clockID)
+   {
+      clearTimeout(clockID);
+      clockID  = 0;
+   }
+}
+
+function GetXmlHttpObject()
+{
+	var xmlHttp = null;
+	try { xmlHttp=new XMLHttpRequest(); }
+	catch (e) {
+		try { 
+			xmlHttp=new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (e) {
+			xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+	}
+	return xmlHttp;
+}
+
+function stateChanged(userId, sort)
+{ 
+	if (xmlHttp.readyState == 4) {		
+		var responseText = xmlHttp.responseText;		
+		var tasksHTML = responseText.substring(responseText.indexOf("<tasksHTML><![CDATA[")+20,responseText.indexOf("]]></tasksHTML>"));
+		var lunchesHTML = responseText.substring(responseText.indexOf("<lunchesHTML><![CDATA[")+22,responseText.indexOf("]]></lunchesHTML>"));
+		var currentTaskHTML = responseText.substring(responseText.indexOf("<currentTaskHTML><![CDATA[")+26,responseText.indexOf("]]></currentTaskHTML>"));
+		var managerNoteHTML = responseText.substring(responseText.indexOf("<managerNoteHTML><![CDATA[")+26,responseText.indexOf("]]></managerNoteHTML>"));
+		var usersListHTML = responseText.substring(responseText.indexOf("<usersListHTML><![CDATA[")+24,responseText.indexOf("]]></usersListHTML>"));
+		
+		if (responseText && responseText.indexOf("<TITLE>404 Not Found</TITLE>")==-1 && responseText.indexOf("<tasksHTML><![CDATA[")) {
+			
+		tasksDiv = document.getElementById("tasks_div");
+		if (tasksDiv)
+		{
+			tasksDiv.innerHTML = tasksHTML;
+		}
+
+		lunchesDiv = document.getElementById("lunches_div");
+		if (lunchesDiv)
+		{
+			lunchesDiv.innerHTML = lunchesHTML;
+		}
+
+		currentTaskDiv = document.getElementById("current_task");
+		if (currentTaskDiv)
+		{
+			currentTaskDiv.innerHTML = currentTaskHTML;
+		}
+		
+		managerNoteDiv = document.getElementById("manager_note");
+		if (managerNoteDiv)
+		{
+			managerNoteDiv.innerHTML = managerNoteHTML;
+		}
+	
+		usersListDiv = document.getElementById("users_list");
+		if (usersListDiv)
+		{
+			usersListDiv.innerHTML = usersListHTML;
+		}
+		}
+	}
+}
+
+function IndexPageRefresh(userId, sort)
+{		
+	xmlHttp = GetXmlHttpObject()
+	if (xmlHttp == null) {
+		alert ("Your browser does not support AJAX!");		
+		return;
+	}
+	var url = "index_tasks_list.php" + "?user_id=" + userId + "&sort=" + sort;
+	if (url) {		
+		xmlHttp.onreadystatechange = function() { stateChanged(userId, sort);};  
+		xmlHttp.open("GET", url, true);
+		xmlHttp.send(null);
+		if (pageRefresh) {
+			clearTimeout(pageRefresh);
+		}
+		pageRefresh = setTimeout("IndexPageRefresh(" + userId + ", '" + sort + "')", 600000);
+	}
+}
+
+function show_user_info(user_id)
+{
+	if (document.getElementById("user_info_"+user_id)) {
+		document.getElementById("user_info_"+user_id).style.display = "block";
+	}
+}
+
+function hide_user_info(user_id)
+{
+	if (document.getElementById("user_info_"+user_id)){
+		document.getElementById("user_info_"+user_id).style.display = "none";
+	}
+}
+
+function hideTableRow(id) {
+	if (document.getElementById(id)) {
+		document.getElementById(id).style.display = 'none';
+	}
+}
+
+function showTableRow(id) {
+	if (document.getElementById(id)) {
+		if (!!(window.attachEvent && !window.opera)) {
+			document.getElementById(id).style.display = '';
+		} else {
+			document.getElementById(id).style.display = 'table-row';
+		}
+	}
+}
+
+function closeBranch(id)
+{
+	document.getElementById("m"+id).style.display = "none";
+	if (document.getElementById("p"+id).style.display == "none") {
+		document.getElementById("p"+id).style.display = "inline";
+	} else {
+		document.getElementById("p"+id).style.display = "none";
+	}
+	for (i=1; i<=200; i++){
+		if (document.getElementById("pr"+id+"_".concat(i))) {
+			document.getElementById("pr"+id+"_".concat(i)).style.display="none";
+		}
+	}
+	save_cookie();
+}
+
+function openBranch(id)
+{
+	document.getElementById("p"+id).style.display = "none";
+	if (document.getElementById("m"+id).style.display == "none") {
+		document.getElementById("m"+id).style.display = "inline";
+	} else {
+		document.getElementById("m"+id).style.display = "none";
+	}
+	var txt="";
+	for (i=1; i<=200; i++){
+		element_id = "pr"+id+"_".concat(i);
+		if (document.getElementById(element_id)) {
+			if ((document.getElementById("b1").className == "" || my_projects[element_id])
+				&& (document.projects_filter.project_filter_cm.checked || cm_projects[element_id]==0)
+				&& (document.projects_filter.project_filter_cl.checked || cl_projects[element_id]==0)			
+			) {
+				document.getElementById(element_id).style.display="";
+			}
+		}
+	}
+	save_cookie();	
+}
+
+function reloadProjects()
+{
+	var txt = '';
+	var activeTab = 'all_projects';
+	if(document.getElementById('b1').className=="noborder") {
+		activeTab = 'my_projects';
+	}
+
+	for (var i in my_projects)
+	{
+		if (document.getElementById(i)) {			
+			var project_str = i.substr(2);			
+			if (project_str.indexOf("_")>0) {
+				parent_project_id = project_str.substr(0,project_str.indexOf("_"));
+				project_id = project_str.substr(project_str.indexOf("_")+1);
+			} else {					
+				parent_project_id = "";
+				project_id = project_str;
+			}
+			
+			parent_minus = document.getElementById('m'+parent_project_id);
+			parent_plus = document.getElementById('p'+parent_project_id);
+			
+			var parent_branch_opened = 0;
+			if (parent_minus && parent_minus.style.display == 'none') {
+				parent_branch_opened = -1;
+				if (parent_plus && parent_plus.style.display == 'none') {
+					parent_branch_opened = 0;
+				}
+			} else {
+				parent_branch_opened = 1;
+			}
+			if (!parent_project_id) {
+				parent_branch_opened = 0;
+			}
+			
+			if (parent_project_id==79 || project_id==79 || !parent_project_id) {
+				txt+="\n"+parent_project_id+"/"+project_id+": "+parent_branch_opened;
+			}
+
+			if ((activeTab == 'all_projects' || (activeTab == 'my_projects' && my_projects[i]==1))
+				&& (				
+				(parent_branch_opened != -1 
+				&& (document.projects_filter.project_filter_cm.checked || cm_projects[i]==0)
+				&& (document.projects_filter.project_filter_cl.checked || cl_projects[i]==0))
+				)
+			) {
+				showTableRow(i);
+				
+			} else {
+				hideTableRow(i);
+			}
+		}
+	}	
+	save_cookie();
+}
+
+function roll(thisname)
+{
+	var task_status_select='{task_status_select}';
+
+	for(i=1;i<=2;i++)
+	{
+		if (document.getElementById('b'+i).className=="noborder")
+		{			
+			activeelem = document.getElementById('b'+i);
+			activeelem.className = "";
+			activeelem.parentNode.className = "menu";			
+		}
+	}
+
+	/* show */
+	thiselem=document.getElementById(thisname);
+	thiselem.className = "noborder";
+	thiselem.parentNode.className="menuact";
+
+	var txt = '';
+	reloadProjects();
+}
+
+function save_cookie()
+{
+	var cookie_str = '';
+	
+	if(document.getElementById('b1').className=="noborder") {
+		cookie_str += 'm';
+	} else {
+		cookie_str += 'a';
+	}
+	if (document.projects_filter.project_filter_cm.checked) {
+		cookie_str += "1";
+	} else {
+		cookie_str += "0";
+	}
+	if (document.projects_filter.project_filter_cl.checked) {
+		cookie_str += "1";
+	} else {
+		cookie_str += "0";
+	}
+	
+	for (var i in my_projects)
+	{
+		if (document.getElementById(i)) {			
+			var project_str = i.substr(2);
+			if (project_str.indexOf("_")==-1) {
+				parent_minus = document.getElementById('m'+project_str);
+				if (!parent_minus || parent_minus.style.display != 'none') {
+					cookie_str+="_"+project_str;
+				}
+			}
+		}
+	}
+	
+	document.cookie = 'monitorprojectstate='+cookie_str+'; expires=Thu, 1 Jan 2026 08:00:00 UTC; path=/';	
+}
+
+
+-->
+</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+  	<td valign="bottom" width="25%" align="left">
+  		<table width="100%" cellpadding="0" cellspacing="1" border="0">
+  		<!--BEGIN cvs_messages-->
+  		<tr><td id="commits">
+				{ITEMPLATE=index_page_commits.html}		
+  		</td></tr>
+  		<!--END cvs_messages-->
+  		<!--BEGIN steps-->
+  		<tr><td id="commits">
+				{ITEMPLATE=index_page_steps.html}		
+  		</td></tr>
+  		<!--END steps-->
+  		<tr><td><font color="green">{birth_days}</font></td></tr>
+  		<tr><td><font style="font-weight:bold" color="green">{reminders}</font></td></tr>
+  		<tr><td><span id="lunches_div">{ITEMPLATE=index_page_lunches.html}</span><br></td></tr>		
+		<tr><td id="manager_note">{ITEMPLATE=index_page_manager_notes.html}</td></tr>
+  		<tr><td id="current_task">{ITEMPLATE=current_task.html}</td></tr>
+    	</table>
+  	</td>
+  	<!-- BEGIN users_list_block -->
+  	<td valign="top" align="right" width="40%">  		
+		<div id="users_list" width="100%">
+		{ITEMPLATE=index_page_users_list.html}
+   		</div>
+   	</td>
+   	<!-- END users_list_block -->
+
+   	<!-- BEGIN projects_list_block -->
+	<td valign="top" align="right" width="35%">	
+    <table cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+    	<td class="FormHeaderTD" colspan="3">
+    		<a name="Projects"><font class="FormHeaderFONT">Projects</font></a>
+    	</td>
+    </tr>
+    <tr>
+    	<td colspan="3">
+    	<form name="projects_filter" style="display:inline;">
+    	<table>
+    		<tr>
+			<td onmousedown="roll('b1');" class="menu{act_my}"><div id="b1" class="{noborder_my}"><nobr>My Projects</nobr></div></td>
+			<td onmousedown="roll('b2');" class="menu{act_all}"><div id="b2" class="{noborder_all}"><nobr>All Projects</nobr></div></td>
+			<td>
+			 	<input type="checkbox" value="1" name="project_filter_cm" {project_filter_cm_checked} onClick="reloadProjects();" onChange="reloadProjects();">Completed
+			</td><td>
+			 	<input type="checkbox" value="1" name="project_filter_cl" {project_filter_cl_checked} onClick="reloadProjects();">Closed
+			</td>
+			</tr>
+		</table>
+		</form>
+		</td>
+	</tr>
+    
+    <tr>
+		<td class="ColumnTD" width="60%">
+			<font class="ColumnFONT">Title</font>
+		</td>
+		<td class="ColumnTD" width="30%" align="center">
+			<font class="ColumnFONT">Status</font>
+		</td>
+		<td class="ColumnTD" width="10%"></td>
+    </tr>
+
+    <!-- BEGIN projects -->
+
+    <tr id="pr{project_id}{subproject}" style="display:{pr_display};">
+      <td nowrap>   {tab}
+	  <font style="display:{minus_display};cursor: hand; cursor:pointer;"  id="m{project_id}"
+		onclick='closeBranch({project_id});' FACE="Courier New" color="{white_color}">-</font><font 
+			style="display:{plus_display};cursor: hand; cursor:pointer;" id='p{project_id}'
+		onclick='openBranch({project_id});' FACE="Courier New"  color="{white_color}">+</font> <a
+		 href="view_project_tasks.php?project_id={abs_project_id}"><font class="DataFONT" style="color:{color};">{project_title}</font></a>&nbsp({tasks_count})&nbsp;
+	</td><td align="left">
+        <a href="edit_project.php?project_id={abs_project_id}" style="color:{color};">{status_desc}</a>&nbsp;
+      </td><td align="right">
+        <a href="edit_project.php?project_id={abs_project_id}">edit</a>&nbsp;
+      </td><td>
+    </tr>
+    <!-- END projects -->
+
+    <!-- BEGIN no_projects -->
+    <tr><td colspan="3" class="DataTD"><font class="DataFONT">No projects<font color=white size=+1><b>-</b><font></font></td></tr>
+    <!-- END no_projects -->
+
+    <tr>
+      <td colspan="3" nowrap class="ColumnTD"><font class="ColumnFONT">
+      	<a href="projects_summary.php"><font class="ColumnFONT">Projects Summary</font></a> &nbsp;&nbsp;|&nbsp;&nbsp;
+        <a href="edit_project.php"><font class="ColumnFONT">Create New Project</font></a></font>
+      </td>
+    </tr>
+    </table>   
+    </td>
+    <!-- END projects_list_block -->
+    </tr>
+    <tr>
+    </tr>
+    </table>
+
+	<!-- BEGIN for_Artem -->
+	<br>
+	<table class="FormTABLE" width=100%>
+    <tr><td class="FormHeaderTD" colspan="9"><a name="Tasks"><font class="FormHeaderFONT">Approve Vacations/Overworks</font></a></td></tr>
+    <!-- BEGIN header_approve_vacation -->
+    <tr>
+	  <td class="ColumnTD" nowrap><a href="index.php?sort=project"><font class="ColumnFONT">Type</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=project"><font class="ColumnFONT">User</font></a></td>
+      <td class="ColumnTD"><a href="index.php?sort=title"><font class="ColumnFONT">Title</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=status"><font class="ColumnFONT">Reason</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=type"><font class="ColumnFONT">Start Date</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=create"><font class="ColumnFONT">End Date</font></a></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Total days</font></td>
+      <td class="ColumnTD" nowrap></td>
+      <td class="ColumnTD" nowrap></td>
+    </tr>
+    <!-- END header_approve_vacation -->
+
+    <!-- BEGIN approve_vacation -->
+      <tr>
+      	<td nowrap width=10%><b><font color="blue">{type}</font></b>&nbsp;</td>
+        <td nowrap width=15%><b>{user_name}</b>&nbsp;</td>
+    	<td width=15%><a class="Task{STATUS}" href="edit_task.php?task_id={task_id}">{title}</a>&nbsp;</td>
+     	<td nowrap width=10%>{reason}&nbsp;</td>
+        <td nowrap width=10%> {vacation_start_date}&nbsp;</td>
+        <td nowrap width=10%>{vacation_end_date}&nbsp;</td>
+        <td nowrap align=center width=10%>{vacation_total_days}&nbsp;</td>        
+        <td class=nowrap width=10%>
+		<form name="approve_vacation" action="approve_vacation.php" method="POST">
+		<input type="hidden" name="approve" id="approve" value="{approve}">
+		<input type="hidden" name="period_id" id="period_id" value="{period_id}">
+
+		<a href="approve_vacation.php?approve=1&period_id={period_id}" onClick="approveVacation(); return false;">Approve</a>
+		</td>
+		<td class=nowrap width=10%>
+		<input type="hidden" name="decline" id="decline" value="{decline}">
+		<a href="approve_vacation.php?decline=1&period_id={period_id}" onClick="declineVacation(); return false;">Decline</a>
+		</form>
+		</td>
+      </tr>
+    <!-- END approve_vacation -->
+
+    <!-- BEGIN no_approve_vacation -->
+    <tr><td colspan="14" class="DataTD"><font class="DataFONT">There are no vacations which need approving</font></td></tr>
+    <!-- END no_approve_vacation -->
+	</table>
+
+	<!-- END for_Artem -->
+
+<!-- Search & Tasks -->
+
+{ITEMPLATE=index_page_documents.html}
+<div id="tasks_div">
+{ITEMPLATE=index_page_tasks_list.html}
+</div>
+
+</body>
+</html>

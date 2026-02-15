@@ -1,0 +1,55 @@
+<html>
+
+<head>
+
+<title>Control</title>
+
+<link rel="stylesheet" href="site.css" type="text/css"/>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<script language="javaScript">
+function toggleAllTasks() {
+	var element;
+	var tasks_num = document.getElementById('tasks_num');
+	var checkall_current_value = document.getElementById('checkall_current_value');
+
+	if (checkall_current_value.value == 0) {
+		checkall_current_value.value = 1;
+	}
+	else{
+		checkall_current_value.value = 0;
+	}
+
+	for (i = 0; i < tasks_num.value; i++) {
+		element = document.getElementById('tasks_' + i);
+		if (element != null) {
+			if (checkall_current_value.value == 0) {
+				element.checked = false;
+			}
+			else {
+				element.checked = true;
+			}
+
+		}
+	}
+}
+</script>
+
+<table border="0">
+	<tr>
+		<td>
+		{report}
+		</td>
+	</tr>
+	<tr>
+		<td>
+		{form}
+		</td>
+	</tr>
+</table>
+</body>
+
+</html>

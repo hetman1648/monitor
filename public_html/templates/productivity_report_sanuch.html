@@ -1,0 +1,138 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+<table border=0>
+	<tr><td valign="top">
+		<form name="frmFilter" action="{productivity_report_script}">		
+		<table border=0 cellpadding=2 cellspacing=0>
+		<tr>
+			<td align="right">
+				Select year:
+			</td>              
+			<td>
+				<select name="year_selected" style="width:150px">
+					<option value="">--------- Year ---------</option>
+					{years}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select month:
+			</td>              
+			<td>
+				<select name="month_selected" style="width:150px">
+					<option value="">-------- Month --------</option>
+					{months}
+				</select>
+			</td>
+		</tr>		
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;				
+			</td>
+		</tr>
+		</table>
+		</form>
+	</td></tr>
+	<!-- BEGIN team_block -->
+	<tr align="center"><td>
+		<table border="0" cellpadding="2" class="FormTABLE">
+		<tr>
+			<td class="FormHeaderTD" colspan="13"><font class="FormHeaderFONT">Summary</font></td>
+		</tr>
+		<tr align="center">
+			<td class="ColumnTD"><font class="ColumnFONT">Person</font></td>
+			<!-- BEGIN custom_header -->
+				<!-- BEGIN project_header -->
+				<td class="ColumnTD"><font class="ColumnFONT">{project_title}</font></td><!-- END project_header -->
+				
+				<!-- BEGIN viart_web_clients_header -->
+				<td class="ColumnTD"><font class="ColumnFONT">Viart Web Clients</font></td><!-- END viart_web_clients_header -->
+				<!-- BEGIN tickets_header -->
+				<td class="ColumnTD"><font class="ColumnFONT">Tickets</font></td>
+				<td class="ColumnTD"><font class="ColumnFONT">Tickets Delayed</font></td><!-- END tickets_header -->
+				<!-- BEGIN viart_header -->
+				<td class="ColumnTD"><font class="ColumnFONT">Viart</font></td><!-- END viart_header -->
+				<!-- BEGIN sayu_header -->
+				<td class="ColumnTD"><font class="ColumnFONT">Sayu</font></td><!-- END sayu_header -->
+				<!-- BEGIN manual_header -->
+				<td class="ColumnTD"><font class="ColumnFONT">Manual</font></td><!-- END manual_header -->
+			<!-- END custom_header -->
+			<td class="ColumnTD"><font class="ColumnFONT">Paid Days</font></td>			
+			<td class="ColumnTD"><font class="ColumnFONT">Bugs</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">Total Points</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">Bonus</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">Not rated tasks</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">Other projects</font></td>
+		</tr>
+		<!-- BEGIN people -->
+		<tr align="center">
+			<td class="DataTDE" nowrap align="left">{user_name}</td>
+			<!-- BEGIN custom_body -->
+				<!-- BEGIN project_block -->
+				<td class="DataTDE" width="50px">{project_point}</td><!-- END project_block -->
+				
+				<!-- BEGIN viart_web_clients_block -->
+				<td class="DataTDE" width="50px">{viart_web_clients}</td><!-- END viart_web_clients_block -->
+				<!-- BEGIN tickets_block -->
+				<td class="DataTDE" width="50px">{tickets_points}</td>
+				<td class="DataTDE" nowrap>{tickets_delayed_points} ({tickets_delayed})</td><!-- END tickets_block -->
+				<!-- BEGIN viart_block -->
+				<td class="DataTDE" width="50px">{viart}</td><!-- END viart_block -->
+				<!-- BEGIN sayu_block -->
+				<td class="DataTDE" width="50px">{sayu}</td><!-- END sayu_block -->
+				<!-- BEGIN manual_block -->
+				<td class="DataTDE" width="50px">{manual}</td><!-- END manual_block -->
+			<!-- END custom_body -->
+			<td class="DataTDE" width="50px">{paid_days}</td>
+			<td class="DataTDE" width="50px">{bugs}</td>
+			<td class="DataTDE" width="50px"><b>{points}</b></td>
+			<td class="DataTDE" width="50px"><span style="color:red;font-weight:bold">{bonus}</span></td>
+			<td class="DataTDE" valign="top"><table width="100%" border="0" cellpadding="0" cellspacing="0"><!-- BEGIN not_rated_tasks -->
+			<tr><td width="90%"><a href="edit_task.php?task_id={task_id}&rp=productivity_report.php?year_selected={year_selected}&month_selected={month_selected}">{task_title}</a></td><td width="10%" align="right">&nbsp;{spent_hours}</td></tr>
+			<!-- END not_rated_tasks --></table></td>
+			<td class="DataTDE" valign="top"><table width="100%" border="0" cellpadding="0" cellspacing="0"><!-- BEGIN other_projects -->
+			<tr><td width="90%"><a href="edit_task.php?task_id={task_id}&rp=productivity_report.php?year_selected={year_selected}&month_selected={month_selected}">{task_title}</a></td><td width="10%" align="right">&nbsp;{spent_hours}</td></tr>
+			<!-- END other_projects --></table></td>			
+		</tr>
+		<!-- END people -->
+		<tr align="center">
+			<td class="ColumnTD"><font class="ColumnFONT">Totals</font></td>
+			<!-- BEGIN custom_total -->
+				<!-- BEGIN project_total_points -->
+				<td class="ColumnTD"><font class="ColumnFONT">{total_project_point}</font></td><!-- END project_total_points -->
+				<!-- BEGIN viart_web_clients_total -->
+				<td class="ColumnTD"><font class="ColumnFONT">{sum_viart_web_clients}</font></td><!-- END viart_web_clients_total -->
+				<!-- BEGIN tickets_total -->
+				<td class="ColumnTD"><font class="ColumnFONT">{sum_tickets_points}</font></td>
+				<td class="ColumnTD"><font class="ColumnFONT">{sum_tickets_delayed_points} ({sum_tickets_delayed})</font></td><!-- END tickets_total -->
+				<!-- BEGIN viart_total -->
+				<td class="ColumnTD"><font class="ColumnFONT">{sum_viart}</font></td><!-- END viart_total -->
+				<!-- BEGIN sayu_total -->
+				<td class="ColumnTD"><font class="ColumnFONT">{sum_sayu}</font></td><!-- END sayu_total -->
+				<!-- BEGIN manual_total -->
+				<td class="ColumnTD"><font class="ColumnFONT">{sum_manual}</font></td><!-- END manual_total -->
+			<!-- END custom_total -->
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_paid_days}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_bugs}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_points}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_bonus}</font></td>
+			<td class="ColumnTD" colspan="2">&nbsp;</td>
+		</tr>
+		</table>
+		<br>
+	</td>		
+	</tr>
+	<!-- END team_block -->
+</table>		
+
+</body>
+</html>

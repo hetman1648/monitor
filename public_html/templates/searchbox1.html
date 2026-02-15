@@ -1,0 +1,35 @@
+         <!-- BEGIN Formsearch -->
+         <table class="FormTABLE" width="100%">
+         <tr><td class="FormHeaderTD" colspan="11"><a name="search"><font class="FormHeaderFONT">Search</font></a></td></tr>
+         <form action="{ActionPage}?{TransitParams}#tasks">
+         <tr>
+           
+           <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Project</font></td>
+           <td class="DataTD">
+             <select name="project_id"><!-- BEGIN LBproject_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBproject_id --></select>
+           </td>
+           </tr>
+           <tr>
+           <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Status</font></td>
+           <td class="DataTD">
+             <select name="task_status_id"><!-- BEGIN LBtask_status_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBtask_status_id --></select>
+           </td>
+           </tr>
+           <tr>
+           <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Priority</font></td>
+           <td class="DataTD">
+             <select name="priority_id"><!-- BEGIN LBpriority_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBpriority_id --></select>
+           </td>
+           </tr>
+           <tr>
+           <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Type</font></td>
+           <td class="DataTD">
+             <select name="task_type_id"><!-- BEGIN LBtask_type_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBtask_type_id --></select>
+           </td>
+         </tr>
+         <tr>
+           <td><input type="submit" value="Search"/></td>
+         </tr>
+         </form>
+         </table>
+         <!-- END Formsearch -->

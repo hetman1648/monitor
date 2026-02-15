@@ -1,0 +1,117 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<body class="PageBODY"  onLoad="setPeriod({period});selectPeriod()">
+{ITEMPLATE=header.html}
+<div align="center">
+</div>
+
+
+<!-- BEGIN result -->
+<!-- END result -->
+<table width=75% align=center>
+<tr>
+<td align=right>
+{ITEMPLATE=filter.html}
+</td>
+<td>
+<table class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="9"><font class="FormHeaderFONT">Warning Report</font></td>
+    </tr>
+	<!-- BEGIN records_header -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Person</font></td>
+	    <!--<td class="ColumnTD" nowrap><font class="ColumnFONT">Spent hours</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Time per task</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Hours per day</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Working days</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Days off</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Bonuses</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Penalties</font></td>-->
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Quantity</font></td>
+	</tr>
+	<!-- END records_header -->
+
+    <!-- BEGIN records -->
+   <tr  align="center">
+	   	<td class="DataTD" nowrap  align="left"><font class="DataFONT">{user_name}</font></td>
+	   <!-- <td class="DataTD" nowrap><font class="DataFONT">{spent_hours}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT"><a href="./tasks_report.php?year_selected={year_selected}&month_selected={month_selected}&person_selected={user_id}&team={team_selected}">{tasks}</a></font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{time_per_task}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{hours_per_day}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{working_days}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{days_off}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{bonuses}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{penalties}</font></td>	    -->
+	  <td class="DataTD" nowrap><font class="DataFONT">{warn_quant}</font></td>
+	</tr>
+	<!-- END records -->
+
+<!--{user_stats}-->
+
+	<!-- BEGIN no_records -->
+	<tr>
+		<td colspan="2" class=Headline>
+			&nbsp;No data for this period
+		</td>
+	</tr>
+	<!-- END no_records -->
+</table>
+</td>
+<tr>
+<tr>
+<td height=30>
+</td>
+</tr>
+<tr align="center">
+
+<td colspan=2 align="center">
+<table>
+	<tr>
+
+   <td colspan="10" class="FormHeaderTD"><font class="FormHeaderFONT">WARNINGS</font></td>
+</tr>
+<!-- BEGIN warnings_header -->
+<tr align=center>
+   <td class="ColumnTD" width=20%><b>User</b></td>
+   <td class="ColumnTD" width=20%><b>Date Added</b></td>
+   <td class="ColumnTD"><b>Notes</td>
+   <td class="ColumnTD" width=20% align=center><b>Creator</b></td>
+   <td class="ColumnTD">&nbsp;</td>
+</tr>
+<!-- END warnings_header -->
+<!-- BEGIN warnings_td -->
+{shift}
+<tr style="background-color:#FFFFFF">
+   <td class="DataTD" align=left><b>&nbsp;{user_name}&nbsp;</b></td>
+   <td class="DataTD">&nbsp;{date_added}&nbsp;</td>
+   <td class="DataTD">&nbsp;{notes}&nbsp;</td>
+   <td class="DataTD" align=left>&nbsp;{creator}&nbsp;</td>
+   <td class="DataTD" align=center>&nbsp;<a href="edit_warning.php?warning_id={warning_id}">Edit</a>&nbsp;</td>
+</tr>
+<!-- END warnings_td -->
+<!-- BEGIN no_warnings -->
+	<tr>
+		<td colspan="6" class=Headline align=center>
+			&nbsp;No data
+		</td>
+	</tr>
+<!-- END no_warnings -->
+<tr>
+	<td colspan="6" class=Headline align=center>
+	<br>
+	<a href="create_warning.php">Add Warning</a>
+	</td>
+</tr>
+</table>
+</td>
+
+</tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<html>
+
+<head>
+
+<title>Control</title>
+
+<link rel="stylesheet" href="site.css" type="text/css"/>
+
+<script type="text/javascript" src="templates/tasks.js"></script>
+
+<script>
+
+//var dicUsers = new ActiveXObject("Scripting.Dictionary");
+
+var dicUsers = new Array();
+
+{dicUsers}
+
+
+
+function closeTaskRep(task_id, title)
+
+{
+
+	var taskstr=(title ? "task "+title : "this task");
+
+	if (confirm("Are you sure you want to CLOSE "+taskstr+" ?"))
+
+	{
+
+		document.location = "report_people.php?action=close&task_id=" + task_id + "&rp={rp}";
+
+	}
+
+}
+
+
+
+function getPriorityObject(id, user_id)
+
+{
+
+		objPriority = document.getElementById("divTD2" + "_" + id + "_" + user_id);
+
+		txt = objPriority.innerHTML;
+
+		p = "divPriority_(\\d+)";
+
+		var exp = new RegExp(p,'g');
+
+		result = txt.match(exp);
+
+
+
+		if (result != null)
+
+		{
+
+			objPriority = document.getElementById(result[0]);
+
+			return objPriority;
+
+		}
+
+		else return null;
+
+}
+
+
+
+function changePriority(id, direction, user_id)
+
+{
+
+	numbColumns = 12;
+
+	//totalRows   = dicUsers.Item(user_id);
+
+	totalRows   = dicUsers[user_id];
+
+//	alert(direction);
+
+	if (totalRows > 1 && ((direction == "up" && id > 1) || (direction == "down" && id < totalRows)))
+
+	{
+
+		step = 1;
+
+		if (direction == "up") step = -1;
+
+		objPriorityFrom = getPriorityObject(id,user_id);
+
+		objPriorityTo   = getPriorityObject(id+step,user_id);
+
+
+
+		if (objPriorityFrom != null && objPriorityTo != null)
+
+		{
+
+			objPriorityFrom.value = id + step;
+
+			objPriorityTo.value   = id;
+
+		}
+
+
+
+		for (i = 1; i <= numbColumns; i++)
+
+		{
+
+			objFrom = document.getElementById("divTD" + i + "_" + id + "_" + user_id);
+
+			objTo   = document.getElementById("divTD" + i + "_" + (id + step) + "_" + user_id);
+
+
+
+			tmpHTML           = objTo.innerHTML;
+
+			objTo.innerHTML   = objFrom.innerHTML;
+
+			objFrom.innerHTML = tmpHTML;
+
+		}
+
+
+
+		trFrom = document.getElementById("divTR_"+id+"_"+user_id);
+
+		trTo = document.getElementById("divTR_"+(id+step)+"_"+user_id);
+
+
+
+		trTocn2   = catch2(trTo.className);
+
+		trFromcn2 = catch2(trFrom.className);
+
+
+
+		tmpSTYLE= trTo.className;
+
+		trTo.className	= trim2(trFrom.className)+trTocn2;
+
+		trFrom.className = trim2(tmpSTYLE)+trFromcn2;
+
+	}
+
+}
+
+
+
+function catch2 (sstr) {  if(sstr.substr(sstr.length-1)=="2") return "2"; else return ""; }
+
+function trim2 (sstr)  {  if(sstr.substr(sstr.length-1)=="2") return sstr.substr(0,sstr.length-1); else return sstr; }
+
+
+
+function doNothing()
+
+{
+
+	return false;
+
+}
+
+
+
+function confirmSubmit(operation)
+
+{
+
+	if (operation == "save_priorities")
+
+	{
+
+		if (confirm('Are you sure you want to submit priorities?'))
+
+		{
+
+			document.frmReport.operation.value = operation;
+
+			document.frmReport.submit();
+
+			return true;
+
+		}
+
+	}
+
+	else
+
+	{
+
+		if (confirm('Are you sure you want to submit estimates?'))
+
+		{
+
+			document.frmReport.operation.value = operation;
+
+			document.frmReport.submit();
+
+			return true;
+
+		}
+
+	}
+
+	return false;
+
+}
+
+
+
+lastBG = "white";
+
+
+
+function checkAll(elementsbase, fldinput, submitelement)
+
+{
+
+   i=0;
+
+   alltrue=true;
+
+
+
+   while(document.frmReport.elements[i])
+
+   {
+
+     if (document.frmReport.elements[i].name.substr(0,fldinput.length)==fldinput && document.frmReport.elements[i].name.substr(fldinput.length)>0)
+
+     {
+
+     	task_id = document.frmReport.elements[i].name.substr(fldinput.length);
+
+	cAT=checkAdditionalTime(document.frmReport.elements[i],document.frmReport,document.frmReport.elements[i+1],null);
+
+	alltrue=(cAT?alltrue:false);
+
+     }
+
+     i++;
+
+   }
+
+   if (alltrue) submitelement.disabled=false; else submitelement.disabled=true;
+
+}
+
+
+
+</script>
+
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+
+
+
+
+	<!-- BEGIN timereport_link_user -->
+
+		<a href="./time_report.php?period=1&submit=1&person_selected={r_user_id}">[Today Report]</a>
+
+		<a href="./time_report.php?period=2&submit=1&person_selected={r_user_id}">[Yesterday Report]</a>
+
+		<a href="./time_report.php?period=3&submit=1&person_selected={r_user_id}">[Weekly Report]</a>
+
+		<a href="./time_report.php?period=5&submit=1&person_selected={r_user_id}">[Month Report]</a>
+
+	<!-- END timereport_link_user -->
+
+
+
+	<form name="frmReport" action="report_people.php" method="POST" onSubmit="confirmSubmit('save_estimates');">
+
+	<input type="hidden" name="operation"  value="save_priorities">
+
+	<input type="hidden" name="is_viart"  value="{is_viart}">
+
+	<input type="hidden" name="report_user_id"  value="{report_user_id}">
+
+    <a name="tasks">
+
+    <table class="FormTABLE" width=100%>
+
+    <tr><td class="FormHeaderTD" colspan="15"><a name="Tasks"><font class="FormHeaderFONT">{page_title}</font></a></td></tr>
+
+    <tr>
+
+      <td class="ColumnTD" nowrap></td>
+
+      <td class="ColumnTD"><font class="ColumnFONT">Title</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Project</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Prior.</font></td>
+
+      <td class="ColumnTD" nowrap></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Status</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Estimate</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Completion %</font></td>
+
+      <td class="ColumnTD" width="6%"><font class="ColumnFONT">Time left Estimate</font></td>
+
+      <td class="ColumnTD" width="6%"><font class="ColumnFONT">Time left Actual</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Actual</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Type</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Created</font></td>
+
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Complete by</font></td>
+
+      <td class="ColumnTD" nowrap></td>
+
+    </tr>
+
+
+
+    <!-- BEGIN tasks -->
+
+	    <!-- BEGIN tasks_header -->
+
+	    <tr height="10"><td colspan="14"></td></tr>
+
+    	<tr>
+
+    		<td colspan="14"><b>{first_name} {last_name}</b></td>
+
+	    </tr>
+
+    	<!-- END tasks_header -->
+
+
+
+      	<tr class="Task{STATUS}" onMouseOut="this.style.backgroundColor=lastBG;" onMouseOver="lastBG=this.style.backgroundColor; this.style.backgroundColor='#FCFFD5';" id="divTR_{id}_{user_id}">
+
+	      	<td width="20"></td>
+
+	    	<td id="divTD2_{id}_{user_id}">
+
+	          	<a class="aTask{STATUS}" href="edit_task.php?task_id={task_id}&rp={rp}">{task_title}</a>&nbsp;
+
+	          	<input id="divPriority_{task_id}" type="hidden" size="3" name="priority_{task_id}" value="{id}">
+
+		    </td>
+
+	        <td id="divTD1_{id}_{user_id}" nowrap>{project_title}&nbsp;</td>
+
+	        <td align="center" nowrap>{id}&nbsp;</td>
+
+	        <td ><a href="javascript:changePriority({id},'down',{user_id})"><img width="16" height="16" border="0" src="images/move_down.gif"></a><a href="javascript:changePriority({id},'up',{user_id});"><img width="16" height="16" border="0"src="images/move_up.gif"></a></td>
+
+	     	<td id="divTD3_{id}_{user_id}" nowrap>&nbsp; {status_desc}&nbsp;</td>
+
+	        <td id="divTD8_{id}_{user_id}" nowrap><input type="text" name="estimate_{task_id}" size="12" style="font-size:10px;border:1px solid #919B9C;" value="{estimated_hours_title}" style="background:#fff" maxlength="14"
+
+			onkeyup ="checkAdditionalTime(this,document.frmReport,document.frmReport.elements.estimateuhours_{task_id},null); checkAll(document.frmReport.elements,'estimate_',getElementById('save_estimates'))"
+
+			onchange="checkAdditionalTime(this,document.frmReport,document.frmReport.elements.estimateuhours_{task_id},null); checkAll(document.frmReport.elements,'estimate_',getElementById('save_estimates'))"
+
+			onblur  ="checkAdditionalTime(this,document.frmReport,document.frmReport.elements.estimateuhours_{task_id},null); checkAll(document.frmReport.elements,'estimate_',getElementById('save_estimates'))"
+
+		><input type="hidden" name="estimateuhours_{task_id}" value="0"></td>
+
+	        <td id="divTD10_{id}_{user_id}" align="center" nowrap>{completion_percent}&nbsp;</td>
+
+	        <td id="divTD11_{id}_{user_id}">{time_left_estimate}&nbsp;</td>
+
+	        <td id="divTD12_{id}_{user_id}">{time_left_actual}&nbsp;</td>
+
+	        <td id="divTD9_{id}_{user_id}" nowrap>{actual_hours}&nbsp;</td>
+
+	        <td id="divTD4_{id}_{user_id}" nowrap>{type_desc}&nbsp;</td>
+
+	        <td id="divTD5_{id}_{user_id}" align="right" nowrap>{creation_date}&nbsp;</td>
+
+	        <td id="divTD6_{id}_{user_id}" align="right" nowrap>{planed_date}&nbsp;</td>
+
+	        <td id="divTD7_{id}_{user_id}" nowrap><a href="javascript:closeTaskRep({task_id},'{task_title_slashed}')">Close</a></td>
+
+      	</tr>
+
+    <!-- END tasks -->
+
+
+
+    <!-- BEGIN no_mytasks -->
+
+    <tr><td colspan="15" class="DataTD"><font class="DataFONT">There are no tasks for provided search criteria</font></td></tr>
+
+    <!-- END no_mytasks -->
+
+
+
+    <tr><td colspan="15" class="ColumnTD"><font class="ColumnFONT">
+
+
+
+    <input type="button" value="Save Priorities" onClick="confirmSubmit('save_priorities');">
+
+    <input type="submit" value="Save Estimates" id="save_estimates"/>
+
+    </td></tr>
+
+    </table>
+
+    </form>
+
+
+
+</body>
+
+</html>

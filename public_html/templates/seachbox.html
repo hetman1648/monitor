@@ -1,0 +1,52 @@
+<script>
+  function clearSearch()
+  {
+    document.searchForm.project_id.selectedIndex = 0;
+    document.searchForm.task_status_id.selectedIndex = 0;
+    document.searchForm.responsible_user_id.selectedIndex = 0;
+    document.searchForm.priority_id.selectedIndex = 0;
+    document.searchForm.task_type_id.selectedIndex = 0;
+    document.searchForm.show_closed.checked = false;
+  }
+</script>
+    <table class="FormTABLE" width="100%">
+    <tr><td class="FormHeaderTD" colspan="11"><a name="search"><font class="FormHeaderFONT">Search</font></a></td></tr>
+    <form name="searchForm" action="index.php?#search">
+    <tr>
+      
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Project</font></td>
+      <td class="DataTD">
+        <select name="project_id">{projects_list}</select>
+      </td>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Status</font></td>
+      <td class="DataTD">
+        <select name="task_status_id">{statuses_list}</select>
+      </td>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Person</font></td>
+      <td class="DataTD">
+        <select name="responsible_user_id">{people_list}</select>
+      </td>
+      </tr>
+      <tr>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Priority</font></td>
+      <td class="DataTD">
+        <select name="priority_id">{priorities_list}</select>
+      </td>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Type</font></td>
+      <td class="DataTD">
+        <select name="task_type_id">{types_list}</select>
+      </td>
+      <td colspan="2">
+      <input type="checkbox" name="show_closed" {show_closed} value="1">
+      Show closed tasks? &nbsp; &nbsp;
+      </td>
+    </tr>
+    <tr>
+      <td colspan="4"></td>
+      <td colspan="2">
+        <input type="submit" value="Search"/>
+      	<input type="button" onClick="clearSearch()" value="Clear Search"/>
+      </td>  
+      </form>
+    </tr>
+    </table>

@@ -1,0 +1,369 @@
+<html>
+
+<head>
+<title>
+	Control
+</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script language="javascript">
+	//<!--
+
+	var UserTeam = new Array();
+					var UserID = new Array();
+					var UserName = new Array();
+					var ManagerID = new Array();
+					var ManagerUser = new Array();
+					<!-- BEGIN PeopleArray -->
+						UserTeam[{ID}]={IDteam};	UserID[{ID}]={IDuser};	UserName[{ID}]="{user_name}";	ManagerID[{ID}]={is_manager};	ManagerUser[{ID}]={manager_user_id};
+					<!-- END PeopleArray -->
+
+	function AddReport()
+	{
+		document.location = "managing_reports_edit.php?report_id=-1";
+	}
+
+	//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<table cellpadding="0" cellspacing="0" width=100% border="0">
+	<tr colspan="2">
+ 		<td valign="top" width=70%>
+ 			<!-- BEGIN error -->
+ 			<div style="padding: 10px; background-color: red;"><font color=white>{err}</font></div>
+ 			<!-- END error -->
+ 		</td>
+	</tr>
+	<tr>
+		<td><center>
+			<table class="FormTABLE" border="0" width=70%>
+
+				<form name="frmManagingReport" action="managing_reports.php" method="POST">
+				<tr>
+					<td class="FormHeaderTD" colspan="{colspan}">
+						<font class="FormHeaderFONT">Managers Report List</font></a>
+					</td>
+				</tr>
+				<!-- BEGIN header_report -->
+				<tr align="center">
+			    		<td class="ColumnTD" nowrap><a1 href="managing_reports.php?sort=manager&order={m_order}&page_num={page_num}">Manager</a></td>
+			    		<td class="ColumnTD" nowrap><a1 href="managing_reports.php?sort=user&order={u_order}&page_num={page_num}">User</a></td>
+					    <td class="ColumnTD" nowrap><a1 href="managing_reports.php?sort=morning&order={mr_order}&page_num={page_num}">Morning report</a></td>
+					    <td class="ColumnTD" nowrap><a1 href="managing_reports.php?sort=evening&order={er_order}&page_num={page_num}">Evening report</a></td>
+					    <td class="ColumnTD" nowrap><a1 href="managing_reports.php?sort=evening&order={er_order}&page_num={page_num}">Points</a></td>
+					    <!-- BEGIN control_view -->
+					    <td class="ColumnTD" nowrap>Add Report</td>
+					    <!-- END control_view -->
+				</tr>
+				<!-- END header_report -->
+				<!-- BEGIN report -->
+				<tr>
+					<td class="DataTDE" nowrap>&nbsp;{report_manager_name}&nbsp;</td>
+					<td class="DataTDE" nowrap>&nbsp;{report_user_name}&nbsp;</td>
+					<td class="DataTDE" nowrap><center>{report_morning}</center></td>
+					<td class="DataTDE" nowrap><center>{report_evening}</center></td>
+					<td class="DataTDE" nowrap><center>{report_points}</center></td>
+					<!-- BEGIN control_add -->
+					<td class="DataTDE"  align="center" nowrap>{report_add_new}</td>
+					<!-- END control_add -->
+				</tr>
+			    <!-- END report -->
+
+			    <!-- BEGIN no_report_records-->
+			    <tr><td colspan="10" class="Headline">No data for this period</td></tr>
+			    <!-- END no_report_records-->
+			    <tr>
+					<td class="FormHeaderTD" colspan="{colspan}">
+						<font class="FormHeaderFONT">&nbsp;</font></a>
+					</td>
+				</tr>
+			</form>
+			</table>
+			</center>
+		</td>
+		<td valign="top">
+			<br><br>
+			<div align="center">
+			<script language="JavaScript">
+			//<!--
+					function ChangeTeam()
+					{
+						var teamname = document.frmFilter.team.value;
+						var teamid = 0;
+
+						var OldManager = document.forms["frmFilter"].elements["manager_selected"];
+				  		OldManager.length = 0;
+				  		var OldUser = document.forms["frmFilter"].elements["person_selected"];
+				  		OldUser.length = 0;
+
+						switch (teamname) {
+							case "yoonoo"	: teamid = 0;break;
+							case "viart"	: teamid = 1;break;
+							case "all"		: teamid =-1;break;
+							default			: teamid = 0;
+						}
+				        var m=0;
+				        var u=0;
+						for (i=-1; i<UserName.length; i++) {							if (i==-1) {								if (document.createElement) {
+									var newListUser = document.createElement("OPTION");
+									newListUser.text = "---- All users ----";
+									newListUser.value = "";
+									var newListManager = document.createElement("OPTION");
+									newListManager.text = "---- All managers ----";
+									newListManager.value = "";
+
+									if (OldManager.options.add) { OldManager.options.add(newListManager);}
+									else { OldManager.add(newListManager, null);}
+									if (OldUser.options.add) { OldUser.options.add(newListUser);}
+									else { OldUser.add(newListUser, null);}
+								} else {
+									OldManager.options[0] = new Option("", "---- All managers ----", false, false);
+									OldUser.options[0] = new Option("", "---- All users ----", false, false);
+								}							} else {								if (UserID[i] && ManagerID[i]==1 && ( (teamid!=-1 && UserTeam[i]==teamid) || teamid==-1 ) ) {
+									if (document.createElement) {										var newListManager =  document.createElement("OPTION");
+										newListManager.text = UserName[i];
+										newListManager.value = UserID[i];
+
+										if (OldManager.options.add) { OldManager.options.add(newListManager);}
+										else { OldManager.add(newListManager, null);}
+									}
+									else { OldManager.options[m] = new Option(UserID[i], UserName[i], false, false);}
+									m++;
+
+									for (j=0; j<UserName.length; j++) {
+										if (UserID[j] && ManagerUser[j]==UserID[i] && i!=j) {
+											if (document.createElement) {
+												var newListUser =  document.createElement("OPTION");
+												newListUser.text = UserName[j];
+												newListUser.value = UserID[j];
+												if (OldUser.options.add) { OldUser.options.add(newListUser);}
+												else{ OldUser.add(newListUser, null);}
+											}
+											else {
+												OldUser.options[u] = new Option(UserName[j],UserID[j], false, false);
+											}
+											u++;
+										}
+									}
+								}
+							}
+						}
+					}
+
+					function ChangeManager()
+					{						var teamname = document.frmFilter.team.value;
+						var teamid = 0;
+						var manager =  document.frmFilter.manager_selected.value;
+
+						var OldUser = document.forms["frmFilter"].elements["person_selected"];
+				  		OldUser.length = 0;
+				  		if (document.createElement) {				  			var newListUser = document.createElement("OPTION");
+							newListUser.text = "---- All users ----";
+							newListUser.value = "";
+							if (OldUser.options.add) { OldUser.options.add(newListUser);}
+							else { OldUser.add(newListUser, null);}				  		}
+
+						switch (teamname) {
+							case "yoonoo"	: teamid = 0;break;
+							case "viart"	: teamid = 1;break;
+							case "all"		: teamid =-1;break;
+							default			: teamid = 0;
+						}
+                        var u=0;
+						for (j=0; j<UserName.length; j++) {
+							if (UserID[j] && ManagerUser[j]==manager && manager && manager!=-1) {
+								if (document.createElement) {
+									var newListUser =  document.createElement("OPTION");
+									newListUser.text = UserName[j];
+									newListUser.value = UserID[j];
+									if (OldUser.options.add) { OldUser.options.add(newListUser);}
+									else{ OldUser.add(newListUser, null);}
+								}
+								else {
+									OldUser.options[u] = new Option(UserID[j], UserName[j], false, false);
+								}
+								u++;
+							} else if (!manager || manager==-1) {								if (teamid==-1 && ManagerID[j]==0) {									if (document.createElement) {
+										var newListUser =  document.createElement("OPTION");
+										newListUser.text = UserName[j];
+										newListUser.value = UserID[j];
+										if (OldUser.options.add) { OldUser.options.add(newListUser);}
+										else{ OldUser.add(newListUser, null);}
+									}
+									else {
+										OldUser.options[u] = new Option(UserID[j], UserName[j], false, false);
+									}
+									u++;								}
+								else if (UserTeam[j]==teamid && ManagerID[j]==0) {									if (document.createElement) {
+										var newListUser =  document.createElement("OPTION");
+										newListUser.text = UserName[j];
+										newListUser.value = UserID[j];
+										if (OldUser.options.add) { OldUser.options.add(newListUser);}
+										else{ OldUser.add(newListUser, null);}
+									}
+									else {
+										OldUser.options[u] = new Option(UserID[j], UserName[j], false, false);
+									}
+									u++;								}							}
+						}
+					}
+
+			        function selectPeriod()
+			        {
+			                var period = document.frmFilter.period_selected.options[document.frmFilter.period_selected.selectedIndex].value;
+			                var startDate = ""; var endDate = "";
+
+			                if (period == "none") {
+								startDate = "{start_date}"; endDate = "{end_date}";
+							} else if(period == "today") {
+								startDate = "{today_date}"; endDate = "{today_date}";
+							} else if(period == "yesterday") {
+								startDate = "{yesterday_date}"; endDate = "{yesterday_date}";
+							} else if(period == "this_week") {
+								startDate = "{this_week_start}"; endDate = "{this_week_end}";
+							} else if(period == "last_week") {
+								startDate = "{last_week_start}"; endDate = "{last_week_end}";
+							} else if(period == "prev_week") {
+								startDate = "{prev_week_start}"; endDate = "{prev_week_end}";
+							} else if(period == "this_month") {
+								startDate = "{this_month_start}"; endDate = "{this_month_end}";
+							} else if(period == "last_month") {
+								startDate = "{last_month_start}"; endDate = "{last_month_end}";
+							} else if(period == "prev_month") {
+			                        startDate = "{prev_month_start}"; endDate = "{prev_month_end}";
+			    			} else if(period == "this_year") {
+			                        startDate = "{this_year_start}"; endDate = "{this_year_end}";
+			    			}
+			                document.frmFilter.start_date.value = startDate;
+			                document.frmFilter.end_date.value = endDate;
+			        }
+
+			        function clearFilter()
+			        {
+			                document.frmFilter.period_selected.value = "";
+			                document.frmFilter.start_date.value = "";
+			                document.frmFilter.end_date.value = "";
+			                document.frmFilter.person_selected.value = "";
+			        }
+
+			        function setPeriod(iPeriod)
+			        {
+			        	document.frmFilter.period_selected.selectedIndex = iPeriod;
+			        }
+
+			//-->
+			</script>
+
+			<form name="frmFilter" action="{action}?{query_string}">
+				<table border=0>
+					<tr>
+						<td align="left" colspan="2">Select period:</td>
+						<td colspan="2">
+							<select name="period_selected" onChange="selectPeriod()" style="width:150px">
+								<option value="none">----- Period -----</option>
+								{periods}
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td align="left" colspan="2">Start Date:</td>
+						<td colspan="2">
+							<input type="text" name="start_date" value="{start_date}" onChange="setPeriod(0)" style="width:150px">
+							<A HREF="javascript:doNothing()" onClick="setDateField(document.frmFilter.start_date);
+								top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+							<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+						</td>
+					</tr>
+					<tr>
+						<td align="left" colspan="2">End Date:</td>
+						<td colspan="2">
+							<input type="text" name="end_date" value="{end_date}" onChange="setPeriod(0)" style="width:150px">
+							<A HREF="javascript:doNothing()" onClick="setDateField(document.frmFilter.end_date);
+								top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+							<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+						</td>
+					</tr>
+					<tr>
+						<td align="leftt" colspan="2">Select Team:</td>
+						<td colspan="2">
+							<select name="team" style="width:150px" onchange="javascript:ChangeTeam()">
+								<option value="all" {aselected}>All teams</option>
+								<option value="viart" {vselected}>ViArt team</option>
+								<option value="yoonoo" {yselected}>YooNoo team</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td align="left" colspan="2">Filter by manager:</td>
+						<td colspan="2">
+							<select name="manager_selected" style="width:150px" onchange="javascript:ChangeManager()">
+							<option value="">---- All managers ----</option>{manager_list}</select>
+						</td>
+					</tr>
+					<tr>
+						<td align="left" colspan="2">Filter by person:</td>
+						<td colspan="2">
+							<select name="person_selected" style="width:150px">
+							<option value="">---- All users ----</option>{person_list}</select>
+						</td>
+					</tr>
+					<tr>
+						<td align="center" colspan="4">
+							<input type="submit" value=" Filter " name="submit">&nbsp;
+							<input type="button" value=" Clear " onclick="clearFilter()">
+						</td>
+					</tr>
+				</table>
+			</form>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<!-- BEGIN view_user_report -->
+		<td valign="top"><center>
+			<table class="FormTABLE" border="0" width=70%>
+				<tr heigth="20">
+					<td>&nbsp;</td>
+				</tr>
+				<tr>
+					<td class="FormHeaderTD" colspan="4">
+						<font class="FormHeaderFONT">Managers Report List for {view_user_name}</font></a>
+					</td>
+				</tr>
+                <tr>
+                	<td class="ColumnTD" align="center">Morning Report</td>
+                	<td class="ColumnTD" align="center">Evening Report</td>
+                	<td class="ColumnTD" align="center">Points</td>
+                	<td class="ColumnTD" align="center">Date added</td>
+                </tr>
+                <!-- BEGIN view_reports_details -->
+                <tr>
+                	<td class="{colorclass}" align="left">{view_morning_message}</td>
+                	<td class="{colorclass}" align="left">{view_evening_message}</td>
+                	<td class="{colorclass}" align="center">{view_points}</td>
+                	<td class="{colorclass}" align="center">{view_date_added}</td>
+                </tr>
+                <!-- END view_reports_details -->
+                <!-- BEGIN no_view_reports_details-->
+			    <tr><td colspan="10" class="Headline">No data for this period</td></tr>
+			    <!-- END no_view_reports_details-->
+			    <tr>
+					<td class="FormHeaderTD" colspan="4">
+						&nbsp;
+					</td>
+				</tr>
+			</table>
+			</center>
+
+		</td>
+		<!-- END view_user_report -->
+	</tr>
+</table>
+
+</body>
+
+</html>

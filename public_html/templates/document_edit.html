@@ -1,0 +1,112 @@
+<html>
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<!-- BEGIN error -->
+<table width="100%"><tr><td align="center" style="background-color:#FFCCCC; color:red;">{error_message}<br><br></td></tr></table>
+<!-- END error -->
+<!--BEGIN success -->
+<table width="100%"><tr><td align="center" style="background-color:#CCFFCC; color:green;">{success_message}<br><br></td></tr></table>
+<!--END success -->
+
+<!-- BEGIN edit_document_form -->
+<form name="record" action="document_edit.php{query_doc_id}" method="POST" style="display:inline;" enctype="multipart/form-data">
+<input type="hidden" name="operation" value="{operation}">
+<table cellpadding="2" width="100%">
+	<tr>
+		<td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">Document</font></td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD" width="150px">Document Name *</td>
+		<td class="DataTD">
+			<input type=text size='40' name='doc_name' value='{doc_name}' style="width:100%;">
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Document Description *</td>
+		<td class="DataTD">
+			<textarea type="text" name="doc_description" cols="80" rows="5" style="width:100%;height:180px;">{doc_description}</textarea>
+		</td>
+	</tr>
+<!-- BEGIN last_version_link -->
+	<tr>
+		<td class="FieldCaptionTD">File</td>
+		<td class="DataTD"><a href="document_view.php?doc_id={doc_id}" target="_blank">{doc_user_file_name}</a></td>
+	</tr>
+<!-- END last_version_link -->	
+	<tr>
+		<td class="FieldCaptionTD">Upload New</td>
+		<td class="DataTD">
+			<input name="user_file" type="file" {disabled}>
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Allow Edit</td>
+		<td class="DataTD">
+			<!-- BEGIN allow_edit_groups -->
+			<input type="checkbox" name="allow_edit_{group}" value="1" {group_checked} {disabled}>{group_description} &nbsp;&nbsp;
+			<!-- END allow_edit_groups -->
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Allow View</td>
+		<td class="DataTD">
+			<!-- BEGIN allow_view_groups -->
+			<input type="checkbox" name="allow_view_{group}" value="1" {group_checked} {disabled}>{group_description} &nbsp;&nbsp;
+			<!-- END allow_view_groups -->
+		</td>
+	</tr>
+	<!-- BEGIN document_info -->
+	<tr>
+		<td class="FieldCaptionTD">Added By</td>
+		<td class="DataTD">{user_name} on {date_added}</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Date Last Modified</td>
+		<td class="DataTD">{date_last_modified}</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Current Version</td>
+		<td class="DataTD">{current_version}<!-- BEGIN view_previous_versions_link -->&nbsp;&nbsp;&nbsp;&nbsp;
+			<a href="#" id="previous_link" onClick="document.getElementById('previous').style.display='block'; document.getElementById('previous_link').style.display='none'; return false;">Show all versions</a>
+		<!-- END view_previous_versions_link -->
+		<!-- BEGIN previous_versions -->
+		<table id="previous" border="0" cellpadding="2" cellspacing="2" style="display:none;">
+		<tr class="FieldCaptionTD">
+			<td align="center">Version</td>
+			<td align="center">Document</td>
+			<td align="center">Date Added</td>
+			<td align="center">Modified By</td>
+		</tr>
+		<!-- BEGIN previous_version_row -->
+		<tr>
+			<td align="center">{version_number}</td>
+			<td align="center"><a href="document_view.php?doc_id={doc_id}&ver={version_number}" target="_blank">{version_user_file_name}</a></td>
+			<td align="center">{version_date_added}</td>
+			<td align="center">{version_user_name}</td>
+		</tr>
+		<!-- END previous_version_row -->
+		</table>		
+		<!-- END previous_versions -->				
+		</td>
+	</tr>
+	<!-- END document_info -->
+	<tr>
+		<td colspan=2 class="DataTD">
+			<!-- BEGIN save_button_block -->
+			<input type="submit" name="update" value="{save_button}">
+			<!-- END save_button_block -->
+			<!-- BEGIN delete_button_block -->
+			<input type="submit" name="delete" value="Delete" onClick="document.record.operation.value='delete';return confirm('Do you want to delete this document?');">
+			<!-- END delete_button_block -->			
+			<input type="submit" name="cancel" value="Cancel" onClick="document.record.operation.value='cancel';">
+		</td>
+	</tr>
+</table>
+</form>
+<!-- END edit_document_form -->
+</body>
+</html>

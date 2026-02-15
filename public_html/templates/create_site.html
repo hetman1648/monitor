@@ -1,0 +1,111 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<!-- BEGIN error -->
+<table><tr><td><div style="padding: 10px; background-color: red;"><font color=white>{error_message}</font></div></td></tr></table>
+<!-- END error -->
+<form name="frmFilter" action="create_site.php" method="POST">
+<table CELLPADDING=2>
+<tr>
+   <td class="FormHeaderTD" colspan="6" align=center><font class="FormHeaderFONT">&nbsp;Site <a href='http://{web_address}' target='_blank'><font class="FormHeaderFONT">{web_address}</font></a></font></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Site URL</td>
+   <td colspan=4 class="DataTD">
+   <input type=text size='40' name='web_address' value='{web_address}'>
+   </td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Find Person</td>
+   <td class="DataTD">
+   <input type='text' size='40' name="fast_person_filter" value="{fast_person_filter}">
+    <input type="submit" name="action" value="Search Person">
+   </td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Person</td>
+   <td class="DataTD">
+   <select name="person_select">
+   {person_option}
+   </select>
+   </td>
+</tr>
+<tr>
+   <td></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Tags (comma separated)</td>
+   <td colspan=4 class="DataTD"> <input type=text size='40' name='tags' value='{tags}'></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Notes</td>
+   <td colspan=4 class="DataTD"><textarea type="text" name="notes" cols="80" rows="5">{notes}</textarea></td>
+</tr>
+<tr>
+   <td></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Admin web address</td>
+   <td colspan=4 class="DataTD">
+   <input type=text size='40' name='admin_web_address' value='{admin_web_address}'>
+   </select></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Admin Site Login</td>
+   <td colspan=4 class="DataTD">
+   <input type=text size='40' name='admin_web_site_login' value='{admin_web_site_login}'>
+   </select></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Admin Site Password</td>
+   <td colspan=4 class="DataTD">
+   <input type=text size='40' name='admin_web_site_password' value='{admin_web_site_password}'>
+   </select></td>
+</tr>
+<tr>
+   <td></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">FTP address</td>
+   <td colspan=4 class="DataTD">
+   <input type=text size='40' name='ftp_address' value='{ftp_address}'>
+   </select></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">FTP login</td>
+   <td colspan=4 class="DataTD">
+   <input type=text size='40' name='ftp_login' value='{ftp_login}'>
+   </select></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">FTP password</td>
+   <td colspan=4 class="DataTD">
+   <input type=text size='40' name='ftp_password' value='{ftp_password}'>
+   </select></td>
+</tr>
+
+<tr>
+   <td colspan=6 class="DataTD"><input type="submit" name="action_value" value="{action_value}">
+   {delete_button}
+   <input name="site_id" value="{site_id}" type="hidden">
+   <input name="site_id" value="{site_id}" type="hidden">
+   <input type="submit" name="action" value="Cancel">
+   </td>
+</tr>
+</table>
+</form>
+
+
+
+
+</body>
+</html>

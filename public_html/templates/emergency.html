@@ -1,0 +1,52 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<table class="FormTABLE" style="border:1px solid #919B9C;">
+	<tr bgcolor="navy" style="color:white">
+		<th valign="top">Person</th>
+		<th>Day phone</th>
+		<th>Evening phone</th>
+		<th>Cell phone</th>
+		<th>E-mail address</th>
+		<th>MSN account</th>
+		<th>Skype account</th>
+		<th>SMS account</th>
+	</tr>	
+	<!-- BEGIN records -->
+	<tr class="DataTD {class}"><td class="DataTD {class}">
+			{person}
+		</td><td class="DataTD {class}">
+			{day_phone}
+		</td><td class="DataTD {class}">
+			{evn_phone}
+		</td><td class="DataTD {class}">
+			{cell_phone}
+		</td><td class="DataTD {class}">
+			<a href="mailto:{email}">{email}</a>
+		</td><td class="DataTD {class}">
+			{msn_account}
+		</td><td class="DataTD {class}">
+			<!--BEGIN skype--><a href="skype:{skype_account}?call">{skype_account}</a><!--END skype-->
+		</td><td class="DataTD {class}">
+			{sms_account}
+	</td></tr>
+	<!-- END records -->
+
+</table>
+
+<h3>Send emergency message</h3>
+The message will be sent to all email addresses and mobile phones (Tony, Ravi, Simon, Artem, Michael, Vlad, Chris).
+<br>Please note that the  message is limited to 128 chars for mobile phones
+<br><b>{msg}</b>
+<form action="emergency.php" method="POST">
+<textarea cols="45" rows="5" name="message"></textarea>
+<br><input type="submit" value="submit">
+</form>
+    
+</body>
+</html>

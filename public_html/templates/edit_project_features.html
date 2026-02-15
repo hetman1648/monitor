@@ -1,0 +1,238 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<link rel="stylesheet" href="./styles/flora.all.css" type="text/css" media="screen">
+<script type="text/javascript" src="./scripts/jquery-1.2.6.pack.js"></script>
+<script type="text/javascript" src="./scripts/ui.core.js"></script>
+<script type="text/javascript" src="./scripts/ui.tabs.js"></script>
+
+<script>
+	var features_displayed = [];
+	var features_tabs;
+	var features_tabs_length = 2;
+	$(document).ready(function(){
+		features_tabs = $("#blocks > ul").tabs();
+	});
+	
+	function nextRevStatus(obj, project_id, revision_id, feature_id, title) {
+		$.ajax({
+			type: "POST",
+			url:  "edit_project_features.php?project_id=" + project_id + "&revision_id=" + revision_id + "&feature_id=" + feature_id,
+			data: "operation=next_revision_status&field_name=" + title,
+			success: function(msg){
+				$(obj).html(msg);
+			}
+		});
+	}
+	
+	function showFeature(title, feature_id) {
+		if (!features_displayed[feature_id]) {
+			features_tabs_length++;
+			features_tabs.tabs('add', 'project_feature.php?feature_id=' + feature_id, title, features_tabs_length); 
+			features_displayed[feature_id] = features_tabs_length;
+		}
+		features_tabs.tabs('select',features_displayed[feature_id]);
+		return false;
+	}
+</script>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+
+<h1>{project_title}</h1>
+
+
+<div id="blocks" class="flora">
+	<ul>
+		<li><a href="#features"><span>Features</span></a></li>
+		<li><a href="#features_add"><span>Add New Feature</span></a></li>
+		<li><a href="#revisions"><span>Revisions</span></a></li>
+	</ul>
+</div>
+
+<div id="revisions">
+	<table class="FormTABLE" cellpadding="2" border="0">
+	<tr>
+		<td class="ColumnTD" nowrap="" align="center">
+			<font class="ColumnFONT">Title</font>
+		</td>
+		<td class="ColumnTD" nowrap="" align="center">
+			<font class="ColumnFONT">Created</font>
+		</td>
+		<td class="ColumnTD" nowrap="" align="center">
+			<font class="ColumnFONT">By</font>
+		</td>
+	</tr>
+	
+	<!--BEGIN revisions_block-->
+	<tr class="Prevision_class}">
+		<td class="DataTDE" nowrap="" align="center">
+			{revision_title}
+		</td>
+		<td class="DataTDE" nowrap="" align="center">
+			{creation_date}
+		</td>
+		<td class="DataTDE" nowrap="" align="center">
+			{created_user}
+		</td>
+	</tr>
+	<!--END revisions_block-->
+	
+	<tr>
+		<td colspan="3" align="center">
+			<form name="revision_create_form" id="revision_create_form" method="POST">
+				<input type="hidden" name="project_id" value="{project_id}">
+				<input type="hidden" name="return_page" value="{return_page}">
+				<input type="hidden" name="operation" value="add_revision">
+				Title: <input type="text" name="title">
+				<input type="submit" value="Add">
+			</form>
+		</td>
+	</tr>
+	</table>
+</div>
+
+<div id="features">
+	<table class="FormTABLE" cellpadding="2" border="0">
+	<tr>
+		<td class="ColumnTD" nowrap="" align="center">
+			<font class="ColumnFONT">Title</font>
+		</td>
+		<td class="ColumnTD" nowrap="" align="center">
+			<font class="ColumnFONT">Status</font>
+		</td>
+		<td class="ColumnTD" nowrap="" align="center">
+			<font class="ColumnFONT">Created</font>
+		</td>
+		<td class="ColumnTD" nowrap="" align="center">
+			<font class="ColumnFONT">By</font>
+		</td>
+		<!--BEGIN fr_title-->
+		<td class="ColumnTD" nowrap="" align="center" colspan="3">
+			<font class="ColumnFONT">{revision_title}</font>			
+		</td><!--END fr_title-->
+	</tr>
+	
+	<!--BEGIN features_block-->
+	<tr>
+		<td class="{rev_class}" nowrap="" align="center" rowspan="2">
+			<a href="project_feature.php?feature_id={feature_id}" onclick="showFeature('{feature_title_js}', '{feature_id}'); return false;">{feature_title}</a>
+		</td>
+		<td class="{rev_class}" nowrap="" align="center" rowspan="2">
+			{feature_status}
+		</td>
+		<td class="{rev_class}" nowrap="" align="center" rowspan="2">
+			{creation_date}
+		</td>
+		<td class="{rev_class}" nowrap="" align="center" rowspan="2">
+			{created_user}
+		</td>
+		<!--BEGIN fr_value-->
+		<td class="{rev_class}" nowrap="" align="center" onclick="nextRevStatus(this, '{project_id}', '{revision_id}', '{feature_id}', 'status_id');" colspan="3">
+			{rev_status_title}
+		</td><!--END fr_value-->
+	</tr>
+	<tr>
+		<!--BEGIN fr_value_2-->
+		<td class="{rev_class}" nowrap="" align="center" onclick="nextRevStatus(this, '{project_id}', '{revision_id}', '{feature_id}', 'in_cvs');">
+			{rev_in_cvs}
+		</td><td class="{rev_class}" nowrap="" align="center" onclick="nextRevStatus(this, '{project_id}', '{revision_id}', '{feature_id}', 'on_test');">
+			{rev_on_test}
+		</td><td class="{rev_class}" nowrap="" align="center" onclick="nextRevStatus(this, '{project_id}', '{revision_id}', '{feature_id}', 'on_live');">
+			{rev_on_live}
+		</td>
+		<!--END fr_value_2-->
+	</tr>
+	<!--END features_block-->
+	</table>
+</div>
+<div id="features_add">
+	<form name="feature_create_form" id="feature_create_form" method="POST">
+		<input type="hidden" name="project_id" value="{project_id}">
+		<input type="hidden" name="return_page" value="{return_page}">
+		<input type="hidden" name="operation" value="add_feature">
+		<table width="600px">
+			<tr>
+				<td class="ColumnTD">
+					<table width="100%" cellpadding="2px" cellspacing="3px">
+						<tr>
+							<td>
+								Title:
+							</td>
+							<td colspan="9">
+								<input type="text" name="feature_title" style="width:100%">
+							</td>
+						</tr>
+						<tr>
+							<td>
+								Status:
+							</td>
+							<td>
+								<select name="feature_status_id">
+									<!--BEGIN status_option--><option value="{status_id}" {status_selected}>{status_title}</option><!--END status_option-->
+								</select>
+							</td>
+							<td>
+								Task ID:
+							</td>
+							<td>
+								<input type="text" name="feature_task_id" size="10">
+							</td>
+							<td>
+								CVS:
+							</td>
+							<td>
+								<input type="checkbox" name="feature_in_cvs" value="1">
+							</td>
+							<td>
+								Test Site:
+							</td>
+							<td>
+							 	<input type="checkbox" name="feature_on_test" value="1">
+							</td>
+							<td>
+								Live Site:
+							</td>
+							<td>
+								<input type="checkbox" name="feature_on_live" value="1">
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table width="100%">
+						<tr>
+							<td>
+								Description:<br/>
+								<textarea name="feature_description"  style="width:100%; height:100px;"></textarea>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								How to test:<br/>
+								<textarea name="feature_howtotest" style="width:100%; height:100px;"></textarea>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								Modified files:<br/>
+								<textarea name="feature_files" style="width:100%; height:100px;"></textarea>
+							</td>
+						</tr>
+						<tr>
+							<td align="right">
+								<input type="submit" value="Add">
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>				
+	</form>
+</div>
+</body>
+</html>

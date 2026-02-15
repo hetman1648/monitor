@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>Lunch ordering</title>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script language="javascript">
+	var submit_title='{submit_title}';
+</script>
+</head>
+<body class="PageBODY">
+	<form name="menu_form" method="POST">
+
+	<table align="center"  width="99%" height="99%" valign="center"><tr><td align="center">
+
+	<a href="./index.php">Monitor</a>&nbsp; &nbsp;
+	<a href="./lunches_edit_menu.php"><b>Edit Menu</b></a>&nbsp; &nbsp;
+	<a href="./lunches_edit_order.php">Edit Order</a>&nbsp; &nbsp;
+	<a href="./lunches_users.php">Permissions</a>&nbsp; &nbsp;
+	<a href="./lunches_statistics.php">Statistics</a><br><br>
+
+	<table class="FormTABLE" cellpadding=1 align="center">
+		<tr>
+			<td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">View/Edit Menu</font>&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="text" size="10" name="menu_date" maxlength="10" value="{date_title}" readonly/>
+			<a href="#" onClick="setDateField(document.menu_form.menu_date); top.newWin = window.open('./scripts/calendar.html','cal', 'dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<img src="./images/calendar.gif" border=0></a>
+			</td><td class="FieldCaptionTD" align="right">
+			<input type="button" name="butt" value="View" style="width:60px" onclick="if (document.menu_form.elements.menu_date.value.length==10) document.location='lunches_edit_menu.php?menu_date='+document.menu_form.elements.menu_date.value;">
+			</td>
+		</tr>
+		<tr>
+			<td class="FieldCaptionTD">&nbsp;</td>
+			<td class="FieldCaptionTD">Title</td>
+			<td class="FieldCaptionTD">Price</td>
+		</tr>
+		<tr>
+			<td class="DataTD">First course</td>
+			<td class="DataTD"><input type="text" size="25" maxlength="40" name="first_course_title" value="{first_course_title}" {readonly}></td>
+			<td class="DataTD"><input type="text" size="6" maxlength="6" name="first_course_price" value="{first_course_price}" {readonly}></td>
+		</tr>
+		<tr>
+			<td class="DataTD">Second course</td>
+			<td class="DataTD"><input type="text" size="25" maxlength="40" name="second_course_title" value="{second_course_title}" {readonly}></td>
+			<td class="DataTD"><input type="text" size="6" maxlength="6" name="second_course_price" value="{second_course_price}" {readonly}></td>
+		</tr>
+		<tr>
+			<td class="DataTD">Garnish</td>
+			<td class="DataTD"><input type="text" size="25" maxlength="40" name="garnish_title" value="{garnish_title}" {readonly}></td>
+			<td class="DataTD"><input type="text" size="6" maxlength="6" name="garnish_price" value="{garnish_price}" {readonly}></td>
+		</tr>
+		<tr>
+			<td class="DataTD">Salad</td>
+			<td class="DataTD"><input type="text" size="25" maxlength="40" name="salad_title" value="{salad_title}" {readonly}></td>
+			<td class="DataTD"><input type="text" size="6" maxlength="6" name="salad_price" value="{salad_price}" {readonly}></td>
+		</tr>
+		<tr>
+			<td class="DataTD">Dessert</td>
+			<td class="DataTD"><input type="text" size="25" maxlength="40" name="dessert_title" value="{dessert_title}" {readonly}></td>
+			<td class="DataTD"><input type="text" size="6" maxlength="6" name="dessert_price" value="{dessert_price}" {readonly}></td>
+		</tr>
+		<!-- BEGIN tr_submit -->
+		<tr>
+			<td colspan=2>
+				Block order lunch:
+			</td>
+			<td>
+				<input type="checkbox" name="is_blocked" {block_checked} value="1">
+			</td>
+		</tr>
+		<tr>
+			<td class="FieldCaptionTD" colspan="2" align="left"><font color="red"><b>{error_message}</b></font></td>
+			<td class="FieldCaptionTD" align="right"><input type="submit" id="submitelem" value="{submit_title}" style="width:60px"><!-- BEGIN delete_button --><br/><input type="button" value="Delete" style="width:60px" onclick="if (document.menu_form.elements.menu_date.value.length==10) document.location='lunches_edit_menu.php?menu_date='+document.menu_form.elements.menu_date.value+'&action=delete';"><!-- END delete_button -->
+			</td>
+		</tr>
+		<!-- END tr_submit -->
+	</table>
+	</td></tr></table>
+	</form>
+</body>
+</html>

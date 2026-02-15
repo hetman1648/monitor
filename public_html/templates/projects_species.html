@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+		<form name="projects_species" action="projects_species.php" method="POST">
+		
+		<table class="FormTABLE" align="center" width="70%" border=0>
+		<tr align="center" style="margin: 3px;">
+			<td class="ColumnTD" nowrap><font class="ColumnFONT">Project type</font>
+			</td>
+			<td class="ColumnTD" nowrap><font class="ColumnFONT">Project price</font>
+			</td>
+			<td class="ColumnTD" nowrap><font class="ColumnFONT">Price per hour</font>
+			</td>
+			<td class="ColumnTD" nowrap><font class="ColumnFONT">Custom privelege</font>
+			</td>
+			<td class="ColumnTD" nowrap>
+			</td>
+		</tr>
+		<!-- BEGIN project -->
+		<tr>
+			<td class="{colorrow}" nowrap>
+				{type_name}
+			</td>
+			<td class="{colorrow}" nowrap>
+				<input type="text" name= "price_{type_id}" value="{type_price}">
+			</td>
+			<td align="center" class="{colorrow}" nowrap>
+					<input type="checkbox" value="1" name="per_hour_{type_id}" {per_hour}>
+			</td>
+			<td align="center" class="{colorrow}" nowrap>
+				<input type="checkbox" value="1" name="privilege_{type_id}" {privilege}>
+			</td>
+			<td class="{colorrow}" nowrap>
+				<a href="projects_species_edit.php?species_id={type_id}">Edit projects</a>
+			</td>
+		</tr>
+		<!-- END project -->
+		<tr><td colspan="5" align="center"><input type="submit" name="update" value="Update"></td></td>
+		</table>
+		
+		</form>
+</div>
+
+
+</body>
+</html>

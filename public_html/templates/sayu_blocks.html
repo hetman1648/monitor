@@ -1,0 +1,17 @@
+<!-- BEGIN client_spent_hours -->
+<table>
+	<tr><td><b>Person</b></td><td align="right"><b>Time</b></td>
+		<!-- BEGIN user -->
+	<tr><td>{first_name} {last_name}</td><td align="right">{hours}</td>
+		<!-- END user -->
+	<tr><td><b>Total</b></td><td align="right"><b>{total}</b></td>
+<table>	
+<!-- END client_spent_hours -->
+<!-- BEGIN subprojects --><?xml version="1.0" encoding="iso-8859-1"?>
+<subprojects><text><![CDATA[
+	<select class="field" name="{input_name}" id="{input_name}">
+		<option value="0" >- All sub-projects -</option>
+		{subproject_list}
+	</select>
+]]></text>
+</subprojects><!-- END subprojects -->

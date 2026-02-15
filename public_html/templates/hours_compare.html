@@ -1,0 +1,77 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+	
+<form action="hours_compare.php">
+<table class="FormTABLE" align="center" width = "90%">
+	<tr align=center>
+	     
+    	<td align=right>First Person</td><td>
+    	<select name='person1'>
+    		<option value="0">
+    	   	<!-- BEGIN person1 -->
+    		<option value="{user_id}" {selected}> {person_name}
+    		<!-- END person1 -->
+    	</select>
+    	</td>
+    </tr>
+    <tr align=center>
+    	<td align='right'>Second Person</td><td>
+    	<select name='person2'>
+    		<option value="0"> 
+    	   	<!-- BEGIN person2 -->
+    		<option value="{user_id}" {selected}> {person_name}
+    		<!-- END person2 -->
+    	</select>
+    	</td>
+    </tr>
+    <tr align=center>
+    <td colspan=2 align=right>
+      <br>
+      <input type='submit' name=compare value='Compare'>
+    </td>
+    </tr>
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">Compare user's hours</font></td>
+    </tr>
+    
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Year&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Month&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Hours for {person1_title}&nbsp;</font></td>
+	    <td class="ColumnTD" ><font class="ColumnFONT">&nbsp;Holiday days for {person1_title}&nbsp;</font></td>
+	    <td class="ColumnTD" ><font class="ColumnFONT">&nbsp;Holiday hours for {person1_title}&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Hours for {person2_title}&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Total days&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Total hours&nbsp;</font></td>
+	</tr>
+
+    <!-- BEGIN records -->
+    <tr>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{year}&nbsp;</font></td>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{month}&nbsp;</font></td>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{hours1}&nbsp;</font></td>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{holiday_days1}&nbsp;</font></td>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{holiday_hours1}&nbsp;</font></td>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{hours2}&nbsp;</font></td>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{total_days}&nbsp;</font></td>
+    	<td class="DataTD" nowrap><font class="DataFONT">&nbsp;{total_hours}&nbsp;</font></td>
+	    
+	</tr>
+	<!-- END records -->
+
+	<!-- BEGIN no_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No information
+		</td>
+	</tr>
+	<!-- END no_records -->
+</table>
+</form>
+</body>
+</html>

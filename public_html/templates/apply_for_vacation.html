@@ -1,0 +1,177 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   
+<script Language=JavaScript>
+<!--
+	
+	var nDay = new Array();
+	var i = 0;
+	
+	function verify(isField){
+
+		splitDate = isField.value.split("-");
+		refDate = new Date(splitDate[0]+"/"+splitDate[1]+"/"+splitDate[2]);
+		nDay[i++] = refDate.getDay();
+		return refDate; 
+	}	
+
+	function countDays(isForm)
+	{
+		isValid = true;
+		var one_day=1000*60*60*24
+		start_date = document.getElementById("start_date");
+		end_date = document.getElementById("end_date");
+		  
+		start = verify(start_date);
+		end = verify(end_date);
+		daysApart = Math.ceil((end.getTime()-start.getTime())/(one_day));
+		if (daysApart < 0)
+		{
+		  alert("Please enter correct dates!");
+			isForm.total_days.focus();
+			isForm.total_days.value = "";
+		}
+		else
+		{
+			/*	 
+			if (nDay[0] == 0 || nDay[0] == 6)
+				{isValid = false; startDate=false}
+			 if (daysApart < 0){isValid = false;endDate=false}
+			 if (isValid)
+				{
+			 	 workDays = daysApart-(parseInt(daysApart/7)*2);
+				 if (daysApart < 7 && nDay[1] != 0 && nDay[0]-nDay[1] >= 1){workDays = workDays-2}
+				 if (daysApart < 7 && nDay[1] == 0){workDays--}
+				 isForm.total_days.value = workDays + 1;
+				 i = 0;
+				}
+				
+			workDays = daysApart;		
+			for (i=0; i<=daysApart; i++)
+			{
+				weekDay = start.getDay();
+				if (weekDay==0 || weekDay==6) {
+					workDays = workDays - 1;
+				}
+				date = start.getDate();
+				start.setDate(start.getDate()+1);
+			}
+			isForm.total_days.value = workDays+1;
+			*/
+			calculateDays(start_date, end_date);
+		}
+	}
+
+//-->
+</script>
+<!-- AJAX coding-->
+
+<script language="javascript" type="text/javascript">
+   var request = false;
+   try {
+     request = new XMLHttpRequest();
+   } catch (trymicrosoft) {
+     try {
+       request = new ActiveXObject("Msxml2.XMLHTTP");
+     } catch (othermicrosoft) {
+       try {
+         request = new ActiveXObject("Microsoft.XMLHTTP");
+       } catch (failed) {
+         request = false;
+       }  
+     }
+   }
+
+   if (!request)
+     alert("Error initializing XMLHttpRequest!");
+
+   function calculateDays() {
+   
+ 	startDate = document.getElementById("start_date").value;
+	endDate = document.getElementById("end_date").value;
+	totalDays = document.getElementById("total_days");
+	
+   	var url = "count_days.php?start_date="+startDate+"&end_date="+endDate;
+    request.open("GET", url, true);
+    request.onreadystatechange = updatePage;
+    request.send(null);
+   }
+   
+   function updatePage() {
+     if (request.readyState == 4)
+       if (request.status == 200)
+       {
+        var response = request.responseText;
+        //alert(response);
+       totalDays.value = response;
+       }
+       else if (request.status == 404)
+         alert("Request URL does not exist");
+       else
+         alert("Error: status code is " + request.status);
+   }
+</script>
+
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<form name="frmFilter" action="apply_for_vacation.php" method="POST">
+<table>
+<tr>
+   <td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">{header}</font></td>
+</tr>
+<!--<tr>
+   <td class="FieldCaptionTD">Person</td>
+   <td class="DataTD"><select name="person_select">{person_option}</select></td>
+</tr>-->
+<tr>
+   <td class="FieldCaptionTD">{period_t} Title</td>
+   <td class="DataTD"><input name="vacation_title" value="{vacation_title}" size="100"></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Notes</td>
+   <td class="DataTD"><textarea type="text" name="notes" cols="80" rows="10">{notes}</textarea></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Reason Type</td>
+   <td class="DataTD"><select name="reason_type_select">{reason_type_option}</select></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Start Date</td>
+   <td class="DataTD"><input name="start_date" id="start_date" value="{start_date}">
+      <A HREF="#" onClick="setDateField(document.frmFilter.start_date);
+      top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+      <IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+   </td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">End Date</td>
+   <td class="DataTD"><input name="end_date" id="end_date" value="{end_date}">
+      <A HREF="#" onClick="setDateField(document.frmFilter.end_date);
+      top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+      <IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+   </td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Total Days</td>
+   <td class="DataTD"><input name="total_days" id="total_days" value="{total_days}"> <a href="#" onClick="countDays(frmFilter)"><font size="1">Calculate</font></a></td>
+</tr>
+<tr>
+   <td><input type="submit" name="action" value="{action_value}">
+   {delete_button}
+   <input name="period_id" value="{period_id}" type="hidden">
+   <input type="hidden" name="for" value = "{for}">
+   <input type="submit" name="action" value="Cancel"></td>
+</tr>
+</table>
+</form>
+
+</body>
+</html>

@@ -1,0 +1,263 @@
+<html>
+<head>
+<script>
+var req;
+
+function createRequestObject()
+{
+    if (window.XMLHttpRequest) {
+        try {
+            return new XMLHttpRequest();
+        } catch (e){}
+    } else if (window.ActiveXObject) {
+        try {
+            return new ActiveXObject('Msxml2.XMLHTTP');
+        } catch (e){}
+        try {
+            return new ActiveXObject('Microsoft.XMLHTTP');
+        } catch (e){}
+    }
+    return null;
+}
+
+req = createRequestObject();
+
+function bug_operation(operation, user_id, bug_id)
+{
+    query = 'bugs_operations.php?operation=' + operation + '&user_id=' + user_id + '&bug_id=' + bug_id;
+    if(confirm('Sure?'))
+    {
+        req.open("GET", query, false);
+        req.send(null);
+        x = req.responseText;
+    	history.go(0);
+	}
+	
+
+}
+</script>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY" onLoad="setPeriod({period});selectPeriod()">
+{ITEMPLATE=header.html}
+
+<script language="JavaScript">                           
+     function closeBug(query, task_title)
+	 {
+	 	if (confirm("Are you sure you want to CLOSE this bug in task \"" + task_title + "\" ?"))
+		{
+				document.location = "bugs_tracking.php?" + query;
+				alert(query);
+		}
+	}
+	function selectPeriod()
+	{
+		var period = document.frmFilter.period.options[document.frmFilter.period.selectedIndex].value;
+		var startDate = ""; var endDate = "";
+		if (period == 0) {
+			startDate = "{start_date}"; endDate = "{end_date}";
+		} else if(period == 1) {
+			startDate = "{today_date}"; endDate = "{today_date}";
+		} else if(period == 2) {
+			startDate = "{yesterday_date}"; endDate = "{yesterday_date}";
+		} else if (period == 3) {
+			startDate = "{week_start_date}"; endDate = "{week_end_date}";
+		} else if (period == 4) {
+			startDate = "{month_start_date}"; endDate = "{month_end_date}";
+		} else if (period == 5) {
+			startDate = "{this_month_start}"; endDate = "{this_month_end}";
+		} else if (period == 6) {
+			startDate = ""; endDate = "";
+		}
+		document.frmFilter.start_date.value = startDate;
+		document.frmFilter.end_date.value = endDate;
+	}
+
+	var UserTeam = new Array();
+	var UserID = new Array();
+	var UserName = new Array();
+
+	function clearFilter()
+	{
+		document.frmFilter.period.value = "";
+		document.frmFilter.start_date.value = "";
+		document.frmFilter.end_date.value = "";
+	}
+
+	function setPeriod(iPeriod)
+	{
+		document.frmFilter.period.selectedIndex = iPeriod;
+	}
+
+</script>
+<div align="center">
+<table width='90%'>
+<tr>
+	
+	<td >
+	<div>  
+	<form name="frmFilter" action={action}>
+	<table border=0>
+	<tr>
+		<td align="left">
+		  Select period:
+		</td>
+		<td>
+			<select name="period" onChange="selectPeriod()" style="width:150px">
+				<option value="">
+				<option value="1">Today
+				<option value="2">Yesterday
+				<option value="3">Last 7 Days
+				<option value="4">Last Month
+				<option value="5">This Month
+				<option selected value="6" >All Time
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="right">
+			Start Date:
+		</td>
+		<td>
+			<input type="text" name="start_date" value="{start_date}" onChange="setPeriod(0)" style="width:150px">
+
+			<A HREF="javascript:doNothing()"
+				onClick="setDateField(document.frmFilter.start_date);
+				top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+			<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+		</td>
+	</tr>
+	<tr>
+		<td align="right">
+			End Date:
+		</td>
+		<td>
+			<input type="text" name="end_date" value="{end_date}" onChange="setPeriod(0)" style="width:150px">
+
+			<A HREF="javascript:doNothing()"
+				onClick="setDateField(document.frmFilter.end_date);
+				top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+			<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+		</td>
+	</tr>
+	
+	<tr>
+		<td align="right">
+		  Select project:
+		</td>
+		<td>
+			<select style="width:150px" name="project_id">
+			    <option value="">All projects
+			    <!-- BEGIN projects -->
+				<option value="{project_id}" {selected}>{project_title}
+				<!-- END projects -->
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="right">
+			Show Closed:
+		</td>
+		<td>
+			<input type="checkbox" name="show_closed" value="show_closed" {checked}>
+		</td>
+	</tr>
+	<tr>
+		<td align="center" colspan="2">
+			<input type="submit" value=" Filter " name="submit">&nbsp;
+			<input type="button" value=" Clear " onclick="clearFilter()">
+		</td>
+	</tr>
+	</table>
+	</form>
+	</div>
+	</td>
+	
+	
+	<td>
+	<div align="right">
+	<table class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">List of bugs by users</font></td>
+    </tr>
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT"><nobr>Name</nobr></font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Total bugs</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Total importance</font></td>
+	</tr>
+
+    <!-- BEGIN records2 -->
+    <tr>
+	    <td class="DataTD"><font class="DataFONT">{user_name}</font></td>
+	    <td class="DataTD" align="center" nowrap><font class="DataFONT"><a href="bugs_tracking.php?project_id={project_id}&start_date={start_date}&end_date={end_date}&user_id={user_id}&{show_closed}">{total_bugs}</a></font></td>
+	    <td class="DataTD" align="center" nowrap><font class="DataFONT">{total_importance_level}</font></td>
+	</tr>
+	<!-- END records2 -->
+
+	<!-- BEGIN no_records2 -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No bugs 
+		</td>
+	</tr>
+	<!-- END no_records2 -->
+	</table>                                                                 
+	
+	</div>
+	</td>
+</tr>
+</table>
+</div>
+
+<table class="FormTABLE" align="center" width = "90%">
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">List of bugs</font></td>
+    </tr>
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Task</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Responsible User</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Created by</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Closed by</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Date Opened</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Date Resolved</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Resolved</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Declined</font></td>
+	    <td class="ColumnTD" nowrap>Close</td>
+	    <td class="ColumnTD" nowrap>Delete</td>
+	</tr>
+
+    <!-- BEGIN records1 -->
+      <tr class="Task{STATUS}" onMouseOut="this.style.backgroundColor=lastBG; 
+      							document.getElementById('title{title_id}').style.backgroundColor=lastBGtitle;" 
+      							onMouseOver="lastBG=this.style.backgroundColor; 
+      							lastBGtitle=document.getElementById('title{title_id}').style.backgroundColor; 
+      							this.style.backgroundColor='#FCFFD5'; 
+      							document.getElementById('title{title_id}').style.backgroundColor='#FCFFD5';">    
+	    <td >&nbsp;<a id="title{title_id}" class="Task{STATUS}" href="edit_task.php?task_id={task_id}">{task_title}</a>&nbsp;</td>
+	    <td nowrap>{responsible_user}</td>
+	    <td nowrap>{creator}</td>
+	    <td nowrap>{closer}</td>
+	    <td nowrap>{date_issued}</td>
+	    <td nowrap>{date_resolved}</td>
+	    <td nowrap><a href = "#" onclick="bug_operation('ch_resolve', '{user_id}', '{bug_id}')">{is_resolved}</a></td>
+	    <td nowrap><a href = "#" onclick="bug_operation('ch_decline', '{user_id}', '{bug_id}')">{is_declined}</a></td>
+	    <td nowrap><a href = "#" onclick="bug_operation('close', '{user_id}', '{bug_id}')">Close</a></td>
+	    <td nowrap><a href = "#" onclick="bug_operation('delete', '{user_id}', '{bug_id}')">Delete</a></td>
+	    
+	</tr>
+	<!-- END records1 -->
+
+	<!-- BEGIN no_records1 -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No bugs for this period or this project
+		</td>
+	</tr>
+	<!-- END no_records1 -->
+</table>
+
+</body>
+</html>

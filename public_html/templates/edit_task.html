@@ -1,0 +1,1720 @@
+<html>
+<head>
+
+<style  type="text/css">
+.lnkFind {
+	opacity:0.8;
+}
+.lnkFind:hover {
+	opacity:1;
+}
+
+.tablediv {
+display:  table;
+width:600px;
+/*background-color:#eee;*/
+border:1px solid  #666666;
+border-spacing:5px;/*cellspacing:poor IE support for  this*/
+margin:  5px 5px 5px 5px;
+padding:  5px 5px 5px 5px;
+border-collapse:separate;
+}
+.celldiv {
+float:left;/*fix for  buggy browsers*/
+display:  table-cell;
+/*width:50%;*/
+/*background-color:#ccc;*/
+}
+.rowdiv  {
+display:  table-row;
+width:auto;
+}
+
+.btnStop {
+	background-color: #008CBA; 
+	color:white
+}
+
+</style>
+
+
+<style>
+.open { cursor: hand; width: 260px; cursor:pointer;border: solid 1px black; border-right: none; border-bottom: none; text-align: center; font-weight: bold;}
+.close { cursor: hand; width: 260px; cursor:pointer; border: solid 1px black; border-right: none; text-align: center; background: #cfd6d4; }
+.cl { cursor: hand; width: 1px; cursor:pointer; border: solid 1px black; text-align: center; border-right: none; text-align: center; background: #cfd6d4; }
+
+.hyper {color:black; text-decoration: none;}
+</style>
+<title>{task_title}</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT language="JavaScript" src="templates/tasks.js"></SCRIPT>
+<script type="text/javascript" src="scripts/prototype.js"></script>
+<script language="JavaScript">
+function ok_extra()
+{
+	var hour	= document.getElementById("extra_hour").value;
+	var month	= document.getElementById("extra_month").value;
+	var year	= document.getElementById("extra_year").value;
+	document.getElementsByName('extra')[0].style.display='none';
+	if (hour != null)
+	{
+		document.location = "extra_hours.php?task_id={task_id}&hours="+hour+"&month="+month+"&year="+year;
+	}
+}
+
+function cancel_extra()
+{
+	document.getElementsByName('extra')[0].style.display='none';
+}
+
+function extratask()
+{
+	document.getElementsByName('extra')[0].style.display='block';	req = null;
+    if (window.XMLHttpRequest) {
+        try {
+            req = new XMLHttpRequest();
+        } catch (e){}
+    } else if (window.ActiveXObject) {
+        try {
+            req = new ActiveXObject('Msxml2.XMLHTTP');
+        } catch (e){
+            try {
+                req = new ActiveXObject('Microsoft.XMLHTTP');
+            } catch (e){}
+        }
+    }
+	req.open("GET", "extra_hours.php", false);
+	req.send(null);
+	xmlString = req.responseText;
+	if (document.implementation.createDocument) {
+	    var parser = new DOMParser();
+	    xmlobj = parser.parseFromString(xmlString, "text/xml");
+	// MSIE
+	}
+	else
+	if (window.ActiveXObject) {
+	    xmlobj = new ActiveXObject("Microsoft.XMLDOM");
+	    xmlobj.async="false";
+	    xmlobj.loadXML(xmlString);
+	}
+	document.getElementById("div_extra").innerHTML = "";
+	document.getElementById("div_extra").innerHTML = xmlobj.getElementsByTagName("b")[0].childNodes[0].data;
+    document.getElementsByName('extra_view')[0].style.display='block';
+}
+
+function changeLocation ()
+{
+
+	window.location = "create_task.php?task_id={task_id}";
+
+}
+
+function changeLocationQuotations ()
+{
+
+	window.location = "create_task.php?task_id={task_id}&type=child";
+
+}
+//var dicUsers = new ActiveXObject("Scripting.Dictionary");
+var taskID = "{task_id}";
+var responsibleUser  = "{responsibleUser}";
+var dicUsers = new Array();
+{dicUsers}
+var taskArr = new Array();
+{taskArr}
+var idArr = new Array();
+{idArr}
+var statArr = new Array();
+{statArr}
+var prArr = new Array();
+{prArr}
+var taskArray = new Array();
+
+function putTasks()
+{
+
+	tmpString="";
+	for (i=0; i< taskArray.length; i++)
+	{
+		tmpString = tmpString +  taskArray[i][0] +  ";" + taskArray[i][1] + ";" + taskArray[i][2] + "|";
+	}
+	taskField =document.getElementById("tasksArray");
+	taskField.value = tmpString;
+}
+
+function OnOff()
+{
+	var divElement = document.getElementById("tasksList");
+	if (divElement.style.display == "none")
+	{
+		setTaskArr();
+	}
+	else if (divElement.style.display == "block")
+	{
+		divElement.style.display = "none";
+	}
+}
+
+
+function setTasks()
+{
+	//setTaskArr();
+	taskId = document.getElementById("task_id").value;
+	newTaskTitle = document.getElementById("task_title");
+	if (newTaskTitle.value == '')
+	{
+		//newTask = '<b>New Task</b>';
+		newTask = 'New Task';
+	}
+	else
+	//newTask = "<b>"+newTaskTitle.value+"</b>";
+	newTask = newTaskTitle.value;
+
+	if (document.Form.sub_project_id.selectedIndex > 0)
+	{
+		projectValue = document.Form.sub_project_id.options[document.Form.sub_project_id.selectedIndex].text;
+	}
+	else if (document.Form.project_id.selectedIndex > 0)
+	{
+		projectValue = document.Form.project_id.options[document.Form.project_id.selectedIndex].text;
+	}
+	else
+	{
+		projectValue = "";
+	}
+
+	for (i=0; i<taskArray.length; i++)
+	{
+		if (taskArray[i][1] == taskID || (userId != responsibleUser && taskArray[i][1]==0))
+		{
+			//alert("qqq");
+			taskArray[i][0] = newTask;
+			taskArray[i][4] = projectValue;
+		}
+	}
+	//	newTaskTitle = document.getElementById("task_title");
+	//	taskArray = document.getElementById("taskArray");
+
+	var divElement = document.getElementById("tasksList");
+	//divElement = document.MessageForm.tasks;
+
+	content = "<div  class='tablediv'>";
+
+	for (i=0; i< taskArray.length; i++)
+	{
+		if (taskArray[i][1]==0 || taskArray[i][1]==taskId)
+			classStat = "TaskBold"+taskArray[i][3];
+			else
+				classStat = "Task"+taskArray[i][3];
+				
+		if (taskArray[i][4] == "") project_div = "&nbsp;";
+			else  project_div = taskArray[i][4];
+		content = content + "<div id='divTR2_"+i+"' class='"+classStat+"Row' onMouseOut='this.style.backgroundColor=lastBG;' ";
+		content = content + "onMouseOver=\"lastBG=this.style.backgroundColor; this.style.backgroundColor='#FCFFD5';\">";
+		content = content + "<div  class=\"celldiv\" id='divTD0_"+i+"' style=\"width:5%\">"+(i+1)+"</div>";
+		content = content + "<div  class=\"celldiv\" id='divTD1_"+i+"' style=\"width:30%\">"+project_div+"</div>";
+		content = content + "<div  class=\"celldiv\" id='divTD2_"+i+"'style=\"width:55%\">";
+		content = content + "<div id='divTD_"+i+"'><a class='a"+classStat+"Row' href='edit_task.php?task_id="+taskArray[i][1]+"' ";
+		content = content + "title='"+taskArray[i][0]+"'>"+taskArray[i][0].substring(0,35)+"</a></div></div>";
+		content = content + "<div  class=\"celldiv\" style=\"width:10%\"><a href=\"javascript:changePriority("+i+",'down')\">";
+		content = content + "<img width='16' height='16' border=0 src='images/move_down.gif'></a>";
+		content = content + "<a href=\"javascript:changePriority("+i+",'up');\">";
+		content = content + "<img width='16' height='16' border=0 src='images/move_up.gif'></a></div></div>";
+
+	}
+
+	content = content + "</div>";
+	divElement.innerHTML = content;
+	divElement.style.display = 'block';
+}
+
+function setTaskArr()
+{
+	taskArray = new Array();
+	userId = document.MessageForm.responsible_user_id.options[document.MessageForm.responsible_user_id.selectedIndex].value;
+	//  alert (document.Form.sub_project_id.selectedIndex);
+	if (document.Form.sub_project_id.selectedIndex > 0)
+	{
+		projectValue = document.Form.sub_project_id.options[document.Form.sub_project_id.selectedIndex].text;
+	}
+	else if (document.Form.project_id.selectedIndex > 0)
+	{
+		projectValue = document.Form.project_id.options[document.Form.project_id.selectedIndex].text;
+	}
+	else
+	{
+		projectValue = "";
+	}
+	newTaskTitle = document.getElementById("task_title");
+	//	taskArrayField = document.getElementById("taskArray");
+	if (userId > 0)
+	{
+		tasks2 = taskArr[userId];
+		idTasks = idArr[userId];
+		if (statArr[userId] && statArr[userId].length) {
+			statTasks = statArr[userId];
+		} else {
+			statTasks = "";
+		}
+		prTasks = prArr[userId];
+
+		//	alert(idArr[userId]);
+
+		statTask = statTasks.split(';');
+		tasksUser = tasks2.split(';');
+		idTask = idTasks.split(';');
+		prTask = prTasks.split(';');
+
+		if (newTaskTitle.value == '')
+		{
+			//	alert(111);
+			//newTask = '<b>New Task</b>';
+			newTask = 'New Task';
+		}
+		else
+		//newTask = "<b>"+newTaskTitle.value+"</b>";
+		newTask = newTaskTitle.value;
+		if (userId != responsibleUser)
+		{
+				//arrLength = tasksUser.length;
+				//alert(arrLength);
+				taskArray[0] = new Array();
+				taskArray[0][0] = newTask;
+				taskArray[0][1] = 0;
+				taskArray[0][2] = 1;
+				taskArray[0][3] = "New";
+				taskArray[0][4] = projectValue;
+
+			for (i=1; i<= tasksUser.length; i++)
+			{
+				taskArray[i] = new Array();
+				taskArray[i][0] = tasksUser[i-1];
+				taskArray[i][1] = idTask[i-1];
+				taskArray[i][2] = i;
+				taskArray[i][3] = statTask[i-1];
+				taskArray[i][4] = prTask[i-1];
+			}
+		}
+		else
+		{
+			for (i=0; i< tasksUser.length; i++)
+			{
+				taskArray[i] = new Array();
+				taskArray[i][0] = tasksUser[i];
+				taskArray[i][1] = idTask[i];
+				taskArray[i][2] = i+1;
+				taskArray[i][3] = statTask[i];
+				taskArray[i][4] = prTask[i];
+			}
+		}
+
+		setTasks();
+		if (userId == responsibleUser)
+		{
+			for (i=0; i<taskArray.length; i++)
+			{
+				//alert(taskArray[i][1] + " - " + taskId);
+				if (taskArray[i][1] == taskId) selectedPr = taskArray[i][2];
+			}
+			document.MessageForm.priority_id.selectedIndex = selectedPr-1;
+		}
+	}
+}
+
+function changeTaskPosition(taskPos)
+{	
+	
+	var divElement = document.getElementById("tasksList");
+	if (divElement.style.display == "none")
+	{
+		setTaskArr();
+	}
+
+	userId = document.MessageForm.responsible_user_id.options[document.MessageForm.responsible_user_id.selectedIndex].value;
+	newTaskTitle = document.getElementById("task_title");
+	if (newTaskTitle.value == '')
+	{
+		newTask = 'New Task';
+	}
+	else
+	//newTask = "<b>"+newTaskTitle.value+"</b>";
+	newTask = newTaskTitle.value;
+	if (document.Form.sub_project_id.selectedIndex > 0)
+	{
+		projectValue = document.Form.sub_project_id.options[document.Form.sub_project_id.selectedIndex].text;
+	}
+	else if (document.Form.project_id.selectedIndex > 0)
+	{
+		projectValue = document.Form.project_id.options[document.Form.project_id.selectedIndex].text;
+	}
+	else
+	{
+		projectValue = "";
+	}
+	taskArray2 = new Array();
+	taskPos = taskPos-1;
+	//alert (userId + " : " + responsibleUser);
+	for (j=0; j<taskArray.length; j++)
+	{
+
+		//alert(taskArray[1][1] + " : " + taskID);
+		if ((taskArray[j][1]==taskID) || (userId != responsibleUser && taskArray[j][1]==0))
+		{
+			//alert(j);
+			taskPosOld=j;
+		}
+
+	}
+	if (taskPosOld>taskPos)
+	{
+		i=0;
+		while (i!=taskPos)
+		{
+			taskArray2[i] = new Array();
+			taskArray2[i][0] = taskArray[i][0];
+			taskArray2[i][1] = taskArray[i][1];
+			taskArray2[i][2] = i+1;//taskArray[i][2];
+			taskArray2[i][3] = taskArray[i][3];
+			taskArray2[i][4] = taskArray[i][4];
+			i++;
+		}
+
+		taskArray2[taskPos] = new Array();
+		taskArray2[taskPos][0] = newTask;
+		if (userId == responsibleUser)
+		taskArray2[taskPos][1] = taskID;
+		else
+		taskArray2[taskPos][1] = 0;
+		taskArray2[taskPos][2] =	taskPos+1;
+		taskArray2[taskPos][3] =	"New";
+		taskArray2[taskPos][4] = projectValue;
+
+		for (i=taskPos; i<taskPosOld; i++)
+		{
+			//alert(i);
+			j=i+1;
+			taskArray2[j] = new Array();
+			taskArray2[j][0] = taskArray[i][0];
+			taskArray2[j][1] = taskArray[i][1];
+			taskArray2[j][2] = j+1;//taskArray[i][2];
+			taskArray2[j][3] = taskArray[i][3];
+			taskArray2[j][4] = taskArray[i][4];
+		}
+
+		for (i=taskPosOld+1; i<taskArray.length; i++)
+		{
+
+			//	alert (i);
+			j=i+1;
+			taskArray2[i] = new Array();
+			taskArray2[i][0] = taskArray[i][0];
+			taskArray2[i][1] = taskArray[i][1];
+			taskArray2[i][2] =j;//taskArray[i][2];
+			taskArray2[i][3] = taskArray[i][3];
+			taskArray2[i][4] = taskArray[i][4];
+		}
+
+	}
+	else if  (taskPosOld<taskPos)
+	{
+		//alert(222);
+		i=0;
+		l=0;
+
+		while (i<taskPos)
+		{
+			//alert(taskArray[l][1] + " - "+ taskID + " - "+ userId + " - "+  responsibleUser);
+			if (userId != responsibleUser)
+			{
+				if (taskArray[l][1]!=0)
+				{
+					taskArray2[i] = new Array();
+					taskArray2[i][0] = taskArray[l][0];
+					taskArray2[i][1] = taskArray[l][1];
+					taskArray2[i][2] = i+1;//taskArray[i][2];
+					taskArray2[i][3] = taskArray[l][3];
+					taskArray2[i][4] = taskArray[l][4];
+					i++;
+					l++;
+				}
+				else
+				{
+					l++;
+				}
+			}
+			else
+			{
+				if (taskArray[l][1]!=taskID)
+				{
+					taskArray2[i] = new Array();
+					taskArray2[i][0] = taskArray[l][0];
+					taskArray2[i][1] = taskArray[l][1];
+					taskArray2[i][2] = i+1;//taskArray[i][2];
+					taskArray2[i][3] = taskArray[l][3];
+					taskArray2[i][4] = taskArray[l][4];
+					i++;
+					l++;
+				}
+				else
+				{
+					l++;
+				}
+			}
+
+			//	alert (i + " - " +taskPos);
+		}
+
+		taskArray2[taskPos] = new Array();
+		taskArray2[taskPos][0] = newTask;
+		if (userId == responsibleUser)
+		taskArray2[taskPos][1] = taskID;
+		else
+		taskArray2[taskPos][1] = 0;
+		taskArray2[taskPos][2] =	taskPos+1;
+		taskArray2[taskPos][3] =	"New";
+		taskArray2[taskPos][4] = projectValue;
+		//alert (taskArray2[taskPos-1][0]);
+		for (j=taskPos+1; j<taskArray.length; j++)
+		{
+			if (taskArray[j][1]!=taskID || (userId != responsibleUser && taskArray[j][1]!=0))
+			{
+				//alert(j);
+				taskArray2[j] = new Array();
+				taskArray2[j][0] = taskArray[j][0];
+				taskArray2[j][1] = taskArray[j][1];
+				taskArray2[j][2] = parseInt(j)+1;//taskArray[j-1][2];
+				taskArray2[j][3] = taskArray[j][3];
+				taskArray2[j][4] = taskArray[j][4];
+				//	alert (j + ": " + taskArray2[j][0]);
+			}
+		}
+
+	}
+
+	taskArrayText = "";
+	
+	for (k=0; k<taskArray2.length; k++)
+	{
+		//alert(taskArray2[k][0]);
+		taskArray[k] = new Array();
+		taskArray[k][0] = taskArray2[k][0];
+		taskArray[k][1] = taskArray2[k][1];
+		taskArray[k][2] = taskArray2[k][2];
+		taskArray[k][3] = taskArray2[k][3];
+		taskArray[k][4] = taskArray2[k][4];
+		
+		taskArrayText += taskArray[k][0]+" : "+taskArray[k][1]+" : "+taskArray[k][2]+" : "+taskArray[k][3]+" : "+taskArray[k][4]+"\n";
+	}
+
+	setTasks();
+//	alert(taskArrayText);
+
+}
+
+function changePriority(id, direction)
+{
+	if (document.MessageForm.priorities_changed && document.MessageForm.priorities_changed.value=="0")
+	{
+		document.MessageForm.priorities_changed.value = "1";
+	}	
+	
+	newTaskTitle = document.getElementById("task_title");
+
+	if (newTaskTitle.value == '')
+	{
+		//	alert(111);
+		newTask = 'New Task';
+	}
+	else
+	newTask = newTaskTitle.value;
+
+	userId = document.MessageForm.responsible_user_id.options[document.MessageForm.responsible_user_id.selectedIndex].value;
+	maxPriority = dicUsers[userId];
+
+	step = 1;
+	if (direction == "up") step = -1;
+	if ((direction == "down" && taskArray[id][2] < maxPriority-1) || (direction == "up"  && taskArray[id][2] > 0))
+	{
+		for (i = 1; i <= 2; i++)
+		{
+			objFrom = document.getElementById("divTD" + i + "_" + id);
+			objTo   = document.getElementById("divTD" + i + "_" + (id + step));
+			tmpHTML           = objTo.innerHTML;
+			objTo.innerHTML   = objFrom.innerHTML;
+			objFrom.innerHTML = tmpHTML;
+		}
+
+	trFrom = document.getElementById("divTR2_"+id);
+	trTo = document.getElementById("divTR2_"+(id+step));
+
+	trTocn2   = catch2(trTo.className);
+	trFromcn2 = catch2(trFrom.className);
+
+	tmpSTYLE= trTo.className;
+	trTo.className	= trim2(trFrom.className)+trTocn2;
+	trFrom.className = trim2(tmpSTYLE)+trFromcn2;
+	}
+	//		alert(id);
+	if 	(direction == "down" && taskArray[id][2] < maxPriority-1)
+	{
+		tmpTask = taskArray[id][0];
+		taskArray[id][0] = taskArray[id+1][0];
+		taskArray[id+1][0] = tmpTask;
+
+		tmpId = taskArray[id][1];
+		taskArray[id][1] = taskArray[id+1][1];
+		taskArray[id+1][1] = tmpId;
+
+		tmpStat = taskArray[id][3];
+		taskArray[id][3] = taskArray[id+1][3];
+		taskArray[id+1][3] = tmpStat;
+
+		tmpPr = taskArray[id][4];
+		taskArray[id][4] = taskArray[id+1][4];
+		taskArray[id+1][4] = tmpPr;
+
+		taskArray[id+1][2] = id+1;
+		taskArray[id][2] = id;
+	}
+
+
+	if 	(direction == "up"  && taskArray[id][2] > 0)
+	{
+		//alert("up");
+		tmpTask = taskArray[id-1][0];
+		taskArray[id-1][0] = taskArray[id][0];
+		taskArray[id][0] = tmpTask;
+
+		tmpId = taskArray[id-1][1];
+		taskArray[id-1][1] = taskArray[id][1];
+		taskArray[id][1] = tmpId;
+
+		tmpStat = taskArray[id][3];
+		taskArray[id-1][3] = taskArray[id][3];
+		taskArray[id][3] = tmpStat;
+
+		tmpPr = taskArray[id][4];
+		taskArray[id-1][4] = taskArray[id][4];
+		taskArray[id][4] = tmpPr;
+
+		taskArray[id-1][2] = id-1;
+		taskArray[id][2] = id;
+	}
+
+	for (i=0; i<taskArray.length; i++)
+	{
+		//
+		// alert(taskArray[i][0];
+	//	if (taskArray[i][0] == "<b>"+newTask+"</b>")
+		if (taskArray[i][0] == newTask)
+		{
+			//alert(taskArray[i][2]);
+			document.MessageForm.priority_id.selectedIndex = taskArray[i][2];
+		}
+	}
+	//		alert(taskArray);
+	//
+}
+
+function catch2 (sstr) {  if(sstr.substr(sstr.length-1)=="2") return "2"; else return ""; }
+function trim2 (sstr)  {  if(sstr.substr(sstr.length-1)=="2") return sstr.substr(0,sstr.length-1); else return sstr; }
+function setPriorities() {
+	userId = document.MessageForm.responsible_user_id.options[document.MessageForm.responsible_user_id.selectedIndex].value;
+	taskId = document.getElementById("task_id").value;
+//	alert(taskId);
+	if (userId != null)
+	{
+		if (userId > 0)
+		{
+			//maxPriority = dicUsers.Item(userId);
+			maxPriority = dicUsers[userId];
+			if (maxPriority == null) maxPriority = 1;
+			document.MessageForm.priority_id.options.length = 0;
+			for (i = 1; i <= maxPriority; i++)
+			{
+				var op = new Option(i,i);
+				document.MessageForm.priority_id.options[i-1] = op;
+			}
+		}
+	}
+	//setTaskArr();
+}
+
+var defaultcompletion=0{task_completion};
+var subProjectsIDs = new Array();
+subProjectsTitles = new Array();
+<!-- BEGIN SubProjectArray -->
+<!-- BEGIN SubProjectParent -->
+subProjectsIDs[{IDparent}] = new Array();
+subProjectsTitles[{IDparent}] = new Array();
+<!-- END SubProjectParent -->
+subProjectsIDs[{IDparent}][{I}] = "{IDchild}"
+subProjectsTitles[{IDparent}][{I}] = "{subproject_title}"
+<!-- END SubProjectArray -->
+function MkSubProjects(index,subprojname){
+	var aCurrIDs = subProjectsIDs[index]; //getValuesByIndex(index);
+	var aCurrTitles = subProjectsTitles[index];
+	var nCurrProjectsCount = (aCurrTitles ? aCurrTitles.length : 0);
+	var oList = document.Form.sub_project_id;
+	oList.length = 0;
+
+	var txt="";
+	var start=0; /*({sub_project_id_value} ? 1 : 0);*/
+
+	if (nCurrProjectsCount)
+	{
+		for (i = start; i < nCurrProjectsCount; i++)
+		{
+			if (aCurrTitles[i] || i==0)
+			{
+				txt+="\n"+aCurrIDs[i];
+				if (document.createElement)
+				{
+					if (i>0)
+					{
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = aCurrTitles[i];
+						newListOption.value = aCurrIDs[i];
+					} else {
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = "-choose a sub-project-";
+						newListOption.value = 0;
+					}
+					(oList.options.add) ? oList.options.add(newListOption) : oList.add(newListOption, null);
+				}
+			}
+		}
+		document.Form.sub_project_id.disabled=false;
+		document.getElementById("id_td_subproject").innerHTML="Sub-Project *";
+	} else {
+		document.Form.sub_project_id.disabled=true;
+		document.getElementById("id_td_subproject").innerHTML="Sub-Project";
+	}
+}
+function  checkPriority(value) {
+
+	maxPriority = document.MessageForm.max_priority_id.value;
+	if (value.length == 0) document.MessageForm.priority_id.value = maxPriority;
+	value = parseInt(value);
+	if (isNaN(value) || value < 1 || value > parseInt(maxPriority)) {
+		document.MessageForm.priority_id.value = maxPriority;
+	}
+	else document.MessageForm.priority_id.value = value;
+}
+
+function set_attached(files,current)
+{
+	div = document.getElementById("divAttached");
+	div.innerHTML = files;
+	insertAtCaret('['+current+']');
+}
+
+function storeCaret(textEl)
+{
+	if (textEl.createTextRange) textEl.caretPos = document.selection.createRange().duplicate();
+}
+
+function insertAtCaret(text)
+{
+	textEl = document.MessageForm.message;
+
+	if (textEl.createTextRange && textEl.caretPos)
+	{
+		var caretPos = textEl.caretPos;
+		caretPos.text = caretPos.text.charAt(caretPos.text.length - 1) == ' ' ? text + ' ' : text;
+	}
+	else if (textEl.createTextRange) { }
+	else textEl.value += text;
+}
+
+function openUpload(message_number)
+{
+    //alert("aa");
+    //return false;
+    var UploadWin = window.open('upload.php?message_number='+message_number+'&hash={hash}', 'UploadWin', 'toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=yes,resizable=yes,width=500,height=400');
+    UploadWin.focus();
+}
+
+function openUpload2(message_number)
+{
+    alert("artem");
+    return 0;
+}
+
+/* dynamic change of statuses options */
+
+var aValues = new Array("9","{question_or_answer}","{bug_status}","4","11", "13,14", "{allvalues}", "{quotationvalues}");
+var aStatusesText = new Array({allstatuses});
+
+function getValuesByIndex(index){	var sValues = aValues[index];	return sValues.split(",");}
+function getTextByIndex(index){		var sText = aText[index];	return sText.split(",");}
+
+function MkValues(index){
+	var aCurrValues = getValuesByIndex(index);
+	//	alert (aCurrValues);
+	var nCurrValuesCnt = aCurrValues.length;
+	var oList = document.MessageForm.task_status_id;
+	oList.length = 0;
+
+	var txt="";
+
+	for (i = 0; i < nCurrValuesCnt; i++)
+	{
+		if (document.createElement)
+		{
+			var newListOption = document.createElement("OPTION");
+			newListOption.text = aStatusesText[aCurrValues[i]-1];
+			newListOption.value = aCurrValues[i];
+
+			txt+=aStatusesText[aCurrValues[i]-1]+"   "+aCurrValues[i]+"\n";
+
+			(oList.options.add) ? oList.options.add(newListOption) : oList.add(newListOption, null);
+		}else{
+			oList.options[i] = new Option(aCurrValues[i], aCurrValues[i], false, false);
+		}
+	}
+		//alert(txt);
+}
+
+/* |tabs| */
+
+function roll(thisname,divname)
+{
+	var task_status_select='{task_status_select}';
+
+	for(i=1;i<=8;i++)
+	{
+		if (document.getElementById('b'+i) && document.getElementById('b'+i).className=="noborder")
+		{
+			activeelem=document.getElementById('b'+i);
+			activeelem.className="";
+			activeelem.parentNode.className="menu";
+			if (document.getElementById('d'+i)) {
+				document.getElementById('d'+i).style.display="none";
+			}
+		}
+	}
+
+	/* show */
+	thiselem=document.getElementById(thisname);
+	thiselem.className="noborder";
+	document.getElementById('tr_agree').style.display="none";
+	thiselem.parentNode.className="menuact";
+	if (document.getElementById(divname)) {
+		document.getElementById(divname).style.display="";
+	}
+
+	switch (thisname)
+	{
+		case 'b1':
+		document.getElementById('addTimeRow').style.display="";
+		MkValues(0);
+		document.getElementById('tr_status').style.display="none";
+		document.getElementById('tr_priorities').style.display="";
+
+		document.getElementById('tr_importance').style.display="none";
+		
+		document.getElementById('tr_deadline').style.display="none";
+		document.getElementById('tr_price').style.display="none";
+		document.getElementById('tr_estimate').style.display="none";		
+
+		document.getElementById('tr_agree').style.display="none";
+		document.getElementById('tr_completion').style.display="";
+		break;
+		case 'b2':
+		document.getElementById('addTimeRow').style.display="none";
+
+		document.getElementById('tr_priorities').style.display="none";
+		MkValues(1);
+		document.getElementById('tr_status').style.display="";
+		
+		document.getElementById('tr_deadline').style.display="none";
+		document.getElementById('tr_price').style.display="none";
+		document.getElementById('tr_estimate').style.display="none";		
+
+		document.getElementById('tr_importance').style.display="none";
+		document.getElementById('tr_completion').style.display="";
+
+		document.getElementById('tr_agree').style.display="none";
+		break;
+		case '{report_b_id}':
+
+		if (document.getElementById('{report_b_id}').style.display != 'none')
+		{
+			document.getElementById('addTimeRow').style.display="";
+
+			MkValues(2);
+			document.getElementById('tr_status').style.display="none";
+			
+			document.getElementById('tr_deadline').style.display="none";
+			document.getElementById('tr_price').style.display="none";
+			document.getElementById('tr_estimate').style.display="none";			
+
+			document.getElementById('tr_importance').style.display="";
+			document.getElementById('tr_completion').style.display="";
+		}
+		break;
+
+		case '{resolve_b_id}':
+		if (document.getElementById('{resolve_b_id}').style.display != 'none')
+		{
+
+			document.getElementById('addTimeRow').style.display="none";
+			document.getElementById('tr_deadline').style.display="none";
+			document.getElementById('tr_price').style.display="none";
+			document.getElementById('tr_estimate').style.display="none";
+
+			document.getElementById('tr_importance').style.display="none";
+			MkValues(2);
+			document.getElementById('tr_status').style.display="none";
+			document.getElementById('tr_completion').style.display="none";
+
+			document.getElementById('tr_agree').style.display="";
+		}
+		break;
+		case 'b4':
+		document.getElementById('tr_priorities').style.display="none";
+		document.getElementById('addTimeRow').style.display="none";
+		document.getElementById('tr_agree').style.display="none";
+		document.getElementById('tr_importance').style.display="none";
+		document.getElementById('tr_deadline').style.display="none";
+		document.getElementById('tr_price').style.display="none";
+		document.getElementById('tr_estimate').style.display="none";		
+		MkValues(3);
+		document.MessageForm.elements.task_status_id.value=4;
+		document.getElementById('tr_status').style.display="none";
+		document.getElementById('tr_completion').style.display="none";
+		break;
+		case 'b6':
+		document.getElementById('tr_priorities').style.display="none";
+		document.getElementById('tr_agree').style.display="none";
+		document.getElementById('addTimeRow').style.display="none";
+		document.getElementById('tr_deadline').style.display="none";
+		document.getElementById('tr_price').style.display="none";
+		document.getElementById('tr_estimate').style.display="none";
+		document.getElementById('tr_importance').style.display="none";
+		MkValues(4);
+		document.MessageForm.elements.task_status_id.value=11;
+		document.getElementById('tr_status').style.display="none";
+		document.getElementById('tr_completion').style.display="none";
+		break;
+		
+		case 'b7':
+		document.getElementById('tr_priorities').style.display="none";
+		document.getElementById('tr_agree').style.display="none";
+		document.getElementById('addTimeRow').style.display="none";
+		document.getElementById('tr_deadline').style.display="none";
+		document.getElementById('tr_price').style.display="none";
+		document.getElementById('tr_estimate').style.display="none";		
+		document.getElementById('tr_importance').style.display="none";
+		MkValues(5);
+		document.MessageForm.elements.task_status_id.value=13;
+		document.getElementById('tr_status').style.display="";
+		document.getElementById('tr_completion').style.display="none";
+		break;
+		
+		case 'b5':
+		document.getElementById('tr_priorities').style.display="";
+		document.getElementById('tr_agree').style.display="none";
+		document.getElementById('addTimeRow').style.display="";
+		document.getElementById('tr_deadline').style.display="none";
+		document.getElementById('tr_price').style.display="none";
+		document.getElementById('tr_estimate').style.display="none";
+		document.getElementById('tr_importance').style.display="none";
+		MkValues(6);
+		document.MessageForm.elements.task_status_id.value=(task_status_select==1?8:task_status_select);
+		document.getElementById('tr_status').style.display="";
+		document.getElementById('tr_completion').style.display="";
+		break;
+		
+		case 'b8':
+		document.getElementById('tr_priorities').style.display="none";
+		document.getElementById('tr_agree').style.display="none";
+		document.getElementById('addTimeRow').style.display="none";
+		document.getElementById('tr_importance').style.display="none";
+		MkValues(7);
+		document.MessageForm.elements.task_status_id.value = (task_status_select==1?8:task_status_select);
+		document.getElementById('tr_status').style.display="";
+		document.getElementById('tr_price').style.display="";
+		document.getElementById('tr_estimate').style.display="";
+		document.getElementById('tr_deadline').style.display="";
+		document.getElementById('tr_completion').style.display="none";
+		break;		
+	}
+}
+
+function checkCompletion(compl,submitelem)
+{
+	err=true;
+	if (!compl || (compl>=0 && compl<=100)) err=false;
+	return err;
+}
+
+</script>
+
+<script type="text/javascript" language="javascript">
+function show_client_inf() {
+	document.getElementById("id_client_inf").style.display = "block";
+}
+function hide_client_inf() {
+	document.getElementById("id_client_inf").style.display = "none";
+}
+
+function ClientHours() {
+	this.blockName = "client_spent_hours";
+	this.divId = "id_client_inf";
+}
+
+ClientHours.prototype = {
+	load: function(client_id) {
+		var url = "sayu_blocks.php";
+		url += "?block=" + this.blockName;
+		url += "&client_id=" + client_id;
+		
+		oThis = this;
+
+		var ajax = new Ajax.Updater(
+		{success: this.divId},
+		url,
+		{method: 'get',
+		parameters: '',
+		onFailure: report_error}
+		);
+	},
+
+	onFailure: function() {
+		$(this.divId).innerHTML = "Error";
+	}
+}
+
+
+function report_error(request) {
+	$('zipResult').innerHTML = "Error";
+}
+
+
+function client_hours_reload(client_id) {
+	client_hours.innerHTML = 'Loading...';
+	client_hours.load(client_id);
+}
+
+var client_hours = new ClientHours(client_id);
+var client_id = {this_client_id};
+client_hours.load(client_id);
+
+
+function openWindow(task_id, project_id)
+{
+	var allocateWin = window.open ('allocate_parent_task.php?task_id='+ task_id + '&project_id=' + project_id, 'allocateWin', 'toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=yes,resizable=yes,width=400,height=300');
+	allocateWin.focus();
+}
+
+function setParentTask(parent_task_id, task_title, allocate_url_id) {
+	if (document.getElementById("parenttask_name")) {
+		document.getElementById("parenttask_name").innerHTML = task_title;
+	}
+	if (document.getElementById("parenttask_link")) {
+		document.getElementById("parenttask_link").href = "edit_task.php?task_id="+parent_task_id;
+	}
+}
+
+
+</script>
+
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+	<!-- BEGIN FormForm -->
+
+  	<a name="task"></a>
+  	<table class="FormTABLE" border="0" width="100%">
+  		<tr>
+    		<td class="FormHeaderTD" colspan="3">
+      			<table width="100%" cellspacing="0" cellpadding="0">
+        			<tr>
+          				<td align="center">
+            				<font class="FormHeaderFONT">Task</font>
+          				</td>
+          				<td align="right">
+            				<a href="#messages" class="link2">Messages ({total_messages})</a>
+          				</td>
+        			</tr>
+      			</table>
+    		</td>
+  		</tr>
+
+	  	<!-- BEGIN FormError -->
+
+	  	<tr><td class="DataTD" colspan="3"><font class="DataFONT">{sFormErr}<font></td></tr>
+
+	  	<!-- END FormError -->
+
+  		<form method="POST" action="{FileName}?task_id={task_id}" name="Form">
+
+  		<tr>
+  			<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Title *</font></td>
+	      		<td class="DataTD" colspan="2">
+
+        		<table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+        			<tr align="left">
+		        		<td><input type="text" name="task_title" id="task_title" maxlength="255" value="{task_title}" size="100" onChange="setTasks();"></td>
+		        		<!-- BEGIN creator_block -->
+        				<td align="right">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creator:</td>
+        				<td align="left">&nbsp;<b>{creator_name}</b></td>
+        				<!-- END creator_block -->
+						<td align="right" width="300px"><a href="notes.php?task_id={task_id}">Available Notes({total_notes})</a> &nbsp; <a href="note_edit.php?task_id={task_id}">add note</a></b></td>
+        			</tr>
+        		</table>
+      			</td>
+	      	</tr>
+	 	<tr>
+	      		<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Project *</font></td>
+	      		<td class="DataTD" height="32px;">
+        		<select name="project_id" style="width:150px" onchange="MkSubProjects(this.value,'sub_project_id')">
+        		<!-- BEGIN LBproject_id --><option value="{ID}" {Selected}>{Value}</option>
+        		<!-- END LBproject_id -->
+        		</select>
+	      		</td>
+      			<td rowspan="12" class="DataTD" valign="top" width="80%">
+				<!--<font class="FieldCaptionFONT">Description</font><br>-->
+        		<textarea readonly="true" name="task_desc" rows="21" style="width:100%">{task_desc}</textarea>
+	      		</td>
+  		</tr>
+		<tr>
+			<td class="FieldCaptionTD" height="32px;"><span id="id_td_subproject">Sub-Project</span></td>
+			<td class="DataTD"><select name="sub_project_id" style="width:150px"></select></td>
+		</tr>		
+		<tr>
+			<td class="FieldCaptionTD" colspan="2">
+			<!-- BEGIN project_url_block --><a href="{project_url}">{project_url}</a><br><!-- END project_url_block -->
+			<!-- BEGIN edit_project_link -->
+			 <a href="edit_project.php?project_id={sub_project_id_value}&return_page=edit_task.php?task_id={task_id}" onClick="
+				if (document.Form.sub_project_id.value) {
+					this.href='edit_project.php?project_id='+document.Form.sub_project_id.value+'&return_page=edit_task.php?task_id={task_id}';
+				} else if (document.Form.project_id.value) {
+					this.href='edit_project.php?project_id='+document.Form.project_id.value+'&return_page=edit_task.php?task_id={task_id}';
+				} else {
+					return false;
+				}
+				">edit project</a> | <a href="edit_project_features.php?project_id={sub_project_id_value}&return_page=edit_task.php?task_id={task_id}" onClick="
+				if (document.Form.sub_project_id.value) {
+					this.href='edit_project_features.php?project_id='+document.Form.sub_project_id.value+'&return_page=edit_task.php?task_id={task_id}';
+				} else if (document.Form.project_id.value) {
+					this.href='edit_project_features.php?project_id='+document.Form.project_id.value+'&return_page=edit_task.php?task_id={task_id}';
+				} else {
+					return false;
+				}
+				">edit features list</a>
+			 <!-- END edit_project_link -->
+			 </td>			
+		</tr>
+		<!-- BEGIN task_domain_block -->
+		<tr>
+			<td class="FieldCaptionTD" >
+				<font class="FieldCaptionFONT">Domain *</font>
+			</td>
+			<td class="DataTD">
+	        	<input type="text" name="task_domain" id="task_domain" value="{task_domain}" maxlength="255" style="width:150px"
+	        	onkeypress="taskDomainPressed()"> <a href="view_clients.php?fsite={task_domain}&submit=Find&show_table=1" class="lnkFind" alt="Find the domain in Clients database" title="Find the domain in Clients database"><img src="images/find.png"  width=20 height=20 border=0 ></a>
+	        	<div id="task_domains"></div>
+	  		</td>
+  		</tr>
+  		<script>
+  			var task_domains_timeout;
+  			var task_domains_loading_domain = false;
+  			function taskDomainPressed() {
+  				clearTimeout(task_domain_timeout);
+  				var task_domain_timeout = setTimeout("taskDomainLoad()", 1000);
+  			}
+  			function taskDomainLoad() {
+  				var domain = $("task_domain").value;
+  				if (domain.length && domain !=task_domains_loading_domain) {
+  					task_domains_loading_domain = domain;
+  					$("task_domains").show();
+  					$("task_domains").update("(fetching domains list ...)");
+  					clearTimeout(task_domains_timeout);
+					new Ajax.Request('ajax_responder.php?action=get_domains_list',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'domain': document.Form.task_domain.value
+				    	},
+						onSuccess: function(transport){
+							var response = transport.responseText || "no response text";
+							$("task_domains").update(response);
+							var task_domains_timeout = setTimeout("taskDomainsHide()", 25000);
+						},
+						onFailure: function(){
+							$("task_domains").update("Something went wrong...");
+							var task_domains_timeout = setTimeout("taskDomainsHide()", 5000);
+						}
+					});
+  				}
+  			}
+  			function taskDomainsHide() {
+  				$("task_domains").hide();
+  			}
+  			function selectDomain(domain_id, domain_url, client_id, client_name) {
+  				$("task_domain").value = domain_url;
+  				$("client_id").value   = client_id;
+				$("task_client").value = client_name;
+  				taskDomainsHide();
+  			}
+  		
+  		</script>
+  		<!-- END task_domain_block -->
+  		<tr>
+	      	<td class="FieldCaptionTD" nowrap><font class="FieldCaptionFONT">Date to complete</font></td>
+	      	<td class="DataTD" nowrap>
+        		<input type="text" name="day" size="1" maxlength="2" value="{DAY}">
+        		<select name="month" style="width:78px">{MONTH}</select>
+        		<input type="text" name="year" size="1" maxlength="2" value="{YEAR}">
+	      	</td>
+ 		</tr>
+  		<tr>
+  			<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Status</font></td>
+  			<td class="DataTD">
+        		<select name="task_status_id" id="ID_task_status" onChange="if(document.Form.responsible_user_id.value!={resp_user_id}&&this.value==1) this.value=8;">
+			<!-- BEGIN LBtask_status_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBtask_status_id --></select>
+	      	</td>
+	    </tr>
+		<!-- BEGIN task_client_block -->
+		<tr>
+			<td class="FieldCaptionTD" >
+				<div onmouseover="show_client_inf();" onmouseout="hide_client_inf();"><font class="FieldCaptionFONT">Client</font></div>
+				<div id="id_client_inf" style="display:none; position:absolute; background-color:white; border-color: #585858; border-width: 2px; border-style: solid;">No information.</div>
+			</td>
+			<td class="DataTD">
+				<input type="hidden" value={this_client_id} name="client_id" id="client_id">
+	        	<input type="text" name="task_client" id="task_client" value="{this_client_company}" maxlength="255" style="width:150px"
+	        	onkeypress="taskClientPressed()">
+	        	<div id="task_clients"></div>
+	  		</td>
+  		</tr>
+  		<script>
+  			var task_clients_timeout;
+  			var task_clients_loading_client = false;
+  			function taskClientPressed() {
+  				clearTimeout(task_client_timeout);
+  				var task_client_timeout = setTimeout("taskClientLoad()", 1000);
+  			}
+  			function taskClientLoad() {
+  				var client = $("task_client").value;
+  				if (client.length && client !=task_clients_loading_client) {
+  					task_clients_loading_client = client;
+  					$("task_clients").show();
+  					$("task_clients").update("(fetching clients list ...)");
+  					clearTimeout(task_clients_timeout);
+  					new Ajax.Request('ajax_responder.php?action=get_clients_list',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'client': document.Form.task_client.value,
+				    		'task_id': document.getElementById("task_id").value
+				    	},
+						onSuccess: function(transport){
+							var response = transport.responseText || "no response text";
+							$("task_clients").update(response);
+							var task_clients_timeout = setTimeout("taskClientsHide()", 25000);
+						},
+						onFailure: function(){
+							$("task_clients").update("Something went wrong...");
+							var task_clients_timeout = setTimeout("taskClientsHide()", 5000);
+						}
+					});
+  				}
+  			}
+  			function taskClientsHide() {
+  				$("task_clients").hide();
+  			}
+  			function selectClient(client_id, client_name, $task_id) {
+  				$("task_client").value = client_name;
+  				$("client_id").value = client_id;
+  				taskClientsHide();
+  				new Ajax.Request('ajax_responder.php?action=task_update_client',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'client_id': client_id,
+				    		'task_id': $task_id
+				    	},
+						onSuccess: function(transport){
+							/*var response = transport.responseText;
+							responseArray = response.split('||');
+							$("task_domain_"+TaskId).value = responseArray[0];
+							$("task_domain_"+TaskId).disabled = true;
+							$("domain_id_"+TaskId).value = responseArray[1];*/
+						},
+						onFailure: function(){
+						}
+					});
+  			}
+  		
+  		</script>
+  		<!-- END task_client_block -->
+  		<tr>
+  			<td class="FieldCaptionTD" nowrap><font class="FieldCaptionFONT">Responsible person *</font></td>
+  			<td class="DataTD">
+        		<select name="responsible_user_id" id="ID_responsible_user" style="width:150px; z-index:1">
+        		<!--
+			checkPriority(document.Form.priority_id.value);
+			  if (this.value!={resp_user_id})
+			  {
+			    if (document.getElementById('ID_task_status ').value==1)
+			        document.getElementById('ID_task_status').value=8;}
+				-->
+				<!-- BEGIN LBresponsible_user_id --><option value="{ID}" {Selected}>{Value}</option>
+        		<!-- END LBresponsible_user_id -->
+
+        		</select>
+      			</td>
+		</tr>
+		<tr>
+  			<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Type</font></td>
+  			<td class="DataTD">
+        		<select name="task_type_id" style="width:150px"><!-- BEGIN LBtask_type_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBtask_type_id --></select>
+	      		</td>
+	      	</tr>
+  		<tr>
+  			<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Estimated Time <acronym title="acceptable time formats : 19; 19h; 19 hours; 3d 3h; 3 days 3 hours; 3,375d" lang="en">(?)</acronym></font></td>
+  			<td class="DataTD"><input type="text" size="10" style="width:150px" name="task_estimated_hours" value="{estimated_hours}" maxlength="14"
+			onkeyup="checkAdditionalTime(this,document.Form,document.Form.elements.upd_uhours,document.getElementById('id_update'))"
+			onchange="checkAdditionalTime(this,document.Form,document.Form.elements.upd_uhours,document.getElementById('id_update'))"
+			onblur="checkAdditionalTime(this,document.Form,document.Form.elements.upd_uhours,document.getElementById('id_update'))" />
+			<input type="hidden" name="upd_uhours" value="{estimated_hours_value}">
+
+			</td>
+			
+      	</tr>
+      	<tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT">Task cost, $</font></td><td class="DataTD">
+        	<input type="text" name="task_cost" value="{task_cost}" maxlength="14" style="width:150px">
+  		</td></tr>
+      	<tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT">Hourly charge, $</font></td><td class="DataTD">
+        	<input type="checkbox" name="hourly_charge" value="{hourly_charge}" {hourly_charge_checked}>
+  		</td></tr>
+		<!-- BEGIN time_report -->
+  		<tr>
+  			<td colspan="2">
+  				<table border="0" cellpadding="0" cellspacing="0" width="100%">
+  					<tr><td colspan="2" class="FieldCaptionTD"><font class="FieldCaptionFONT">Worked on this task:</font></td></tr>
+
+  					<!-- BEGIN tr_row -->
+  					<tr class="DataTD">
+  						<td>{tr_name}</td>
+  						<td align="right">{tr_time}</td>
+  					</tr>
+
+
+  					<!-- END tr_row -->
+  				</table>
+  			</td>
+	      	</tr>
+	      	<!-- END time_report -->
+
+		<!-- BEGIN subtasks -->
+      	
+  		<tr>
+	      	
+  			<td colspan="2">
+  				<table border="0" cellpadding="0" cellspacing="0" width="100%">
+  					<tr><td colspan="2" class="FieldCaptionTD"><font class="FieldCaptionFONT">Subtasks:</font></td></tr>
+
+  					<!-- BEGIN subtasks_row -->
+  					<tr class="DataTD">
+  						<td><a href="edit_task.php?task_id={subtask_id}">{subtask_name}</a></td>
+  						<td align="right">{subtask_time}</td>
+  					</tr>
+  					<!-- END subtasks_row -->
+  					
+  					<tr><td>Total time including subtasks</td><td align="right">{total_time_spent}</td></tr>
+  				</table>
+  			</td>
+	      	</tr>
+	      	<!-- END subtasks -->
+	      	
+		<!-- BEGIN parenttask -->
+      	<tr>
+  			<td colspan="2">  			
+  				<table border="0" cellpadding="0" cellspacing="0" width="100%">				
+  					<!-- BEGIN parenttask_exists -->
+  					<tr>
+  						<td colspan="2" class="FieldCaptionTD"><font class="FieldCaptionFONT">Parent task:</font></td>
+  					</tr>
+  					<tr>
+  						<td colspan="2"><a href="edit_task.php?task_id={parenttask_id}">{parenttask_name}</td>
+  					</tr>
+  					<!-- END parenttask_exists -->
+  					<!-- BEGIN parenttask_not_exist -->
+  					<tr>
+  						<td colspan="2" class="FieldCaptionTD"><a href="javascript: openWindow({task_id}, {parenttask_project_id});">Allocate parent task</a></td>
+  					</tr>
+  					<tr >
+  						<td colspan="2"><a id="parenttask_link" href="edit_task.php?task_id="><span id="parenttask_name"></span></td>
+  					</tr>
+  					<!-- END parenttask_not_exist -->
+  				</table>
+  		</tr>
+      	<!-- END parenttask -->	      	
+
+	      	<!-- BEGIN bug_report -->
+  		<tr>
+  			<td colspan="2">
+  				<table border="0" cellpadding="0" cellspacing="0" width="100%">
+  					<tr><td colspan="2" class="FieldCaptionTD"><font class="FieldCaptionFONT">Bugs Tracking:</font></td></tr>
+
+  					<!-- BEGIN tr_bug_row -->
+  					<tr class="DataTD">
+  						<td>{tr_name}</td>
+  						<td>{tr_bugs}</td>
+  					</tr>
+
+
+  					<!-- END tr_bug_row -->
+  				</table>
+  			</td>  			
+	      	</tr>
+	      	<!-- END bug_report -->
+
+ 		<tr>
+	    		<td colspan="2">
+	  			<b>{task_attachments_header}</b><br>
+  				<!-- BEGIN task_attachments -->
+			   	<a target="_blank" href="{att_file}"><img src="images/{image_name}" border=0>&nbsp;{att_file_name}</a><br>
+			  	<!-- END task_attachments -->
+  			</td>
+  			<td colspan="3" align="right">
+
+			  	<!-- ***   Buttons   ***  -->
+			  	<!-- BEGIN extra_button -->
+			  	<input type="button" value="Add Extra Hours" onClick="javascript:extratask();">
+			  	<!-- END extra_button -->
+			  	
+			  	<!-- BEGIN start_button -->
+			  	<input type="button" value="Start Task" onClick="javascript:startTask({task_id},'Start','{task_title_slashed}',false,{completion_javascript},'{active_task_title}',{is_periodic},'{url_page}'); return false;">
+			  	<!-- END start_button -->
+			  	
+			  	<!-- BEGIN close_button -->
+			  	<input type="button" value="Close Task" onClick="javascript:closeTask({task_id},'{task_title_slashed}'); return false;">
+			  	<!-- END close_button -->
+			  	
+			  	<!-- BEGIN duplicate_task_button -->
+			  	<input type="button" value="Duplicate Task" onClick="changeLocation();">
+			  	<!-- END duplicate_task_button -->
+			  	<!-- BEGIN make_child_task_button -->
+			  	<input type="button" value="Make Child Task" onClick="changeLocationQuotations();">
+			  	<!-- END make_child_task_button -->
+
+			  	<!-- BEGIN FormEdit -->
+			  	<input type="hidden" value="update" name="FormAction"/>
+			  	<input type="submit" value="Update Task" id="id_update" onclick="putTasks(); document.forms('Form').FormAction.value = 'update';" />
+			  	<!-- END FormEdit -->
+
+			  	<!-- BEGIN FormCancel -->
+			  	<input type="submit" value="Cancel" onclick="document.forms('Form').FormAction.value = 'cancel';" />
+			  	<!-- END FormCancel -->
+			  	<input type="hidden" name="FormName" value="Form"/>
+  			
+
+		  		<input type="hidden" name="PK_task_id" value="{PK_task_id}"/>
+		  		<input type="hidden" name="task_id" value="{task_id}"/>
+
+		  	<!-- Transfer parameters -->
+
+		  	<input type="hidden" name="trn_task_status_id" value="{trn_task_status_id}">
+		  	<input type="hidden" name="trn_project_id" value="{trn_project_id}">
+		  	<input type="hidden" name="trn_priority_id" value="{trn_priority_id}">
+		  	<input type="hidden" name="trn_task_type_id" value="{trn_task_type_id}">
+		  	<input type="hidden" name="return_page" value="{return_page}">
+		  	<input type="hidden" name="rp" value="{rp}">
+		  	</td>
+  			
+		</tr>
+		<style>
+	       .eediv {position: relative; width:400px; height:100px;}
+	       .ediv {position: absolute; width:400px; height:100px; overflow: auto;}
+	    </style>
+		<tr>
+			<td>
+				<div id="extra" valign="top" name="extra" style="positon:absolute; display:none;">
+				<table CELLSPACING='0' style="position:absolute; border-color:black;border-style:solid; border-color:#333333; width:400px; height:100px; z-index:500;background-color:white; border-width: 2px; left: 300px">
+					<tr>
+						<td><img src="images/tr.gif" width="1" height="1"></td>
+						<td colspan=4 height="100" id='table_extra' style="display:''; z-index:500;">
+							 <div class='eediv'><div class='ediv' id='div_extra'></div></div>
+							 <input type="button" name='ok' value='&nbsp;Ok&nbsp;'
+								onclick="javascript:ok_extra();">
+							<input type=button id='id_cancel_extra' value='Cancel' onclick="javascript:cancel_extra()">
+						</td>
+					</tr>
+				</table>
+				</div>
+				&nbsp;
+			</td>
+		</tr>
+	  	</form>
+	</table>
+	</a>
+
+    <!-- END FormForm -->
+
+  	<!-- BEGIN messages_block -->
+  	<br><div name="messages">
+  	<a name="messages"></a>
+
+  	<form name="MessageForm" method="POST" action="edit_task.php?task_id={task_id}#messages">
+
+  		<input type="hidden" name="FormName" value="MessageForm">
+  		<input type="hidden" name="tasksArray" id="tasksArray" value="">
+  		<input type="hidden" name="priorities_changed" value="0">
+  		<input type="hidden" name="task_id" id="task_id" value="{task_id}">
+
+  		<!-- Transit parameters -->
+
+  		<input type="hidden" name="completion" value="{completion}">
+  		<input type="hidden" name="PK_task_id" value="{PK_task_id}"/>
+	  	<input type="hidden" name="trn_task_status_id" value="{trn_task_status_id}">
+	  	<input type="hidden" name="trn_project_id" value="{trn_project_id}">
+	  	<input type="hidden" name="trn_priority_id" value="{trn_priority_id}">
+	  	<input type="hidden" name="trn_task_type_id" value="{trn_task_type_id}">
+	  	<input type="hidden" name="trn_user_id" value="{trn_user_id}">
+
+	  	<input type="hidden" name="return_page" value="{return_page}">
+	  	<input type="hidden" name="rp" value="{rp}">
+      <table class="FormTABLE" width="100%" border=0>
+  	  	<tr>
+	    	<td class="FormHeaderTD" colspan="2">
+
+	      		<table width="100%" cellspacing="0" cellpadding="0" border=0>
+	        		<tr>
+	          			<td align="center"><font class="FormHeaderFONT">Messages</font></td>
+	          			<td align="right"><a href="#task" class="link2">Task</a></td>
+	        		</tr>
+	      		</table>
+	    	</td>
+	  	</tr>
+	  	<tr>
+	    	<td class="FieldCaptionTD" valign="top" nowrap style="padding-right:15px">
+	      		Total messages: <b>{total_messages}</b><br>
+
+	      		<!-- BEGIN message_shortcut -->
+	      		&nbsp; - <a href="#{message_number}">{first_name} {last_name}: {message_status}</a><br>
+	      		<!-- END message_shortcut -->
+	    	</td>
+	    	<td align="right" width="100%">
+	      		<textarea ONSELECT="storeCaret(this);" ONCLICK="storeCaret(this);" ONKEYUP="storeCaret(this);" name ="message" cols="110" rows="20"  style="width:100%">{last_message}</textarea>
+	    	</td>
+    	  </tr>
+
+	  	  <tr><td colspan=2 align="right">
+		<table width="100%" border=0 cellpadding=1 cellspacing=0>
+		<tr>
+			<td width="20%">&nbsp;</td>
+			<td width="10%" onmousedown="roll('b1','d1');" class="menuact"><div id="b1" class="noborder"><nobr>Reassign Task</nobr></div></td>
+			<td width="10%" onmousedown="roll('b2','d2');" class="menu"><div id="b2"><nobr>Send message</nobr></div></td>
+			<td style='display:{report_display}' width="10%" onmousedown="roll('{report_b_id}','{report_d_id}');" class="menu"><div id="{report_b_id}"><nobr>Report bug</nobr></div></td>
+
+			<td style='display:{resolve_display}' width="10%" onmousedown="roll('{resolve_b_id}','{resolve_d_id}');" class="menu"><div id="{resolve_b_id}"><nobr>Resolve bug</nobr></div></td>
+			<td width="10%" onmousedown="roll('b4','d4');" class="menu"><div id="b4"><nobr>Task done</nobr></div></td>
+			<td width="10%" onmousedown="roll('b6','d6');" class="menu"><div id="b6"><nobr>Task Tested</nobr></div></td>
+			<td width="10%" onmousedown="roll('b7','d7');" class="menu"><div id="b7"><nobr>Document</nobr></div></td>
+			<td width="10%" onmousedown="roll('b5','d5');" class="menu"><div id="b5"><nobr>Modify task</nobr></div></td>
+			<!-- BEGIN quotations_tab --><td width="10%" onmousedown="roll('b8','d8');" class="menu"><div id="b8"><nobr>Quotations</nobr></div></td><!-- END quotations_tab -->
+		</tr>
+		<tr>
+			<td colspan="9" class="cont" width=100%>
+		<div id="d1" style="display:none"><!--	reassign task d --></div>
+		<div id="d2" style="display:none"><!--	send message div--></div>
+		<div id="{report_d_id}" style="display:none"><!--	report bug div 	--></div>
+		<div id="d4" style="display:none"><!--	task done div 	--></div>
+		<div id="d6" style="display:none"><!--	task tested div --></div>
+		<div id="d7" style="display:none"><!--	task document --></div>
+		<div id="d5" style="display:none"><!--	modify task div --></div>
+		<div id="d8" style="display:none"><!--	quotations div --></div>
+		<div id="{resolve_d_id}" style="display:none"><!--	resolve bug div --></div>
+
+	
+	    <table width=100% border=0>
+		    <tr><td valign="top" width=400 nowrap>
+		      <input type="button" value="Clear" onClick="message.value='';">
+		      <input type="reset"  value="Reset">
+		      <!--<input type="submit" value="Move to Wishlist" name="towish">-->
+		      <input type="hidden" name="hash" value="{hash}"/>
+		      <input type="button" value="Attach Files" onClick="openUpload({total_messages});">
+		      <input style='display:inline' type="button" value="Quote" onClick='message.value = ">" + (message.value).replace(/\n/g,  "\n>")'>
+		    </td>
+		    <td valign="top">
+			    <div id="divAttached"></div>
+		    </td>
+		    <td valign="bottom" colspan="2" align="right">
+		      <table>
+		        <tr>
+					<td align="right">Reassign task to: </td>
+					<td align="right"><select name="responsible_user_id" style="width:150px" onChange="setPriorities();if (document.getElementById('tasksList').style.display == 'block') setTaskArr();">
+					<!-- BEGIN short_list_user --><option value="{ID}" {Selected}>{Value}</option>
+        			<!-- END short_list_user -->
+        			</select></td>
+		        </tr>
+				<tr id="tr_priorities" style="display:">
+					<td align=right><font class="FieldCaptionFONT">Priority:</font></td>		        
+		        	<td>
+		        		<select name="priority_id" onChange="changeTaskPosition(this.options[this.selectedIndex].value);">
+		        		</select>		        	
+		        	<!-- BEGIN show_tasks -->
+					<a href="#" onCLick="OnOff();return false;">Set Priorities</a>
+					<div id="tasksList" name="tasks" style="padding: 1px; display: none; position: absolute; background-color: white; left: 250px; top:1020px;">
+					</div>
+			  		</td></tr>
+					<!-- END show_tasks -->
+
+		        <tr id="tr_importance" style="display:none">
+		          <td align="right">Importance: </td>
+		          <td align="right"><select name="importance_value" style="width:150px">
+		          <option value = "1">Lowest
+		          <option value = "2">Low
+		          <option value = "3">Normal
+		          <option value = "4">High
+		          <option value = "5">Highest
+
+		          </select></td>
+		        </tr>
+
+
+		        <tr id="tr_agree" style="display:none">
+		          <td align="right">Bug Status: </td>
+		          <td align="right"><select name="bug_status" style="width:150px">
+		          <option value = "1" selected="selected">Fixed
+		          <option value = "2">Not a bug
+		          </select></td>
+		        </tr>
+
+		        <tr id="addTimeRow">
+		          <td align="right">Additional time needed <acronym title="acceptable time formats : 19; 19h; 19 hours; 3d 3h; 3 days 3 hours; 3,375d" lang="en">(?)</acronym> : </td>
+		          <td align="right"><input type="text" name="additional_time" style="width:150px;" value=""
+			  	onkeyup="checkAdditionalTime(this,document.MessageForm,document.MessageForm.elements.uhours,document.getElementById('submit_id'))"
+				onchange="checkAdditionalTime(this,document.MessageForm,document.MessageForm.elements.uhours,document.getElementById('submit_id'));"
+				onblur="checkAdditionalTime(this,document.MessageForm,document.MessageForm.elements.uhours,document.getElementById('submit_id'));"
+				/></td>
+       		          <input type="hidden" name="uhours" value="">
+		        </tr>
+
+
+		        <tr id="tr_status" style="display:none">
+		          <td align="right">Status: </td>
+		          <td align="right"><select name="task_status_id" style="width:150px">{statuses_list}</select></td>
+		        </tr>
+		        <tr id="tr_completion">
+		          <td align="right">Completion %: </td>
+		          <td align="right"><input type="text" maxlength="3" style="width:150px" name="task_completion" value="{task_completion}"/></td>
+		        </tr>
+	        
+		        <tr id="tr_price" style="display:none">
+		          <td align="right">Price: </td>
+		          <td align="right"><input type="text" maxlength="8" style="width:150px" name="task_cost" value="{task_cost}"/></td>
+		        </tr>
+		        <tr id="tr_estimate" style="display:none">
+		          <td align="right">Estimate: </td>
+		          <td align="right"><input type="text" maxlength="8" style="width:150px" name="task_estimated_hours" value="{estimated_hours}" maxlength="14"
+				onkeyup="checkAdditionalTime(this,document.MessageForm,document.MessageForm.elements.uhours_estimate,document.getElementById('submit_id'))"
+				onchange="checkAdditionalTime(this,document.MessageForm,document.MessageForm.elements.uhours_estimate,document.getElementById('submit_id'));"
+				onblur="checkAdditionalTime(this,document.MessageForm,document.MessageForm.elements.uhours_estimate,document.getElementById('submit_id'))" />
+					<input type="hidden" name="uhours_estimate" value="{estimated_hours_value}">
+
+			</td>
+		          
+		          
+		          </td>
+		          
+		          
+		        </tr>
+		        
+		        <tr id="tr_deadline" style="display:none">
+		          <td align="right">Deadline: </td>
+		          <td align="right">
+		          	<input type="text" name="message_day" size="1" maxlength="2" value="{DAY}">
+        			<select name="message_month" style="width:78px">{MONTH}</select>
+        			<input type="text" name="message_year" size="1" maxlength="2" value="{YEAR}">
+				</td>
+		        </tr>
+		        <tr>
+		          <td colspan="2" align="right"><input type="submit" id="submit_id" value="Submit Message" style="width:150px" onclick="putTasks();"></td>
+		        </tr>
+		      </table>
+		    </td></tr>
+	    </table>
+	    </td>
+	  </tr>
+
+	  </form>
+	  </table>
+	  </td></tr>
+
+	  </table></a></td></tr>
+
+			<script type="text/javascript">
+			<!--
+			document.MessageForm.elements.additional_time.value="";
+
+			var j;
+			for(j=1;j<=7;j++)
+			if (document.getElementById('b'+j).className=="noborder")
+			{
+				MkValues(j-1);
+			}
+			//-->
+			</script>
+
+
+  <!-- BEGIN single_message -->
+
+    <br><br>
+
+    <div name="{message_number}">
+
+    <table cellspacing="0" cellpadding="0" border="0" bgcolor="#F0F0F0" width="100%">
+      <tr>
+        <td class="FieldCaptionTD" width=400 valign="top">
+          <a name="{message_number}" href="edit_task.php?task_id={task_id}#{message_number}"><font class="LargeHeader">{message_status}</font></a><br>
+          <b>From:</b> <a href="mailto:{email}">{first_name} {last_name} ({email})</a><br>
+          <b>To:</b> {r_first_name} {r_last_name} ({r_email})<br>
+          <b>Sent:</b> {message_date}<br>
+        </td>
+        <td class="FieldCaptionTD" align="left" valign="top">
+          <b>{attachments_header}</b><br>
+		<!-- BEGIN attachments -->
+	   	  <a target="_blank" href="{cur_file}"><img src="images/{image_name}" border=0>&nbsp;{file_name}</a><br>
+		<!-- END attachments -->
+        </td>
+        <td align="right" valign="bottom">
+          <a href="#messages" onClick="reply();">Reply</a>
+        </td>
+      </tr>
+
+    </table>
+
+    {message}
+
+
+    </div>
+  <!-- END single_message -->
+
+  </div>
+  <!-- END messages_block -->
+
+<script language="javascript">
+//OnOff();
+setPriorities();
+MkSubProjects(document.Form.elements.project_id.value,'sub_project_id');
+<!-- BEGIN set_sub_project -->
+document.Form.elements.sub_project_id.value={sub_project_id_value};
+<!-- END set_sub_project -->
+</script>
+
+</body>
+</html>

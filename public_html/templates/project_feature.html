@@ -1,0 +1,116 @@
+<script>
+	function showEdited(feature_id, title) {
+		$("#" + title + "_" + feature_id + "_html").hide();
+		$("#" + title + "_" + feature_id + "_edit").show();
+		$("#" + title + "_" + feature_id).val($("#" + title + "_html").html());
+	}
+	function hideEdited(feature_id, title) {
+		$("#" + title + "_" + feature_id + "_html").show();
+		$("#" + title + "_" + feature_id + "_edit").hide();
+	}
+	function saveEdited(feature_id, title) {
+		 $.ajax({
+			type: "POST",
+			url:  "project_feature.php?feature_id=" + feature_id,
+			data: "operation=save_feature_field&field_name=" + title + "&field_value=" + $("#" + title + "_" + feature_id).val(),
+			success: function(msg){
+				$("#" + title + "_" + feature_id + "_html").show();
+				$("#" + title + "_" + feature_id + "_edit").hide();
+				$("#" + title + "_" + feature_id + "_html").html($("#" + title + "_" + feature_id).val());
+			}
+		});
+	}
+	function showHistory(feature_id, title) {
+		newwindow=window.open("project_feature_history.php?feature_id=" + feature_id + "&field_name=" + title, 'History', 'height=500,width=600');
+		if (window.focus) {newwindow.focus()}
+		return false;
+	}
+</script>
+
+<div id="feature_{feature_id}">
+	<h1>
+	<div id="feature_title_{feature_id}_html">{feature_title}</div>
+	<div id="feature_title_{feature_id}_edit" style="display:none;">
+		<input type="text" id="feature_title_{feature_id}" style="width:300px;" value='{feature_title}'><input type="button" value="Save" onclick="saveEdited('{feature_id}', 'feature_title');"><input type="button" value="Cancel" onclick="hideEdited('{feature_id}', 'feature_title');">
+	</div>
+	<a href='#' onclick="showEdited('{feature_id}', 'feature_title');">[edit]</a> <a href='#' onclick="showHistory('{feature_id}', 'feature_title');">[history]</a><h1>
+	
+
+	<table class="FormTABLE" cellpadding="2" border="0" width="600px">
+		<tr>
+			<td class="ColumnTD" nowrap="" align="right" width="50px">
+				<font class="ColumnFONT">Created:</font>
+			</td>
+			<td class="DataTDE" nowrap="" align="left" width="150px">	
+				{creation_date}
+			</td>
+			<td valign="top" rowspan="5" width="400px">
+				<h2>Description <a href='#' onclick="showEdited('{feature_id}', 'feature_description');">[edit]</a> <a href='#' onclick="showHistory('{feature_id}', 'feature_description');">[history]</a></h2>
+				<div id="feature_description_{feature_id}_html">{feature_description}</div>
+				<div id="feature_description_{feature_id}_edit" style="display:none;">
+					<textarea id="feature_description_{feature_id}" style="width:100%; height:100px;">{feature_description}</textarea>
+					<input type="button" value="Save" onclick="saveEdited('{feature_id}', 'feature_description');">
+					<input type="button" value="Cancel" onclick="hideEdited('{feature_id}', 'feature_description');">
+				</div>
+								
+				<h2>How to test <a href='#' onclick="showEdited('{feature_id}', 'feature_howtotest');">[edit]</a> <a href='#' onclick="showHistory('{feature_id}', 'feature_howtotest');">[history]</a></h2>
+				<div id="feature_howtotest_{feature_id}_html">{feature_howtotest}</div>
+				<div id="feature_howtotest_{feature_id}_edit" style="display:none;">
+					<textarea id="feature_howtotest_{feature_id}" style="width:100%; height:100px;">{feature_howtotest}</textarea>
+					<input type="button" value="Save" onclick="saveEdited('{feature_id}', 'feature_howtotest');">
+					<input type="button" value="Cancel" onclick="hideEdited('{feature_id}', 'feature_howtotest');">
+				</div>
+				
+				<h2>Modified files <a href='#' onclick="showEdited('{feature_id}', 'feature_files');">[edit]</a> <a href='#' onclick="showHistory('{feature_id}', 'feature_files');">[history]</a></h2>
+				<div id="feature_files_{feature_id}_html">{feature_files}</div>
+				<div id="feature_files_{feature_id}_edit" style="display:none;">
+					<textarea id="feature_files_{feature_id}" style="width:100%; height:100px;">{feature_files}</textarea>
+					<input type="button" value="Save" onclick="saveEdited('{feature_id}', 'feature_files');">
+					<input type="button" value="Cancel" onclick="hideEdited('{feature_id}', 'feature_files');">
+				</div>
+				
+			</td>
+		</tr>
+		<tr>
+			<td class="ColumnTD" nowrap="" align="right">
+				<font class="ColumnFONT">By:</font>
+			</td><td class="DataTDE" nowrap="" align="left">
+				{created_user}
+			</td>
+		</tr>
+		<tr>
+			<td class="ColumnTD" nowrap="" align="right">
+				<font class="ColumnFONT">Status:</font>
+			</td><td class="DataTDE" nowrap="" align="left">
+				{feature_status}
+			</td>
+		</tr>
+		<tr>
+			<td class="ColumnTD" nowrap="" align="right">
+				<font class="ColumnFONT">Related Task:</font>
+			</td><td class="DataTDE" nowrap="" align="left">
+				<a href="edit_task.php?task_id={feature_task_id}" target="_blank">{feature_task_id}</a>
+			</td>
+		</tr>
+		<tr>
+			<td valign="top" class="ColumnTD" nowrap="" align="right">
+				<font class="ColumnFONT">
+					Marks:
+				</font>
+			</td>
+			<td valign="top" class="DataTDE" nowrap="" align="left">				
+				<ul>
+					<li>
+						{feature_in_cvs}
+					</li>
+					<li>
+						{feature_on_test}
+					</li>
+					<li>
+						{feature_on_live}
+					</li>
+				</ul>				
+			</td>
+		</tr>
+	</table>	
+</div>

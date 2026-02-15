@@ -1,0 +1,68 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body></body>
+<h1>{feature_title}</h1>
+
+<table width="100%" class="FormTABLE" cellpadding="2" border="0">
+	<tr>
+		<td valign="top">
+			<table class="FormTABLE" cellpadding="2" border="0">
+				<tr>
+					<td class="ColumnTD" nowrap="" align="right">
+						<font class="ColumnFONT">Created:</font>
+					</td>
+					<td class="DataTDE" nowrap="" align="left">	
+						{creation_date}
+					</td>
+				</tr>
+				<tr>
+					<td class="ColumnTD" nowrap="" align="right">
+						<font class="ColumnFONT">By:</font>
+					</td>
+					<td class="DataTDE" nowrap="" align="left">	
+						{created_user}
+					</td>
+				</tr>
+			</table>
+		</td>
+		<td valign="top">
+			<!--BEGIN no_history-->
+			<h2>No Changes</h2>
+				{current_value}
+			<!--END no_history-->
+			<!--BEGIN history-->
+		
+			<table class="FormTABLE" cellpadding="2" border="0">
+				<tr>
+					<td align="center" class="ColumnTD">
+						<font class="ColumnFONT">Init</font>
+					</td>
+				<tr>
+				<tr>
+					<td class="DataTDE">
+						{init_value}
+					</td>
+				<tr>
+				<!--BEGIN history_row-->
+				<tr>
+					<td align="center" class="ColumnTD">
+						<font class="ColumnFONT">{modified_date} by {modified_user}</font>
+					</td>
+				<tr>
+				<tr>
+					<td class="DataTDE">
+						{new_value}
+					</td>
+				<tr>
+				<!--END history_row-->
+							
+			</table>
+			<!--END history-->
+		</td>
+	</tr>
+</table>
+</body>
+</html>

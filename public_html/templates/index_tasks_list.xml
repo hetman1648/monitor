@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<tasksHTML><![CDATA[
+{ITEMPLATE=index_page_tasks_list.html}    
+]]></tasksHTML>
+<lunchesHTML><![CDATA[
+{ITEMPLATE=index_page_lunches.html}
+]]></lunchesHTML>
+<currentTaskHTML><![CDATA[
+{ITEMPLATE=current_task.html}
+]]></currentTaskHTML>
+<usersListHTML><![CDATA[
+{ITEMPLATE=index_page_users_list.html}
+]]></usersListHTML>
+<managerNoteHTML><![CDATA[
+{ITEMPLATE=index_page_manager_notes.html}
+]]></managerNoteHTML>
+</tasks>

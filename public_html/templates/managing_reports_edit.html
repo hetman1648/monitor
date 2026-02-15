@@ -1,0 +1,191 @@
+<html>
+
+<head>
+<title>
+	Control
+</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script language="javascript">
+	function DeleteReport(reportid)
+	{		if (reportid && confirm('Are you sure you want to delete this Report?')) {			document.location = "managing_reports_edit.php?operation=delete&report_id="+reportid;		}	}
+	function changePoints(pointsid)
+	{		document.frmManagerReportEdit.points.value = pointsid;	}
+	
+	function moveTask(oldBlock, newBlock)
+	{
+		var oldObject = null; var newObject = null;
+		if(oldBlock == 'av_user_tasks') {
+			oldObject = document.frmManagerReportEdit.av_user_tasks;
+		} else if (oldBlock == 'av_done_tasks') {
+			oldObject = document.frmManagerReportEdit.av_done_tasks;
+		} else { 
+			alert("Wrong object type"); return;
+		}
+		
+		if(newBlock == 'morning_note') {
+			newObject = document.frmManagerReportEdit.morning_note;
+		} else if (newBlock == 'evening_note') {
+			newObject = document.frmManagerReportEdit.evening_note;
+		} else {
+			alert("Wrong object type"); return;
+		}
+		
+		var selectedIndex = oldObject.selectedIndex;
+
+		if(selectedIndex == -1) {
+			alert('Please select block');
+		} else {
+			
+			while(oldObject.selectedIndex != -1)
+			{
+				var selectedIndex = oldObject.selectedIndex;
+				
+				txtarlen = newObject.value.length;
+				delimiter = "";
+				if (txtarlen>0) {
+					last_symbol = newObject.value.charAt(txtarlen-1);
+					if (last_symbol!="\n") {
+						delimiter = "\n";
+					}
+				}
+			
+				newObject.value = newObject.value+delimiter+oldObject.options[selectedIndex].value;
+				/*	newObject.options[newObject.length] = new Option(oldObject.options[selectedIndex].text, oldObject.options[selectedIndex].value);
+				newObject.options[newObject.length - 1].selected = true;*/
+				oldObject.options[selectedIndex] = null;
+			}
+		}
+	}
+	
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<table cellpadding="0" cellspacing="0" border="0" width="100%">
+	<!-- BEGIN error -->
+	<tr>
+ 		<td valign="top">
+ 			<div style="padding: 10px; background-color: red;"><font color=white>{err}</font></div>
+		</td>
+	</tr>
+	<!-- END error -->
+	<tr align="center">
+		<td>
+			<table class="FormTABLE" border="0" width="100%">
+			<form name="frmManagerReportEdit" action="managing_reports_edit.php" method="GET">
+			<input type="hidden" name="points" value="{points}">
+			<input type="hidden" name="manager_id" value="{manager_id}">
+			<input type="hidden" name="manager_name" value="{manager_name}">
+		    <input type="hidden" name="report_id" value="{report_id}">
+				<tr>
+					<td class="FormHeaderTD" colspan="2">
+						<font class="FormHeaderFONT">Manager Report</font></a>
+					</td>
+				</tr>
+				<tr>
+					<td class="ColumnTD" colspan="2">
+						<font class="ColumnFONT">Details</font>
+					</td>
+				</tr>
+				<tr>
+					<td class="DataTD">
+					    	Manager name:
+					</td>
+					<td class="DataTD" nowrap>
+							<b>{manager_name}</b>
+			      			<!--<select style="width:220px" name="manager_name" DISABLEd>{manager_list}</select>-->
+					</td>
+				</tr>
+				<tr>
+			    	<td>
+					    	User name: *
+					</td>
+			      		<td nowrap>
+			      			<select style="width:224px" name="user_name" {view_enable}>{user_list}</select>
+					</td>
+				</tr>
+				<tr>
+					<td>
+					    	Morning note: *
+					</td>
+				</tr>
+				<tr>
+					<td nowrap width="45%" valign="top" align="right">
+					<select name="av_user_tasks" multiple  size="6" style="width:100%;">
+					<!-- BEGIN av_user_tasks -->
+					<option style="color:{option_color};" value="{available_user_tasks_value}">{available_user_tasks_description}</option>
+					<!-- END av_user_tasks -->							 
+					</select>
+					<br>
+					<input type="button" value="  Add Task >>>  " onClick="moveTask('av_user_tasks','morning_note');" {view_enable}>
+					</td>
+					<td nowrap width="55%" valign="top">
+			      			<TEXTAREA NAME="morning_note" style="width:100%;" ROWS="7" COLS="77" {view_readonly}>{morning_note}</TEXTAREA>
+					</td>
+				</tr>
+				<tr>
+					<td>
+					    	Evening note: *
+					</td>
+				</tr>
+				<tr>
+				<td nowrap width="45%" valign="top" align="right">
+					<select name="av_done_tasks" multiple size="6" style="width:100%;">
+					<!-- BEGIN av_done_tasks -->
+					<option style="color:{option_color};" value="{available_done_tasks_value}">{available_done_tasks_description}</option>
+					<!-- END av_done_tasks -->
+					</select>
+					<br>
+					<input type="button" value="  Add Task >>>  " onClick="moveTask('av_done_tasks','evening_note');" {view_enable}>
+					</td>
+					<td nowrap width="55%" valign="top">
+			      			<TEXTAREA NAME="evening_note" style="width:100%;" ROWS="7" COLS="77" {view_readonly}>{evening_note}</TEXTAREA>
+					</td>
+				</tr>
+				<tr>
+					<td>
+					    	Add Date:
+					</td>
+					<td nowrap>
+			      			<input type="text" style="width:224px" name="date_added" value="{date_added}" {view_readonly}>
+			      			<A HREF="#" style="display:{display_start_calendar}"
+			      				onClick="setDateField(document.frmManagerReportEdit.date_added);
+			      				top.newWin = window.open('./scripts/calendar.html','cal',
+								'dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+								<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font>
+							</A>
+					</td>
+				</tr>
+				<tr><td class="DataTD">Daily points:</td><td class="DataTD">&nbsp;</td></tr>
+				<tr>
+					<td>
+						<div>{points_list}</div>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<input name="mailsend" type="checkbox" value="ON">&nbsp;Send email notification to user
+					</td>
+				</tr>
+				<tr align="right" height="50" valign="bottom">
+			    	<td colspan="2">
+			    		<!-- BEGIN control-->
+						<input type="submit" name="operation" value="{operation}">
+						<!-- BEGIN delete --><input type="button" value="Delete" {enable} onClick="DeleteReport({report_id})"><!-- END delete -->
+						<!-- END control-->
+						<input type="button" value="Cancel" onclick="javascript:document.location='{urlback}'">
+					</td>
+				</tr>
+
+			</form>
+			</table>
+		</td>
+	</tr>
+</table>
+
+</body>
+
+</html>

@@ -1,0 +1,40 @@
+<html>
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>  
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<!-- BEGIN error -->
+<table width="100%">
+	<tr>
+		<td align="center" style="background-color:#FFCCCC; color:red;">
+		{error_message}
+		<br><br>
+		</td>
+	</tr>
+</table>
+<!-- END error -->
+<table>
+<tr>
+   <td class="FormHeaderTD" colspan="4"><font class="FormHeaderFONT">Default statuses for {project_title}</font></td>
+</tr>
+<!-- BEGIN project_status -->
+<tr>
+   <td class="DataTD" align="left"><a href="edit_project_status.php?project_status_id={project_status_id}" style="color:{color};">{status_desc}</td>
+   <td class="DataTD" align="center">{completed}</td>
+   <td class="DataTD" align="center"><a href="edit_project_status.php?project_status_id={project_status_id}">edit</a></td>
+   <td class="DataTD" align="center"><a href="project_statuses.php?project_status_id={project_status_id}&action=delete">delete</a></td>
+</tr>
+<!-- END project_status -->
+<tr class="FieldCaptionTD">
+   <td class="FieldCaptionTDclass=" colspan="4"><a href="edit_project_status.php?parent_project_id={parent_project_id}">Add New</td>
+</tr>
+
+</table>
+
+</body>
+</html>

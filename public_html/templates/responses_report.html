@@ -1,0 +1,191 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.period_selected.selectedIndex = 0;
+		document.frmFilter.start_date.value = "";
+		document.frmFilter.end_date.value = "";
+		document.frmFilter.team.value = "";
+		document.frmFilter.person_selected.value = 0;
+		document.frmFilter.project_selected.value = 0;
+		
+	}
+	
+	function setPeriod(iPeriod)
+	{
+		document.frmFilter.period_selected.selectedIndex = iPeriod;
+	}
+	
+	function selectPeriod()
+	{
+		var period = document.frmFilter.period_selected.options[document.frmFilter.period_selected.selectedIndex].value;
+		var startDate = ""; var endDate = "";
+		if (period == "none") {
+			startDate = "{start_date}"; endDate = "{end_date}";
+		} else if(period == "this_week") {
+			startDate = "{this_week_start}"; endDate = "{this_week_end}";
+		} else if(period == "last_week") {
+			startDate = "{last_week_start}"; endDate = "{last_week_end}";
+		} else if(period == "prev_week") {
+			startDate = "{prev_week_start}"; endDate = "{prev_week_end}";
+		} else if(period == "this_month") {
+			startDate = "{this_month_start}"; endDate = "{this_month_end}";
+		} else if(period == "last_month") {
+			startDate = "{last_month_start}"; endDate = "{last_month_end}";
+		} else if(period == "prev_month") {
+			startDate = "{prev_month_start}"; endDate = "{prev_month_end}";
+		} else if(period == "this_year") {
+			startDate = "{this_year_start}"; endDate = "{this_year_end}";
+		}
+		document.frmFilter.start_date.value = startDate;
+		document.frmFilter.end_date.value = endDate;
+	}
+	
+
+	
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+<table border=0>
+	<tr><td valign="top">
+		<form name="frmFilter" action="responses_report.php">		
+		<table border=0 cellpadding=2 cellspacing=0>
+		<tr>
+			<td align="right">
+				Select period:
+			</td>              
+			<td>
+				<select name="period_selected" style="width:150px" onChange="selectPeriod()">
+					<option value="none">-------- Period --------</option>
+					{periods}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Start Date: 
+			</td>
+			<td>
+				<input type="text" name="start_date" value="{start_date}" style="width:150px" onChange="setPeriod(0)">
+					
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.start_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0></A>
+				
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				End Date: 
+			</td>
+			<td>
+				<input type="text" name="end_date" value="{end_date}" style="width:150px" onChange="setPeriod(0)">
+
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.end_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0></A>
+
+			</td>
+		</tr>
+<!--		<tr>
+			<td align="right">
+				Filter by project:
+			</td>              
+			<td>
+				<select name="project_selected" style="width:150px">
+					<option value="">----- All projects -----</option>
+					{projects}
+				</select>
+			</td>
+		</tr>-->
+		<tr>
+			<td align="right">
+				Team: 
+			</td>
+			<td>
+				<select name="team" style="width:150px">
+				<option value="all" {aselected}>All teams</option>
+				<option value="viart" {vselected}>ViArt team</option>
+				<option value="yoonoo" {yselected}>YooNoo team</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Show tasks
+			</td>              
+			<td>
+				<input name="tasks" type="checkbox" {tasks_checked}/>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter ">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>
+	</td>
+		
+
+	<td>
+		<table border="0" cellpadding="4" class="FormTABLE">
+		<tr>
+			<td class="FormHeaderTD" colspan="{colspan}"><font class="FormHeaderFONT">Responses</font></td>
+		</tr>
+		<tr align="center">
+			<td class="ColumnTD"><font class="ColumnFONT">Manager</font></td>
+			<!-- BEGIN date_column_header -->
+			<td class="ColumnTD"><font class="ColumnFONT">Date</font></td>
+			<!-- END date_column_header -->
+			<td class="ColumnTD"><font class="ColumnFONT">Tasks</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">'Assigned to myself'</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">%</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{average_}Response time</font></td>
+		</tr>
+		<!-- BEGIN manager_summary -->
+		<tr align="center">			
+			<td class="DataTDP" align="left"><b>{manager_name}</b></td>
+			<!-- BEGIN date_column_summary -->
+			<td class="DataTDP">&nbsp;</td>
+			<!-- END date_column_summary -->
+			<td class="DataTDP">{tasks_count}</td>
+			<td class="DataTDP" align="right">{assign_to_myself_tasks}</td>
+			<td class="DataTDP" align="right">{assign_to_myself_percent}</td>
+			<td class="DataTDP" align="right">{avg_response_time}</td>
+		</tr>		
+		<!-- BEGIN manager_records -->
+		<tr align="center">
+			<td class="DataTD">&nbsp;</td>
+			<td class="DataTD">{date_added}</td>
+			<td class="DataTD" align="left"><a href="edit_task.php?task_id={task_id}">{task_title}</a></td>
+			<td class="DataTD" align="right" colspan="2">{assign_to_myself_desc}</td>
+			<td class="DataTD" align="right">{response_time}</td>
+		</tr>
+		<!-- END manager_records -->
+		<!-- END manager_summary -->
+		<!-- BEGIN no_records -->
+		<tr align="center">
+			<td class="DataTD" colspan="{colspan}">No records for selected period</td>
+		</tr>
+		<!-- END no_records -->
+		</table>
+		<br>
+	</td>		
+</tr>
+</table>		
+</div>
+</body>
+</html>

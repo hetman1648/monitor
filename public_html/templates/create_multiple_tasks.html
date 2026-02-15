@@ -1,0 +1,246 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script type="text/javascript" src="./scripts/doubleCombo.js"></script>
+<script language="javascript">
+{options_js}
+
+var dicUsers = new Array();
+{dicUsers}
+
+function setPriorities() {
+	userId = document.Form.responsible_user_id.options[document.Form.responsible_user_id.selectedIndex].value;
+	if (userId != null)
+	{
+		if (userId > 0)
+		{
+			//maxPriority = dicUsers.Item(userId);
+			maxPriority = dicUsers[userId];
+
+			if (maxPriority == null) maxPriority = 1;
+			document.Form.priority_id.options.length = 0;
+			for (i = 1; i <= maxPriority; i++)
+			{
+				var op = new Option(i,i);
+				document.Form.priority_id.options[i-1] = op;
+			}
+			document.Form.priority_id.selectedIndex = maxPriority - 1;
+			document.Form.priority_id_text.value = maxPriority;
+			document.Form.max_priority_id.value = maxPriority;
+		}
+	}
+}
+
+function  setPriorityText(value) {
+	document.Form.priority_id_text.value = value;
+}
+
+function  setPrioritySelect(value) {
+	maxPriority = document.Form.max_priority_id.value;
+
+	if (value.length == 0) document.Form.priority_id.selectedIndex = maxPriority - 1;
+	value = parseInt(value);
+	if (isNaN(value) || value < 1 || value > parseInt(maxPriority)) {
+
+	document.Form.priority_id.selectedIndex = maxPriority - 1;
+	setPriorityText(maxPriority);
+	}
+	else {
+		document.Form.priority_id.selectedIndex = value - 1;
+		setPriorityText(value);
+	}
+}
+
+function set_attached(files, current) {
+	div = document.getElementById("divAttached");
+	div.innerHTML = files;
+	insertAtCaret('['+current+']');
+}
+
+function storeCaret (textEl) {
+	if (textEl.createTextRange) textEl.caretPos = document.selection.createRange().duplicate();
+}
+
+function insertAtCaret (text) {
+ 	textEl = document.Form.task_desc;
+ 	if (textEl.createTextRange && textEl.caretPos)
+ 	{
+  		var caretPos = textEl.caretPos;
+  		caretPos.text = caretPos.text.charAt(caretPos.text.length - 1) == ' ' ? text + ' ' : text;
+ 	}
+ 	else if (textEl.createTextRange) { textEl.value = textEl.value + text}
+ 	else textEl.value = text;
+}
+
+function openUpload(message_number) {
+	var UploadWin = window.open ('upload.php?message_number='+message_number, 'UploadWim', 'toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=yes,resizable=yes,width=500,height=400');
+	UploadWin.focus();
+}
+
+function set_form_focus() {
+	// Set focus on first title field
+ 	//document.Form.task_title[0].select();
+}
+
+function reply() {
+  	document.MessageForm.message.focus();
+  	document.MessageForm.message.select();
+}
+
+function onSubmitProceed() {
+	var parent_project_id = document.getElementById("parent_project_id");
+	var sub_project_id = document.getElementById("sub_project_id");
+	var project_id = document.getElementById("project_id");
+
+	if (parent_project_id != null && sub_project_id != null && project_id != null) {
+		if (parent_project_id.selectedIndex == 0) {
+			alert("Select project please");
+			return false;
+		}
+		if (sub_project_id.selectedIndex >= 0) {
+			project_id.value = sub_project_id.options[sub_project_id.selectedIndex].value;
+		} else if (parent_project_id.selectedIndex >= 0) {
+			project_id.value = parent_project_id.options[parent_project_id.selectedIndex].value ;
+		}
+		return true;
+	}
+
+
+	return false;
+}
+
+window.onload = set_form_focus;
+
+</script>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+    <!-- BEGIN FormForm -->
+  <a name="task">
+  <table class="FormTABLE">
+  <tr>
+    <td class="FormHeaderTD" colspan="6">
+      <table width="100%" cellspacing="0" cellpadding="0">
+        <tr>
+          <td align="center">
+            <font class="FormHeaderFONT">Create Multiple Tasks</font>
+          </td>
+          <td align="right">
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- BEGIN FormError -->
+  <tr><td class="DataTD" colspan="6"><font class="DataFONT">{sFormErr}<font></td></tr>
+  <!-- END FormError -->
+
+  <form method="POST" action="{FileName}" name="Form" onsubmit="return onSubmitProceed()">
+
+  <tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT">Responsible person *</font></td>
+  	  <td class="DataTD" colspan="5">
+        <select name="responsible_user_id" onChange="setPriorities()"><!-- BEGIN LBresponsible_user_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBresponsible_user_id --></select>
+      </td>
+  </tr>
+  <tr>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Project *</font></td>
+      <td class="DataTD" colspan="5">
+        <select name="parent_project_id" id="parent_project_id"><!-- BEGIN LBproject_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBproject_id --></select>
+      </td>
+  </tr>
+  <tr>
+    <td class="FieldCaptionTD">Sub-Project</td>
+    <td class="DataTD">
+      <select name="sub_project_id" id="sub_project_id" style="width:150px"><!-- BEGIN LBsubproject_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBsubproject_id --></select>
+    </td>
+  </tr>
+
+<!-- Title and descriptions rows -->
+
+<!-- BEGIN row -->
+
+  <tr>
+	  <td class="FieldCaptionTD" valign="top"><font class="FieldCaptionFONT">Title *</font></td>
+      <td class="DataTD" valign="top">
+        <input type="text" name="task_title[]" maxlength="255" value="{task_title}" size="50">
+     </td>
+	<td class="FieldCaptionTD" valign="top" {trial_adds}><font class="FieldCaptionFONT">Description</font></td>
+      <td class="DataTD" valign="top" {trial_adds}>
+      <textarea name="task_desc[]" cols="40" rows="5">{task_desc}</textarea>
+      </td>
+		<td class="FieldCaptionTD" valign="top" {trial_adds}><font class="FieldCaptionFONT">Date To Complete</font></td>
+      <td class="DataTD" valign="top" {trial_adds}>
+		<input type="text" size="10" name="date_to_complete_{i}" maxlength="10" value="{date_to_complete}" readonly>
+		<a href="#" onClick="setDateField(document.Form.date_to_complete_{i}); top.newWin = window.open('./scripts/calendar.html','cal', 'dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+			<img src="./images/calendar.gif" border=0></a>
+
+      </td>
+  </tr>
+  <!-- BEGIN for_trial -->
+  <tr>
+  	<td class="FieldCaptionTD" valign="top"><font class="FieldCaptionFONT">MCC *</font></td>
+      <td class="DataTD" valign="top">
+        <input type="text" name="mcc[]" maxlength="255" value="{mcc}" size="50">
+     </td>
+  </tr>
+  <tr>
+  	<td class="FieldCaptionTD" valign="top"><font class="FieldCaptionFONT">Email *</font></td>
+      <td class="DataTD" valign="top">
+        <input type="text" name="email[]" maxlength="255" value="{email}" size="50">
+     </td>
+  </tr>
+  <tr height=20>
+  </tr>
+  <!-- END for_trial -->
+<!-- END row -->
+
+<!-- /Title and descriptions rows -->
+  <tr>
+
+  <!-- ***   Buttons   ***  -->
+
+  <td colspan="4" align="right">
+  <input type="hidden" value="{user_id}" name="user_id">
+
+  <!-- BEGIN FormInsert -->
+  <input type="hidden" value="insert" name="FormAction"/>
+  <input type="submit" value="Add Tasks" onclick="document.forms.Form.FormAction.value = 'insert';"/>
+  <!-- END FormInsert -->
+
+  <!-- BEGIN FormCancel -->
+  <input type="submit" value="Cancel" onclick="document.forms.Form.FormAction.value = 'cancel';"/>
+  <!-- END FormCancel -->
+
+  <input type="hidden" name="FormName" value="Form"/>
+  </td>
+
+  <input type="hidden" name="PK_task_id" value="{PK_task_id}"/>
+  <input type="hidden" name="task_id" value="{task_id}"/>
+
+  <!-- Transfer parameters -->
+
+  <input type="hidden" name="trn_task_status_id" value="{trn_task_status_id}">
+  <input type="hidden" name="trn_project_id" value="{trn_project_id}">
+  <input type="hidden" name="trn_priority_id" value="{trn_priority_id}">
+  <input type="hidden" name="trn_task_type_id" value="{trn_task_type_id}">
+  <input type="hidden" name="project_id" id="project_id" value="{project_id}">
+  </tr>
+  </form>
+  </table>
+<script language="javascript">
+//<!--
+var dc = new DoubleCombo( 'parent_project_id', 'sub_project_id', options);
+var sub_project_id = document.getElementById("sub_project_id");
+if (sub_project_id != null && sub_project_id.options.length == 0) {
+	sub_project_id.disabled = true;
+}
+//-->
+</script>
+
+</body>
+</html>

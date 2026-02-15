@@ -1,0 +1,199 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+
+<style>
+	.Spent1 {width:18px; background-color: #66CCFF}
+	.Spent2 {width:18px; background-color: #3388FF}
+	.Spent3 {width:18px; background-color: #0033DD}
+	.Spent4 {width:18px; background-color: #000099}
+	.DayoffTD {background-color: #F0F0F0; border-style: inset; border-width: 0; font-size: 10pt}
+</style>
+<!--
+<style>
+	.Spent1 {width:18px; background-color: #8FFFAF}
+	.Spent2 {width:18px; background-color: #33DD33}
+	.Spent3 {width:18px; background-color: #0033DD}
+	.Spent4 {width:18px; background-color: #000066}
+</style>
+-->
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.year_selected.value = "";
+		document.frmFilter.month_selected.value = "";
+		document.frmFilter.person_selected.value = "";
+	}
+	
+	var UserTeam = new Array();
+	var UserID = new Array(); 
+	var UserName = new Array();	
+	<!-- BEGIN PeopleArray -->
+	UserTeam[{ID}]={IDteam};	UserID[{ID}]={IDuser};		UserName[{ID}]="{user_name}";<!-- END PeopleArray -->
+
+function MkPeopleList(index,plist)
+{
+	var aCurrValues = UserID;
+	var nCurrValuesCnt = (aCurrValues ? aCurrValues.length : 0);
+	var oList = document.forms["frmFilter"].elements["person_selected"];
+	oList.length = 0;
+	
+	var team=1;
+	switch (index)
+	{
+		case "yoonoo"	: team= 0;break;
+		case "viart"	: team= 1;break;
+		case "all"	: team=-1;break;
+		default		: team= 0;
+	}
+	
+	var txt="";
+	
+	if (nCurrValuesCnt)
+	{
+		for (i = -1; i < nCurrValuesCnt; i++)
+		{
+			if ((UserID[i] && ((team==-1)||(team>-1 && UserTeam[i]==team) )  ) || i==-1) 
+			{
+				txt+="\n"+i;
+				if (document.createElement)
+				{
+					if (i>=0)
+					{
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = UserName[i];
+						newListOption.value = UserID[i];
+					} else {
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = "------ All people ------";
+						newListOption.value = "0";
+					}
+					(oList.options.add) ? oList.options.add(newListOption) : oList.add(newListOption, null);
+				}
+			}	
+		}
+	}  
+}
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+	<div align="right" style="float: right" id="legend">
+	<table style="border-style:solid; border-width:1">
+		<tr><td class="ColumnTD" colspan=2 align="center"><font class="ColumnFONT">Legend:</font></td></tr>
+		<tr><td class="DataTD">less than 2 hours spent</td><td class="Spent1"></td></tr>
+		<tr><td class="DataTD">from 2 to 4 hours spent</td><td class="Spent2"></td></tr>
+		<tr><td class="DataTD">from 4 to 6 hours spent</td><td class="Spent3"></td></tr>
+		<tr><td class="DataTD">more than 6 hours spent</td><td class="Spent4"></td></tr>
+	</table>
+	</div>
+
+		<form name="frmFilter" action="tasks_report.php">
+		<table border=0>
+		<tr>
+			<td align="right">
+				Select year:
+			</td>              
+			<td>
+				<select name="year_selected" style="width:150px">
+					<option value="">--------- Year ---------</option>
+					{years}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select month:
+			</td>              
+			<td>
+				<select name="month_selected" style="width:150px">
+					<option value="">-------- Month --------</option>
+					{months}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select Team: 
+			</td>
+			<td>
+				<select name="team" style="width:150px" onchange="MkPeopleList(this.value,'id_people')">
+				<option value="all" {aselected}>All teams</option>
+				<option value="viart" {vselected}>ViArt team</option>
+				<option value="yoonoo" {yselected}>YooNoo team</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Filter by person:
+			</td>              
+			<td>
+				<select name="person_selected" style="width:150px" id="id_people">
+					<option value="">------ All people ------</option>
+					{people}
+				</select>
+			</td>
+		</tr>	
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		<script language="javascript">
+		<!--
+			MkPeopleList(document.frmFilter.elements["team"].value,'id_people');
+			document.frmFilter.elements["person_selected"].value={person_selected};
+			//--!>
+		</script>
+		</table>
+		</form>
+</div>
+
+<!-- BEGIN result -->
+<table class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="{num_cols}"><font class="FormHeaderFONT">Tasks Report</font></td>
+    </tr>
+	<!-- BEGIN records_header -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap colspan="2"><font class="ColumnFONT">Task</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Time spent</font></td>
+	    <!-- BEGIN records_header_day -->
+	    <td class="ColumnTD" nowrap style="width:18px"><font class="ColumnFONT">{i_day}</font></td>
+	    <!-- END records_header_day -->
+	</tr>
+	<!-- END records_header -->
+	    
+    <!-- BEGIN records -->
+    <!-- BEGIN records_person -->
+    <tr  align="center">
+    	<tr><td>&nbsp;</td></tr>
+	   	<td class="DataTD" nowrap align="left" colspan="{num_cols}"><font class="GridRecordHeader"><b>{user_name}</b></font></td>
+	</tr>
+	<!-- END records_person -->
+	<tr>
+		<td style="width:10px"></td>
+	    <td class="DataTD"><font class="DataFONT"><a href="./edit_task.php?task_id={task_id}">{task_title}</a></font></td>		
+	    <td class="DataTD" nowrap align="center"><font class="DataFONT">{spent_hours}</font></td>
+    	{records_days}
+	</tr>
+	<!-- END records -->       
+
+	<!-- BEGIN no_records -->
+	<tr>
+		<td colspan="{num_cols}" class="Headline" align="center">
+			No data for this period
+		</td>
+	</tr>
+	<!-- END no_records -->
+</table>
+<!-- END result -->
+</body>
+</html>

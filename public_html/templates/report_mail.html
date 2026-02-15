@@ -1,0 +1,33 @@
+<html><head><title>Daily reports</title></head>
+<style>
+.HeaderTD {background-color: navy; text-align: center; border-style: outset; border-width: 1; font-size: 12pt; color: #FFFFFF; font-weight: bold;}
+.DataTD {background-color: #f6f2f2; border-style: inset; border-width: 0; font-size: 10pt; padding: 0.05em 0.6em; font-size: 11pt;}
+.CaptionTD {background-color: #D0D0D0; border-style: inset; border-width: 0; font-size: 12pt; color: #000000; font-weight: bold;}
+.error {background-color: #FFE0E0; color: red; font-weight: bold; }
+</style>
+<body>
+<table border='0'>
+	<tr>
+		<td colspan='5' class='HeaderTD'>Daily report today on {now_date} from Olena</td>
+	</tr>
+	<tr>
+		<td class='CaptionTD' align='center'>User</td>
+    	<td class='CaptionTD' align='center'>Morning Reports</td>
+    	<td class='CaptionTD' align='center'>Evening Reports</td>
+    	<td class='CaptionTD' align='center'>Points</td>
+	</tr>
+	<!-- BEGIN user_report -->
+	<tr>
+		<td class='DataTD'>{user_name}</td>
+		<td class='DataTD'>{morning_notes}</td>
+		<td class='DataTD'>{evening_notes}</td>
+		<td class='DataTD'>{points}</td>
+	</tr>
+	<!-- END user_report -->
+	<!-- BEGIN error_report-->
+	<tr class='CaptionTD'><td colspan='5' class='error'>Error</td></tr>
+	<!-- END error_report-->
+	<tr class='CaptionTD'><td colspan='5'>&nbsp;</td></tr>
+</table>
+</body>
+</html>

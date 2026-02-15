@@ -1,0 +1,337 @@
+<html>
+
+
+
+<head>
+
+   <title>Control</title>
+
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+
+   <script language="javascript">
+
+	   function clearFilter()
+		{
+			document.frmFilter.year_selected.value = "";
+			document.frmFilter.start_date.value = "";
+			document.frmFilter.end_date.value = "";
+			document.frmFilter.iduser.value = "";
+		}
+
+   </script>
+
+</head>
+
+
+
+<body class="PageBODY">
+
+
+
+{ITEMPLATE=header.html}
+
+
+
+<table width="100%" border="0">
+
+<tr valign=top>
+
+	<td colspan="2" align="center">
+
+		<form name="frmFilter" method="POST" action="view_vacations.php">
+		<input type="hidden" name="iduser" value="{userid}">
+		<table border="0">
+			<tr>
+				<td colspan="2" class="FormHeaderTD"><font class="FormHeaderFONT">Filter</font></td>
+			</tr>
+			<tr>
+				<td align="right">
+					Select year:
+				</td>
+				<td>
+					<select name="year_selected" style="width:150px">
+						<option value="">------- Year -------</option>
+						{years}
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td align="right">Start Date: </td>
+				<td>
+					<input name="start_date" value="{filter_start_date}">
+      					<A HREF="#" onClick="setDateField(document.frmFilter.start_date);
+      					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+      					<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+      			</td>
+   			<tr>
+      			<td align="right">End Date:</td>
+				<td>
+					<input name="end_date" value="{filter_end_date}">
+      					<A HREF="#" onClick="setDateField(document.frmFilter.end_date);
+						top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+						<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+				</td>
+			<tr>
+      			<td align="right" colspan="2">
+      				<input type="submit" name="action" value="Filter">
+      				<input type="button" value=" Clear " onclick="clearFilter()">
+      			</td>
+   			</tr>
+
+   			<tr>
+   				<td colspan="2" align=center>
+   					<br><br>
+      				<table border="0" width="100%">
+
+						<!-- BEGIN holiday_header -->
+						<tr>
+      						<td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">Ukrainian Holidays</font></td>
+   						</tr>
+   						<tr>
+      						<td class="ColumnTD" align=center><b>Name</b></td>
+      						<td class="ColumnTD" align=center><b>Date</b></td>
+      						<!--td class="ColumnTD">&nbsp;</td-->
+   						</tr>
+			   			<!-- END holiday_header -->
+
+			   			<!-- BEGIN national_holidays -->
+			   			<tr>
+			   				<td  class="DataTD" nowrap>{holiday_title}</td>
+			   				<td class="DataTD" nowrap>{holiday_date}</td>
+			   				<!--td class="DataTD" nowrap><a href="edit_holiday.php?holiday_id={holiday_id}">Edit</a></td-->
+			   			</tr>
+			   			<!-- END national_holidays -->
+
+   						<tr>
+			   				<td>{edit_holidays}</td>
+   						</tr>
+					</table>
+					
+      				<table border="0" width="100%">
+
+						<!-- BEGIN english_holiday_header -->
+						<tr>
+      						<td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">English Holidays</font></td>
+   						</tr>
+   						<tr>
+      						<td class="ColumnTD" align=center><b>Name</b></td>
+      						<td class="ColumnTD" align=center><b>Date</b></td>
+      						<!--td class="ColumnTD">&nbsp;</td-->
+   						</tr>
+			   			<!-- END english_holiday_header -->
+
+			   			<!-- BEGIN english_holidays -->
+			   			<tr>
+			   				<td  class="DataTD" nowrap>{holiday_title}</td>
+			   				<td class="DataTD" nowrap>{holiday_date}</td>
+			   				<!--td class="DataTD" nowrap><a href="edit_holiday.php?holiday_id={holiday_id}">Edit</a></td-->
+			   			</tr>
+			   			<!-- END english_holidays -->
+
+	   					<tr>
+			   				<td>{edit_english_holidays}</td>
+   						</tr>
+					</table>
+
+   				</td>
+   			</tr>
+   		</table>
+   		</form>
+	</td>
+
+	<td></td>
+
+	<td colspan="2" align="center" valign=top width="600">
+		<table border="0">
+			<tr>
+	      		<td class="FormHeaderTD" colspan="6"><font class="FormHeaderFONT">Not Paid Stats</font></td>
+	   		</tr>
+		 	<tr>
+				<td class="ColumnTD">User</td>
+				<td class="ColumnTD">Vacatioin</td>
+				<td class="ColumnTD">Not paid</td>
+				<td class="ColumnTD">Illness</td>
+				<td class="ColumnTD">Total</td>
+				<td class="ColumnTD">&nbsp</td>
+			</tr>
+
+
+			<!-- BEGIN not_paid_stats -->
+			<tr>
+				<td class="{colorrow}">{user_name}</td>
+				<td class="{colorrow}" align="right">{vacation}</td>
+				<td class="{colorrow}" align="right">{not_paid}</td>
+				<td class="{colorrow}" align="right">{illness}</td>
+				<td class="{colorrow}" align="right">{total}</td>
+				<td class="{colorrow}">&nbsp</td>
+			</tr>
+			<!-- END not_paid_stats -->
+
+		</table>
+	</td>
+
+	<!-- BEGIN header_holiday_summary-->
+	<td colspan="2" align="center" valign=top width=550>
+		<table  border="0">
+			<tr>
+				<td class="FormHeaderTD" colspan="8"><font class="FormHeaderFONT">Holidays Summary</font></td>
+			</tr>
+			<tr>
+				<td class="ColumnTD">Person</td>
+				<td class="ColumnTD">Total <br>days</td>
+				<td class="ColumnTD">Used <br>days</td>
+				<td class="ColumnTD">Available<br> days</td>
+				<td class="ColumnTD">Total days <br>{this_year}</td>
+				<td class="ColumnTD">Used  days <br>{this_year}</td>
+				<td class="ColumnTD">Start date</td>
+				<td class="ColumnTD">Details</td>
+			</tr>
+			<!-- END header_holiday_summary-->
+
+		    <!-- BEGIN holiday_summary -->
+			<tr>
+			   <td class="DataTD" nowrap><a href="view_vacations.php?show_user_id={show_user_id}">{hol_user_name}</a></td>
+			   <td class="DataTD"  nowrap><a onClick="setDateField(document.frmFilter.start_date);
+			      top.newWin = window.open('total_vacations.php?user_id={show_user_id}','total','dependent=yes,width=230,height=230,screenX=200,screenY=300,titlebar=yes')" href="#">{total_holidays}</a></td>
+			   <td class="DataTD">{used_holidays}</td>
+			   <td class="DataTD" nowrap><b>{avail_holidays}</b></td>
+			   <td class="DataTD" nowrap>{total_holidays_year}</td>
+			   <td class="DataTD" nowrap>{used_holidays_year}</td>
+			   <td class="DataTD" nowrap>{work_start}</td>
+			   <td class="DataTD" nowrap>&nbsp;<a href='hours_compare.php?user_id={show_user_id}'>Details</a>&nbsp;</td>
+			</tr>
+			<!-- END holiday_summary -->
+
+			<tr>
+				<td colspan="2">
+		   			<br> <!-- {add_holiday} -->
+		   		</td>
+		   	</tr>
+		</table>
+	</td>
+	<td></td>
+</tr>
+
+<tr>
+	<td colspan="8">&nbsp</td>
+</tr>
+
+<!-- BEGIN days_off_header -->
+<tr>
+	<td colspan="10" class="FormHeaderTD"><font class="FormHeaderFONT">Days Off</font></td>
+</tr>
+
+<tr>
+	<td class="ColumnTD">&nbsp</td>
+	<td class="ColumnTD">User</td>
+	<td class="ColumnTD">Period Title</td>
+	<td class="ColumnTD">Reason Type</td>
+	<td class="ColumnTD">Start Date</td>
+	<td class="ColumnTD">End Date</td>
+	<td class="ColumnTD">Total Days</td>
+	<td class="ColumnTD" align=center><b>Approved</b></td>
+	<td class="ColumnTD" align=center><b>Declined</b></td>
+	<td class="ColumnTD">&nbsp</td>
+</tr>
+<!-- END days_off_header -->
+
+<!-- BEGIN vacation_td -->
+<tr>
+	<td class="DataTD">&nbsp</td>
+	<td class="DataTD">{vac_user_name}</td>
+	<td class="DataTD">{period_title}</td>
+	<td class="DataTD">{reason_type}</td>
+	<td class="DataTD" nowrap>{start_date}</td>
+	<td class="DataTD" nowrap>{end_date}</td>
+	<td class="DataTD" align=center>{total_days}</td>
+	<td class="DataTD" align=center><font color={color_approved}>{approved}</font></td>
+	<td class="DataTD" align=center><font color={color_declined}>{declined}</font></td>
+	<td class="DataTD">&nbsp</td>
+</tr>
+<!-- END vacation_td -->
+
+<tr>
+	<td colspan="8">&nbsp</td>
+</tr>
+
+<!-- BEGIN paid_days_header -->
+<tr>
+	<td colspan="10" class="FormHeaderTD"><font class="FormHeaderFONT">Paid Days</font></td>
+</tr>
+
+<tr>
+	<td class="ColumnTD">&nbsp</td>
+	<td class="ColumnTD">User</td>
+	<td class="ColumnTD" colspan="2">Period Title</td>
+	<td class="ColumnTD" nowrap>Start Date</td>
+	<td class="ColumnTD" nowrap>End Date</td>
+	<td class="ColumnTD">Total Days</td>
+	<td class="ColumnTD" align=center><b>Approved</b></td>
+	<td class="ColumnTD" align=center><b>Declined</b></td>
+	<td class="ColumnTD">&nbsp</td>
+</tr>
+<!-- END paid_days_header -->
+
+<!-- BEGIN vacation_td_paid -->
+<tr>
+	<td class="DataTD">&nbsp</td>
+	<td class="DataTD">{username_pd}</td>
+	<td class="DataTD" colspan="2">{period_title}</td>
+	<td class="DataTD" nowrap>{start_date}</td>
+	<td class="DataTD" nowrap>{end_date}</td>
+	<td class="DataTD">{total_days}</td>
+	<td class="DataTD" align=center><font color={color_approved}>{approved}</font></td>
+	<td class="DataTD" align=center><font color={color_declined}>{declined}</font></td>
+	<td class="DataTD">&nbsp</td>
+</tr>
+<!-- END vacation_td_paid -->
+
+<!--<tr>
+	<td colspan='10' nowrap><p><a href="create_vacation.php?is_paid=0">Add Vacation Period</a> | <a href="create_vacation.php?is_paid=1">Add Paid Period</a></p></td>
+</tr>
+-->
+
+<tr>
+   <td colspan="8">&nbsp</td>
+</tr>
+
+<!-- BEGIN delay_not_header -->
+<tr>
+	<td colspan="10" class="FormHeaderTD"><font class="FormHeaderFONT">Delay Notifications</font></td>
+</tr>
+
+<tr>
+	<td class="ColumnTD">&nbsp</td>
+	<td class="ColumnTD">User</td>
+	<td class="ColumnTD" colspan="2">Period description</td>
+	<td class="ColumnTD">Date</td>
+	<td class="ColumnTD">Date Added</td>
+	<td class="ColumnTD">Created by</td>
+	<td class="ColumnTD" colspan="3">&nbsp;</td>
+</tr>
+<!-- END delay_not_header -->
+
+<!-- BEGIN delay_notes -->
+<tr>
+	<td class="DataTD">&nbsp</td>
+	<td class="DataTD">{username_dn}</td>
+	<td class="DataTD" colspan="2">{delay_descr}</td>
+	<td class="DataTD" nowrap>{date}</td>
+	<td class="DataTD">{add_date}</td>
+	<td class="DataTD">{created_user_name}</td>
+	<td class="DataTD" colspan="3">&nbsp;</td>
+</tr>
+<!-- END delay_notes -->
+
+<tr>
+	<td colspan='8' nowrap><p><a href="create_delay_note.php">Add Delay Notification</a></p></td>
+</tr>
+
+
+</table>
+
+</body>
+
+</html>

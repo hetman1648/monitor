@@ -1,0 +1,49 @@
+<html>
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>  
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<form name="form" action="edit_project_status.php" method="POST">
+<table>
+<tr>
+   <td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">Edit Status</font></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Projects</td>
+   <td class="DataTD"><select name="parent_project_id">
+   <!-- BEGIN parent_project_id --><option value="{parent_project_id_value}" {parent_project_id_selected}>{parent_project_id_description}</option>
+   <!-- END parent_project_id -->   
+   </select></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Title</td>
+   <td class="DataTD"><input type="text" name="status_desc" width="80" value="{status_desc}"></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Color</td>
+   <td class="DataTD"><input type="text" name="color" width="8" value="{color}"></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Order</td>
+   <td class="DataTD"><input type="text" name="status_order" width="8" value="{status_order}"></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Is Completed?</td>
+   <td class="DataTD"><input type="checkbox" name="is_completed" value="1" {is_completed_checked}></td>
+</tr>
+
+<tr>
+   <td><input type="submit" name="action" value="{action_value}">
+   <input name="project_status_id" value="{project_status_id}" type="hidden">
+   <input type="submit" name="action" value="Cancel"></td>
+</tr>
+</table>
+</form>
+
+</body>
+</html>

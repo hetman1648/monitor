@@ -1,0 +1,457 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript">
+<!--
+
+lastBG = "white";	
+
+var browser = navigator.userAgent.toLowerCase();
+var isIE = ((browser.indexOf("msie") != -1) && (browser.indexOf("opera") == -1) && (browser.indexOf("webtv") == -1));
+
+function openWindow(task_id, project_id, allocate_url_id)
+{
+	var allocateWin = window.open ('allocate_parent_task.php?task_id='+ task_id + '&project_id=' + project_id + '&allocate_url_id=' + allocate_url_id, 'allocateWin', 'toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=yes,resizable=yes,width=400,height=300');
+	allocateWin.focus();
+}
+
+function setParentTask(parent_task_id, task_title, allocate_url_id) {
+	if (document.getElementById(allocate_url_id)) {
+		document.getElementById(allocate_url_id).href = "edit_task.php?task_id="+parent_task_id;
+		document.getElementById(allocate_url_id).innerHTML = "DONE";
+	}	
+}
+
+var currentTabName = 'quot';
+
+function changeTab(newTabName)
+{	
+	if (currentTabName != newTabName) {
+		currentTab = document.getElementById("tab_" + currentTabName);
+		newTab = document.getElementById("tab_" + newTabName);
+
+		currentData = document.getElementById("data_" + currentTabName);
+		newData = document.getElementById("data_" + newTabName);
+		
+		currentTabTd = document.getElementById("tab_td_" + currentTabName);
+		newTabTd = document.getElementById("tab_td_" + newTabName);
+		
+		currentTabTd.className = "menu";
+		newTabTd.className = "menuact";
+
+		if (currentData) {
+			currentData.style.display = "none";
+		}
+		if (newData) {
+			newData.style.display = "block";
+		}
+
+		document.frmFilter.tab.value = newTabName;
+		currentTabName = newTabName;
+		//formObj.tab.value = newTabName;
+	}
+}
+
+function showHideTasks(project_id) {
+	if (document.getElementById("id_tr_"+project_id)) {
+		if (document.getElementById("id_tr_"+project_id).style.display=="none") {
+			//show it!
+			if (isIE) {
+				document.getElementById("id_tr_"+project_id).style.display = "block";	
+			} else {
+				document.getElementById("id_tr_"+project_id).style.display = "table-row";	
+			}
+			if (document.getElementById("id_a_"+project_id)) {
+				document.getElementById("id_a_"+project_id).innerHTML = "-";
+			}
+		} else {
+			document.getElementById("id_tr_"+project_id).style.display = "none";	
+			if (document.getElementById("id_a_"+project_id)) {
+				document.getElementById("id_a_"+project_id).innerHTML = "+";
+			}
+			//hide it!
+		}
+	}
+	
+}
+
+function makeCorrection(task_id)
+{
+	if (document.tasks_with && document.tasks_with.elements["make_correction_"+task_id]) {
+		document.tasks_with.elements["make_correction_"+task_id].value = 1;		
+		document.tasks_with.submit();
+	}
+}
+
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+		<form name="frmFilter" action="monthly_report.php">
+<TABLE border=0 cellpadding="10" cellspacing="0" width="100%">
+<TR>
+<!--	<TD width="36%"></TD>-->
+	<TD width="50%" align="center">
+		<table border=0>
+		<tr>
+			<td align="right" height="50px" valign="bottom">
+				Select year:
+			</td>              
+			<td valign="bottom">
+				<select name="year_selected" style="width:150px">
+					<option value="">--------- Year ---------</option>
+					{years}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right" height="25px" valign="bottom">
+				Select month:
+			</td>              
+			<td valign="bottom">
+				<select name="month_selected" style="width:150px">
+					<option value="">-------- Month --------</option>
+					{months}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2" height="25px" valign="bottom">
+				<input type="hidden" value="{current_tab}" name="tab">&nbsp;
+				<input type="hidden" value="{sort}" name="sort">&nbsp;
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+			</td>
+		</tr>
+		</table>
+</TD>
+<TD width="50%" align="right">
+				
+				<table class="FormTABLE" width="100%" cellpadding="0" cellspacing="1" style="padding-left:10px;padding-right:10px;border: 1px solid #AAA;">
+<!--				<tr><td colspan="4" align="center">
+				<h3>Grand Total</h3>	
+				</td>
+				</tr>-->
+				<tr><td>
+					Quotations summary</td><td align="center">{num_invoiced_quotations}</td><td align="right">{q_total_actual_hours}</td><td align="right">{q_total_task_cost}</td>
+				</tr>
+				<tr>
+					<td>Tasks with Hourly charge set</td><td align="center">{num_tasks_with_hourly}</td><td align="right">{tw_total_actual_hours}</td><td align="right">{tw_total_task_cost}</td>
+				</tr>
+				<tr>
+					<td>Tasks without Hourly charge set</td><td align="center">{num_tasks_without_hourly}</td><td align="right">{two_total_actual_hours}</td><td align="right">{two_total_task_cost}</td>
+				</tr>
+				<tr>
+					<td>Corrections</td><td align="center">{num_corrections}</td><td align="right">{c_total_actual_hours}</td><td align="right">{c_total_task_cost}</td>
+				</tr>
+				<tr>
+					<td>Tasks charged per job</td><td align="center">{total_jobs_number}</td><td align="right">{total_jobs_time}</td><td align="right">{total_jobs_cost}</td>
+				</tr>
+				<tr>
+					<td><b>Total</b></td><td align="center"><b>{grand_total_number}</b></td><td align="right"><b>{grand_total_time}</b></td><td align="right"><b>{grand_total_cost}</b></td>
+				</tr>				
+				<tr>
+					<td>Not Invoiced Quotations</td><td align="center" style="color:#333;">{num_not_invoiced_quotations}</td><td align="right" style="color:#333;">{qinv_total_actual_hours}</td><td align="right" style="color:#333;">{qinv_total_task_cost}</td>
+				</tr>
+				</table>
+				<!-- summary-->
+				
+</TD>
+</TABLE>		
+		</form>
+</div>
+
+<table cellspacing="0" cellpadding="0" border="0">
+<tr>
+	<td onClick="changeTab('quot'); return false;" class="menuact" id="tab_td_quot"><div id="tab_quot"><a class="" style="padding-left:10px;padding-right:10px;" href="#" onClick="changeTab('quot'); return false;">Quotations summary ({num_invoiced_quotations})</a></td>
+	<td onClick="changeTab('qinv'); return false;" class="menu" id="tab_td_qinv"><div id="tab_qinv"><a class="" style="padding-left:10px;padding-right:10px;" href="#" onClick="changeTab('qinv'); return false;">Not Invoiced Quotations ({num_not_invoiced_quotations})</a></td>
+	<td onClick="changeTab('twith'); return false;" class="menu" id="tab_td_twith"><div id="tab_twith"><a class="" href="#" style="padding-left:10px;padding-right:10px;" onClick="changeTab('twith'); return false;">Tasks with Hourly charge set ({num_tasks_with_hourly})</a></td>
+	<td onClick="changeTab('twoh'); return false;" class="menu" id="tab_td_twoh"><div id="tab_twoh"><a class="" href="#" style="padding-left:10px;padding-right:10px;" onClick="changeTab('twoh'); return false;">Tasks without Hourly charge set ({num_tasks_without_hourly})</a></td>
+	<td onClick="changeTab('tc'); return false;" class="menu" id="tab_td_tc"><div id="tab_tc"><a class="" href="#" style="padding-left:10px;padding-right:10px;" onClick="changeTab('tc'); return false;">Corrections ({num_corrections})</a></td>
+	<td onClick="changeTab('jobs'); return false;" class="menu" id="tab_td_jobs"><div id="tab_jobs"><a class="" href="#" style="padding-left:10px;padding-right:10px;" onClick="changeTab('jobs'); return false;">Tasks charged per job ({total_jobs_number})</a></td>
+</tr>
+</table>
+
+
+<div id="data_quot" style="display: block;">
+<table width="100%" border="0" cellspacing="0" cellpadding="1" style="border: 1px solid navy;"><tr><td align="center">
+<h2>Invoiced Quotations summary ({num_invoiced_quotations})</h2>
+<table class="FormTABLE" align="center">
+	<!-- BEGIN quotations -->
+    <tr align="center">
+    	<td class="ColumnTD" nowrap><font class="ColumnFONT">ID</font></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=quot&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=project"><font class="ColumnFONT">Project</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=quot&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=task"><font class="ColumnFONT">Quotations</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=quot&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=cost"><font class="ColumnFONT">Amount</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=quot&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=estimate"><font class="ColumnFONT">Estimated Time</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=quot&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=actual"><font class="ColumnFONT">Actual Time</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=quot&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=deadline"><font class="ColumnFONT">Deadline</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=quot&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=invoice"><font class="ColumnFONT">Invoiced</font></a></td>
+	</tr>
+	<!-- BEGIN quotations_records -->
+    <tr align="center">
+    	<td nowrap align="right">{task_id}</td>
+		<td nowrap align="left">{project_title}</td>
+		<td nowrap align="left"><a href="edit_task.php?task_id={task_id}">{task_title}</a></td>
+		<td nowrap align="right">{task_cost}</td>
+		<td nowrap align="right">{estimated_hours}</td>
+		<td nowrap align="right" style="{hours_style}">{actual_hours}</td>
+		<td nowrap align="right" style="{deadline_style}">{date_deadline}</td>
+		<td nowrap align="right">{date_invoiced}</td>
+	</tr>
+	<!-- END quotations_records -->
+	<!-- BEGIN quotations_no_records -->
+    <tr align="center" >
+		<td colspan="8" nowrap align="center">No Records</td>
+	</tr>
+	<!-- END quotations_no_records -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap colspan="3"><font class="ColumnFONT">Total</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{q_total_task_cost}</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{q_total_estimated_hours}</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{q_total_actual_hours}</font></td>
+		<td class="ColumnTD" colspan="2"></td>
+	</tr>	
+	<!-- END quotations -->
+</table>
+</td></tr></table></div>
+
+
+<div id="data_qinv" style="display: none;">
+<table width="100%" border="0" cellspacing="0" cellpadding="1" style="border: 1px solid navy;"><tr><td align="center">
+<h2>Not Invoiced Quotations ({num_not_invoiced_quotations})</h2>
+<table class="FormTABLE" align="center">
+	<!-- BEGIN qinvs -->
+    <tr align="center">
+     	<td class="ColumnTD" nowrap><font class="ColumnFONT">ID</font></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=qinv&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=project"><font class="ColumnFONT">Project</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=qinv&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=task"><font class="ColumnFONT">Quotations</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=qinv&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=cost"><font class="ColumnFONT">Amount</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=qinv&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=estimate"><font class="ColumnFONT">Estimated Time</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=qinv&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=actual"><font class="ColumnFONT">Actual Time</font></a></td>
+	</tr>
+	<!-- BEGIN qinv_records -->
+    <tr align="center">
+    	<td nowrap align="right">{task_id}</td>
+		<td nowrap align="left">{project_title}</td>
+		<td nowrap align="left"><a href="edit_task.php?task_id={task_id}">{task_title}</a></td>
+		<td nowrap align="right">{task_cost}</td>
+		<td nowrap align="right">{estimated_hours}</td>
+		<td nowrap align="right">{actual_hours}</td>
+	</tr>
+	<!-- END qinv_records -->
+	<!-- BEGIN qinv_no_records -->
+    <tr align="center" >
+		<td colspan="6" nowrap align="center">No Records</td>
+	</tr>
+	<!-- END qinv_no_records -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap colspan="3"><font class="ColumnFONT">Total</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{qinv_total_task_cost}</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{qinv_total_estimated_hours}</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{qinv_total_actual_hours}</font></td>
+	</tr>	
+	<!-- END qinvs -->
+</table>
+</td></tr></table></div>
+
+
+<div id="data_twith" style="display: none;">
+<table width="100%" border="0" cellspacing="0" cellpadding="1" style="border: 1px solid navy;"><tr><td align="center">
+<!-- BEGIN tasks_w_table -->
+
+
+    	<h2>Tasks with Hourly charge set ({num_tasks_with_hourly})</h2>
+<form name="tasks_with" action="monthly_report.php" method="POST">
+<input type="hidden" name="tab" value="twith">
+<input type="hidden" name="month_selected" value="{month_selected_value}">
+<input type="hidden" name="year_selected" value="{year_selected_value}">
+<input type="hidden" value="{sort}" name="sort">
+<table class="FormTABLE" align="center">    
+    <tr align="center">
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twith&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=project"><font class="ColumnFONT">Project</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twith&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=task"><font class="ColumnFONT">Task Title</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twith&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=actual"><font class="ColumnFONT">Hours Spent</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twith&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=cost"><font class="ColumnFONT">Cost</font></a></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">People</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"></font></td>
+	</tr>
+	<!-- BEGIN tasks_records -->
+    <tr align="center">
+		<td nowrap align="left">{project_title}</td>
+		<td nowrap align="left"><a href="edit_task.php?task_id={task_id}">{task_title}</a></td>
+		<td nowrap align="right">{actual_hours}</td>
+		<td nowrap align="right">{task_cost}</td>
+		<td align="left" style="padding-left:25px;padding-right:25px;">{people_list}</td>
+		<td nowrap align="center"><input type="hidden" name="make_correction_{task_id}" value="0"><a href="javascript: makeCorrection({task_id});">mark as correction</a></td>
+	</tr>
+	<!-- END tasks_records -->
+	<!-- BEGIN tasks_no_records -->
+    <tr align="center" >
+		<td colspan="6" nowrap align="center">No Records</td>
+	</tr>
+	<!-- END tasks_no_records -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap colspan="2"><font class="ColumnFONT">Total</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{tw_total_actual_hours}</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{tw_total_task_cost}</font></td>
+		<td class="ColumnTD" nowrap align="right" colspan="2"></td>
+	</tr>	
+	
+</table>
+</form>
+<!-- END tasks_w_table -->
+</td></tr></table></div>
+
+<div id="data_twoh" style="display: none;">
+<table width="100%" border="0" cellspacing="0" cellpadding="1" style="border: 1px solid navy;"><tr><td align="center">
+<!-- BEGIN tasks_wo_table -->
+<h2>Tasks without Hourly charge set ({num_tasks_without_hourly})</h2>
+<form name="tasks" action="monthly_report.php" method="POST">
+<input type="hidden" name="tab" value="twoh">
+<input type="hidden" name="month_selected" value="{month_selected_value}">
+<input type="hidden" name="year_selected" value="{year_selected_value}">
+<input type="hidden" value="{sort}" name="sort">
+<table class="FormTABLE" align="center">
+    <tr align="center">
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twoh&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=project"><font class="ColumnFONT">Project</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twoh&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=task"><font class="ColumnFONT">Task Title</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twoh&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=actual"><font class="ColumnFONT">Hours Spent</font></a></td>
+		<td class="ColumnTD"><font class="ColumnFONT">People</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Quotation</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Hourly Charge</font></td>
+	</tr>
+	<!-- BEGIN nrtasks_records -->
+    <tr align="center">
+		<td nowrap align="left">{project_title}</td>
+		<td nowrap align="left"><a href="edit_task.php?task_id={task_id}">{task_title}</a></td>
+		<td nowrap align="right">{actual_hours}</td>
+		<td align="left" style="padding-left:25px;">{people_list}</td>
+		<td nowrap align="center"><a id="allocate_{task_id}" href="javascript: openWindow({task_id}, {project_id}, 'allocate_{task_id}');">allocate</a></td>
+		<td nowrap align="center"><input type="checkbox" name="hourly_charge_{task_id}" value="1"></td>
+	</tr>
+	<!-- END nrtasks_records -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap colspan="2" align="right" style="padding-right:25px;"><font class="ColumnFONT">Total hours spent</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{two_total_actual_hours}</font></td>
+		<td class="ColumnTD" nowrap colspan="2"></td>
+		<td class="ColumnTD" nowrap><input type="submit" value="Update"></td>
+	</tr>	
+	<!-- BEGIN nrtasks_no_records -->
+    <tr align="center" >
+		<td colspan="7" nowrap align="center">No Records</td>
+	</tr>
+	<!-- END nrtasks_no_records -->
+</table>
+</form>
+<!-- END tasks_wo_table -->
+</td></tr></table></div>
+
+<div id="data_tc" style="display: none;">
+<table width="100%" border="0" cellspacing="0" cellpadding="1" style="border: 1px solid navy;"><tr><td align="center">
+<!-- BEGIN tasks_c_table -->
+<h2>Corrections ({num_corrections})</h2>
+<form name="tasks_corrections" action="monthly_report.php" method="POST">
+<input type="hidden" name="tab" value="tc">
+<input type="hidden" name="month_selected" value="{month_selected_value}">
+<input type="hidden" name="year_selected" value="{year_selected_value}">
+<input type="hidden" value="{sort}" name="sort">
+<table class="FormTABLE" align="center">
+    <tr align="center">
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=tc&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=project"><font class="ColumnFONT">Project</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=tc&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=task"><font class="ColumnFONT">Task Title</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=tc&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=actual"><font class="ColumnFONT">Hours Spent</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=tc&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=cost"><font class="ColumnFONT">Cost</font></a></td>
+		<td class="ColumnTD"><font class="ColumnFONT">People</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Quotation</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Hourly Charge</font></td>
+	</tr>
+	<!-- BEGIN corrections_records -->
+    <tr align="center">
+		<td nowrap align="left">{project_title}</td>
+		<td nowrap align="left"><a href="edit_task.php?task_id={task_id}">{task_title}</a></td>
+		<td nowrap align="right">{actual_hours}</td>
+		<td nowrap align="right">{task_cost}</td>
+		<td align="left" style="padding-left:25px;">{people_list}</td>
+		<td nowrap align="center"><a id="allocate_{task_id}" href="javascript: openWindow({task_id}, {project_id}, 'allocate_{task_id}');">allocate</a></td>
+		<td nowrap align="center"><input type="checkbox" name="hourly_charge_{task_id}" value="1"></td>
+	</tr>
+	<!-- END corrections_records -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap colspan="2" align="right" style="padding-right:25px;"><font class="ColumnFONT">Total hours spent</font></td>
+		<td class="ColumnTD" nowrap align="right"><font class="ColumnFONT">{c_total_actual_hours}</font></td>
+		<td class="ColumnTD" nowrap colspan="3"></td>
+		<td class="ColumnTD" nowrap><input type="submit" value="Update"></td>
+	</tr>	
+	<!-- BEGIN corrections_no_records -->
+    <tr align="center" >
+		<td colspan="7" nowrap align="center">No Records</td>
+	</tr>
+	<!-- END corrections_no_records -->
+</table>
+</form>
+<!-- END tasks_c_table -->
+</td></tr></table></div>
+
+<div id="data_jobs" style="display: none;">
+<table width="100%" border="0" cellspacing="0" cellpadding="1" style="border: 1px solid navy;"><tr><td align="center">
+
+<h2>Tasks charged per job ({total_jobs_number})</h2>
+<table class="FormTABLE" align="center" width="500">
+   <tr align="center">
+		<td class="ColumnTD" nowrap colspan="2"><font class="ColumnFONT">Job Type</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Number</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Cost</font></td>
+	</tr>
+	<!-- BEGIN jobs_records -->
+    <tr align="center" class="DataRow1">
+		<td nowrap align="center" width="16"><!-- BEGIN tasks_roll --><a href="javascript: showHideTasks({project_id});" id="id_a_{project_id}">+</a><!-- END tasks_roll --></td>
+		<td nowrap align="left">{job_type}</td>
+		<td nowrap align="center">{jobs_number}</td>
+		<td nowrap align="right">{job_cost}</td>
+	</tr>
+	<!-- BEGIN jobs_tasks_records -->
+	<tr align="center" id="id_tr_{project_id}" style="display:none;">
+		<td colspan="4" align="center">
+		<table width="450">
+			<!-- BEGIN jobs_task_record -->
+			<tr>
+				<td align="left" width="70%"><a href="edit_task.php?task_id={task_id}">{task_title_short}</td>
+				<td align="right" width="15%">{task_actual_hours}</td>
+				<td align="right" width="15%">{task_date_created}</td>
+			</tr>
+			<!-- END jobs_task_record -->
+		</table>
+		
+		</td>
+	</tr>
+	<!-- END jobs_tasks_records -->
+	<!-- END jobs_records -->
+	
+	<!-- BEGIN jobs_no_records -->
+	<tr align="center" >
+		<td colspan="4" nowrap align="center">No Records</td>
+	</tr>
+	<!-- END jobs_no_records -->
+  <tr align="center">
+		<td class="ColumnTD"  nowrap align="left" colspan="2"></td>
+		<td class="ColumnTD"  nowrap align="center">{total_jobs_number}</td>
+		<td class="ColumnTD"  nowrap align="right">{total_jobs_cost}</td>
+	</tr>	
+  <tr align="center">
+		<td colspan="4"><a href="projects_species.php">Edit prices</a></td>
+	</tr>	
+</table>
+</td></tr></table></div>
+
+<script language="javascript">
+<!--
+	changeTab('{current_tab}');
+//-->
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+.PageBODY {background-color: #FFFFFF; color: #000000; font-family: Tahoma,Verdana,Helvetica; font-size: 10pt}
+/*.FormTABLE {border-style: outset; border-width: 2}*/
+.FormHeaderTD {background-color: navy; text-align: center; border-style: outset; border-width: 1}
+.FormHeaderFONT {font-size: 12pt; color: #FFFFFF; font-weight: bold}
+.FieldCaptionTD {background-color: #F0F0F0; border-style: inset; border-width: 0; font-size: 10pt}
+.FieldCaptionFONT {font-size: 10pt; color: #000000}
+.DataTD {background-color: #FAFAFA; border-style: inset; border-width: 0; font-size: 10pt}
+.DataTDYellow {background-color: #FCFFD5; border-style: inset; border-width: 0; font-size: 10pt}
+.DataTDred {background-color: #FFF5F5; border-style: inset; border-width: 0; font-size: 10pt}
+.DayoffTD    {background-color: #F0F0F0; border-style: inset; border-width: 0; font-size: 10pt}
+.DayoffTDred {background-color: #F7E7E7; border-style: inset; border-width: 0; font-size: 10pt}
+.Spent1 {width:18px; background-color: #66CCFF}
+.Spent2 {width:18px; background-color: #3388FF}
+.Spent3 {width:18px; background-color: #0033DD}
+.Spent4 {width:18px; background-color: #000099}
+.DayDeadline {width:18px; background-color: #F65050}
+.DayPlanned {width:18px; background-color: #A0FFA0}
+
+/*
+.Spent1red {width:18px; background-color: #FF9898}	
+.Spent2red {width:18px; background-color: #F65151}	
+.Spent3red {width:18px; background-color: #DF2626} 
+.Spent4red {width:18px; background-color: #B60000}	
+.Spent1green {width:18px; background-color: #AFFFAF}	
+.Spent2green {width:18px; background-color: #4DEE66}	
+.Spent3green {width:18px; background-color: #00CC66} 
+.Spent4green {width:18px; background-color: #009966}	
+*/
+
+.DataFONT {font-size: 10pt; color: #000000}
+.DataFONTred {font-size: 10pt; color: red}
+.ColumnFONT {font-size: 10pt; color: #000000; font-weight: bold}
+.ColumnTD {background-color: #D0D0D0; border-style: inset; border-width: 0}
+.GridRecordHeader {background-color: #FAFAFA; font-size: 10pt; color: navy}
+
+.TaskInProgress {background-color: #CCFFCC; font-size: 10pt; color: blue}
+.TaskOnHold {background-color: #FAFAFA; font-size: 10pt; color: #D0D0D0}
+.TaskDone {background-color: #FAFAFA; font-size: 10pt; color: green}
+.TaskRejected {background-color: #FAFAFA; font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.TaskQuestion {background-color: #FAFAFA; font-size: 10pt; color: #CC3399}
+.TaskAnswer {background-color: #FAFAFA; font-size: 10pt; color: #CC3399}
+.TaskWaiting {background-color: #FAFAFA; font-size: 10pt; color: #808080}
+.TaskNew {background-color: #FAFAFA; font-size: 10pt; color: black}
+.TaskReassigned {background-color: #FAFAFA; font-size: 10pt; color: #FF5A00}
+.TaskDeadline {background-color: #FFCCCC; font-size: 10pt; color: red}
+
+.TaskInProgress2 {background-color: #CCFFCC; font-size: 10pt; color: blue}
+.TaskOnHold2 {background-color: #EEEEEE; font-size: 10pt; color: #D0D0D0}
+.TaskDone2 {background-color: #EEEEEE; font-size: 10pt; color: green}
+.TaskRejected2 {background-color: #EEEEEE; font-size: 10pt; color: #D0D0D0;text-decoration:line-through}
+.TaskQuestion2 {background-color: #EEEEEE; font-size: 10pt; color: #CC3399}
+.TaskAnswer2 {background-color: #EEEEEE; font-size: 10pt; color: #CC3399}
+.TaskWaiting2 {background-color: #EEEEEE; font-size: 10pt; color: #808080}
+.TaskNew2 {background-color: #EEEEEE; font-size: 10pt; color: black}
+.TaskReassigned2 {background-color: #EEEEEE; font-size: 10pt; color: #FF5A00}
+.TaskDeadline2 {background-color: #FFCCCC; font-size: 10pt; color: red}
+
+.aTaskInProgress {font-size: 10pt; color: blue}
+.aTaskOnHold {font-size: 10pt; color: #D0D0D0}
+.aTaskDone {font-size: 10pt; color: green}
+.aTaskRejected {font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.aTaskQuestion {font-size: 10pt; color: #CC3399}
+.aTaskAnswer {font-size: 10pt; color: #CC3399}
+.aTaskWaiting {font-size: 10pt; color: #808080}
+.aTaskNew {font-size: 10pt; color: black}
+.aTaskReassigned {font-size: 10pt; color: #808080}
+
+.aLogout {}
+
+.aTaskInProgress2 {font-size: 10pt; color: blue}
+.aTaskOnHold2 {font-size: 10pt; color: #D0D0D0}
+.aTaskDone2 {font-size: 10pt; color: green}
+.aTaskRejected2 {font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.aTaskQuestion2 {font-size: 10pt; color: #CC3399}
+.aTaskAnswer2 {font-size: 10pt; color: #CC3399}
+.aTaskWaiting2 {font-size: 10pt; color: #808080}
+.aTaskNew2 {font-size: 10pt; color: black}
+.aTaskReassigned2 {font-size: 10pt; color: #808080}
+
+.link2 {color:white;}
+.link2:hover {color:#D0D0D0;}
+
+.LargeHeader {font-size:12pt; font-weight:bold;}
+TextArea,Select,Input {"font-family:Tahoma;"}
+TD {font-size: 10pt;}
+
+A {
+    Font-family: "Tahoma", "Verdana", "Arial";
+    font-size: 10pt;
+    color: #003366;
+    text-decoration: none;}
+
+A:hover {
+    Font-family: "Tahoma", "Verdana", "Arial";
+    font-size: 10pt;
+    text-decoration: underline;}
+
+A.redlink {
+    color: red;
+}
+
+/* styles for rollover tabs */
+.menuact {background: #FCFFD5; border-top: 2px solid #FF8200; border-right:1px solid #919B9C; border-left:1px solid #919B9C; text-align: center; cursor:pointer;cursor:hand;}
+.menu {border: 2px solid #FFFFFF; text-align: center; background: #F5F3EB; cursor:pointer;cursor:hand; }
+.menu div {border: 1px solid #919B9C; text-align: center; cursor:pointer;cursor:hand;}
+.menu div.noborder {border: 0px;cursor:pointer;cursor:hand;}
+.cont {border-top:1px solid #919B9C;}
+
+acronym { border-bottom:1px dotted #333;cursor:help }

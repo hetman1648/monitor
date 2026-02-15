@@ -1,0 +1,92 @@
+<center>
+<script type="text/javascript" src="https://monitor.sayu.co.uk/scripts/jquery-1.2.6.pack.js"></script>
+<script type="text/javascript" src="https://monitor.sayu.co.uk/scripts/jquery.funcs.js"></script>
+<style>
+	.red {background-color: #FF3300; }
+	.yellow { background-color: #FFFF00; }
+	.green { background-color: #AAFF00; }
+	.darkgreen { background-color: #669933; }
+	.blue { background-color: #CCCCFF;}
+	.high { background-color: #DDDDDD;}	
+	.highCenter { background-color: #D0D0D0;}	
+	.wrong-task { text-decoration: line-through; }
+</style>
+
+<h1>Tickets Calendar</h1>
+<table border="0" cellpadding="2" class="FormTABLE" width="100%">
+	<tr align="center">
+		<td class="ColumnTD">&nbsp;</td>
+		<!--BEGIN user_tickets_header-->
+			<td class="ColumnTD" nowrap align="center" colspan="4"><font class="ColumnFONT">{user_name}</font></td>
+		<!--END user_tickets_header-->
+		<td class="ColumnTD">&nbsp;</td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" width="1%"><font class="ColumnFONT">Day</font></td>
+		<!--BEGIN user_tickets_header2-->
+		<td class="ColumnTD" width="8%"><font class="ColumnFONT">&nbsp;Tickets&nbsp;</font></td>			
+		<td class="ColumnTD" width="8%"><font class="ColumnFONT">&nbsp;Points&nbsp;</font></td>
+		<td class="ColumnTD" width="8%"><font class="ColumnFONT">&nbsp;Delayed Tickets&nbsp;</font></td>
+		<td class="ColumnTD" width="8%"><font class="ColumnFONT">&nbsp;Delayed Points&nbsp;</font></td>
+		<!--END user_tickets_header2-->
+		<td class="ColumnTD" width="1%">&nbsp;</td>
+	</tr>
+	<!--BEGIN users_tickets_stat-->
+	<tr>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{day_selected}			
+		</td>
+		<!--BEGIN user_tickets_stat-->	
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{day_good}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{day_good_points}				
+		</td>			
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{day_bad}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{day_bad_points}				
+		</td>
+		<!--END user_tickets_stat-->
+		<td  class="DataTDE" nowrap align="center">
+			<a href='#' onclick="showRow('html_{day_selected}'); return false;">>></a>
+		</td>
+	</tr>
+	<tr class="html" style="font-size:small; display:none;"; id='html_{day_selected}'>
+		<td class="DataTDE" nowrap align="center">
+			&nbsp;			
+		</td>
+		<!--BEGIN user_tickets_stat2-->	
+		<td class="DataTDE" nowrap align="center" colspan="4" valign="top">
+			<!--BEGIN html_block-->
+			<table cellpadding=5 cellspacing=0>
+				<tr align=center>
+					<td class=ColumnTD>Ticket</td>
+					<td class=ColumnTD>Answered</td>
+					<td class=ColumnTD>Previous</td>
+					<td class=ColumnTD>Points</td>
+				</tr>
+				{html}
+			</table>
+			<!--END html_block-->
+		</td>
+		<!--END user_tickets_stat2-->
+		<td  class="DataTDE" nowrap align="center">
+			&nbsp;
+		</td>
+	</tr>
+	<!--END users_tickets_stat-->
+	<tr align="center">
+		<td class="ColumnTD">&nbsp;</td>
+		<!--BEGIN user_tickets_footer-->
+		<td class="ColumnTD"><font class="ColumnFONT">{day_good}</font></td>			
+		<td class="ColumnTD"><font class="ColumnFONT">{day_good_points}</font></td>
+		<td class="ColumnTD"><font class="ColumnFONT">{day_bad}</font></td>
+		<td class="ColumnTD"><font class="ColumnFONT">{day_bad_points}</font></td>
+		<!--END user_tickets_footer-->
+		<td class="ColumnTD">&nbsp;</td>
+	</tr>
+</table>
+</center>

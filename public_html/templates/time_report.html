@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+
+	{ITEMPLATE=filter.html}
+
+</div>
+
+<!-- BEGIN result -->
+<table class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">Time Spending Report {for_person}</font></td>
+    </tr>
+	<!-- BEGIN records_header -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">User</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Time Period</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Task Title</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Spent Hours</font></td>
+	</tr>
+	<!-- END records_header -->
+
+    <!-- BEGIN records -->
+	{day_hours_html}
+	{date_html}
+    <tr>
+	    <td class="DataTD" nowrap><font class="DataFONT">{person}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{time_period}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT"><a href="./edit_task.php?task_id={task_id}">{task_title}</font></td>
+	    <td class="DataTD" nowrap align="center"><font class="DataFONT">{spent_hours}</font></td>
+	</tr>
+	<!-- END records -->
+	{day_hours_html2}
+	
+	{total_day_hours}
+
+	<!-- BEGIN no_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No data for this period
+		</td>
+	</tr>
+	<!-- END no_records -->
+</table>
+<!-- END result -->
+
+</body>
+</html>

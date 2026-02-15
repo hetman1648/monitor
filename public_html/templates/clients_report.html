@@ -1,0 +1,420 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript" src="./scripts/net.js"></script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<div align='center'>
+<script language="JavaScript">
+<!--
+        function selectPeriod()
+        {
+                var period = document.frmFilter.period_selected.options[document.frmFilter.period_selected.selectedIndex].value;
+                var startDate = ""; var endDate = "";
+
+                if (period == "none") {
+					startDate = "{start_date}"; endDate = "{end_date}";
+				} else if(period == "today") {
+					startDate = "{today_date}"; endDate = "{today_date}";
+				} else if(period == "yesterday") {
+					startDate = "{yesterday_date}"; endDate = "{yesterday_date}";
+				} else if(period == "this_week") {
+					startDate = "{this_week_start}"; endDate = "{this_week_end}";
+				} else if(period == "last_week") {
+					startDate = "{last_week_start}"; endDate = "{last_week_end}";
+				} else if(period == "prev_week") {
+					startDate = "{prev_week_start}"; endDate = "{prev_week_end}";
+				} else if(period == "this_month") {
+					startDate = "{this_month_start}"; endDate = "{this_month_end}";
+				} else if(period == "last_month") {
+					startDate = "{last_month_start}"; endDate = "{last_month_end}";
+				} else if(period == "prev_month") {
+                        startDate = "{prev_month_start}"; endDate = "{prev_month_end}";
+    			} else if(period == "this_year") {
+                        startDate = "{this_year_start}"; endDate = "{this_year_end}";
+    			}
+                document.frmFilter.start_date.value = startDate;
+                document.frmFilter.end_date.value = endDate;
+        }
+
+        function clearFilter()
+        {
+                document.frmFilter.period_selected.value = "today";
+                document.frmFilter.start_date.value = "";
+                document.frmFilter.end_date.value = "";
+                document.frmFilter.person_selected.value = "";
+				document.frmFilter.googleid_search.value = "";
+				document.frmFilter.keyword.value = "";
+				selectPeriod();
+        }
+
+        function setFilterParameter(id, value) {
+        	var element = document.getElementById(id);
+        	if (element != null) {
+        		element.value = value;
+        	}
+        	
+        }
+
+        function setFilterOption(id, index) {
+        	var element = document.getElementById(id);
+        	if (element != null) {        	
+        		for(var i = 0; i < element.options.length; i++) {
+        			if (element.options[i].value == index) {
+        				element.options[i].selected = true;
+        				return;
+        			}
+        		}
+        	}
+        }
+
+-->
+</script>
+
+
+
+<form name="frmFilter" action="{action}" method="POST">
+	<table border=0>
+		<tr>
+			<td align="right">Select period:</td>
+			<td>
+				<select name="period_selected" id="period_selected" onChange="selectPeriod()" style="width:150px">
+					<option value="none">----- Period -----</option>
+					{periods}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Start Date:</td>
+			<td>
+				<input type="text" name="start_date" value="{start_date}" onChange="setPeriod(0)" style="width:150px">
+				<A HREF="javascript:doNothing()" onClick="setDateField(document.frmFilter.start_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">End Date:</td>
+			<td>
+				<input type="text" name="end_date" value="{end_date}" onChange="setPeriod(0)" style="width:150px">
+				<A HREF="javascript:doNothing()" onClick="setDateField(document.frmFilter.end_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+			</td>
+		</tr>
+		
+<!-- 		<tr>
+			<td align="right">Select Team:</td>
+			<td>
+				<select name="team" style="width:150px" onchange="MkPeopleList(this.value,'id_people')">
+					<option value="all" {aselected}>All teams</option>
+					<option value="viart" {vselected}>ViArt team</option>
+					<option value="yoonoo" {yselected}>YooNoo team</option>
+				</select>
+			</td>
+		</tr>
+ -->		 
+		<tr>
+			<td align="right">Client Type:</td>
+			<td>
+				<select name="client_type" style="width:150px">
+					<option value="all" >---- Choose Type ----</option>
+					<option value="viart" {vselected}>ViArt</option>
+					<option value="sayu" {sselected}>Sayu</option>
+				</select>
+			</td>
+		</tr>		 
+		<tr>
+			<td align="right">Filter by project:</td>
+			<td>
+				<select name="project_selected" id="project_selected" style="width:150px" onChange="SubprojectsLoad(this.value);">
+				<option value="">---- All projects ----</option>{project_list}</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Sub-project:</td>
+			<td>
+				<div id="subprojects" style="">Loading...</div>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Filter by person:</td>
+			<td>
+				<select name="person_selected" id="person_selected" style="width:150px">
+				<option value="">---- All people ----</option>{person_list}</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Keyword:</td>
+			<td>
+				<input type="text" name="keyword" value="{keyword}" id="keyword" style="width:150px">
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Google ID:</td>
+			<td>
+				<input type="text" name="googleid_search" value="{googleid_search}" id="googleid_search" style="width:150px">
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Clients per page:</td>
+			<td>
+				<select name="records_per_page" id="records_per_page" style="width:150px">
+				<option value="all" {all_selected} >---- All clients ----</option>
+				<option value="25" {25_selected} >25</option>
+				<option value="100" {100_selected} >100</option>
+				<option value="150" {150_selected} >150</option>
+				</select>
+			</td>
+		</tr>
+		
+		<tr>
+			<td align="center" colspan="4">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+	</table>
+</form>
+</div>
+<script type="text/javascript" language="javascript">
+var project_id = {project_selected};
+var subproject_id = {subproject_selected};
+
+function Subprojects(url) {
+	this.url = url;
+	this.subprojects = "";
+	this.ajaxHelper = new net.ContentLoader( this, url, "POST", [] );
+	this.action = "";
+}
+
+Subprojects.prototype = {
+	load: function() {
+		this.onLoadBefore();
+		this.action = "load";
+		this.ajaxHelper.sendRequest();
+		this.subprojects = "";
+	},
+	
+	ajaxUpdate: function(request) {
+		if (this.action == "load") {
+			if (request.responseXML != null) {
+				var records = request.responseXML.documentElement;
+				var text  = this.getElementContent(records,'text');
+				this.subprojects = new SubprojectsText(text);
+				this.toHTML();
+			}
+			this.onLoadAfter();
+		} 
+	},
+
+	getElementContent: function(element,tagName) {
+		var childElement = element.getElementsByTagName(tagName)[0];
+		return childElement.text != undefined ? childElement.text : childElement.textContent;
+	},
+
+	toHTML: function() {
+	},
+	
+	handleError: function(request) {
+		
+	},
+
+	onLoadBefore: function() {},
+	onLoadAfter: function() {},
+	onSaveBefore: function() {},
+	onSaveAfter: function() {}
+}
+
+function SubprojectsText(text) {
+	this.text = text;
+	this.name = name;
+}
+
+function subprojectsSetStatus(id, status) {
+	var element = document.getElementById(id);
+	if (element != null) {
+		element.innerHTML = status;
+	}
+}
+
+function subprojectsToHTML(subprojects,id) {
+	var html = "";
+	if (subprojects != null) {
+			html = subprojects.text;
+	} 
+	var element = document.getElementById(id);
+	if (element != null) {
+		element.innerHTML = html;
+	}
+}
+
+
+function SubprojectsLoad(project_id, subproject_id) {
+	var inputName = "subproject_selected";
+	var blockName = "subprojects";
+	var id = "subprojects";
+
+	var url = "sayu_blocks.php";
+	url += "?block=" + blockName;
+	url += "&input_name=" + inputName;
+	url += "&project_id=" + project_id;
+	url += "&subproject_id=" + subproject_id;
+
+	var subprojects = new Subprojects(url);
+	var element = document.getElementById(id);
+	if (element.style.display == "block") {
+		//AdgroupsClose(id);
+	} else {
+		element.style.display = "block";
+		element.style.width = '300px';
+	}
+	subprojects.onLoadBefore = function() {subprojectsSetStatus(id, "Loading...");}
+	subprojects.onLoadAfter = function() {
+		subprojects.toHTML = subprojectsToHTML(subprojects.subprojects,id);
+	}
+	subprojects.load();
+}
+
+SubprojectsLoad(project_id, subproject_id);
+
+</script>
+
+<!-- BEGIN result -->
+<table class="FormTABLE" align="center" width="70%" border=0>
+    <tr>
+        <td colspan="6" align="center" style="padding-bottom:10px">Date filter: {start_date} till {end_date}</td>
+    </tr>
+	<!-- BEGIN navigation_top -->
+	<tr>
+		<td colspan="6">Navigation: {navigator_top}</td>
+	</tr>
+	<!-- END navigation_top -->
+    <tr>
+    	<td class="FormHeaderTD" colspan="6"><font class="FormHeaderFONT">Clients Report</font></td>
+    </tr>
+	<!-- BEGIN clients_header -->
+	<tr align="center" >
+		<td class="ColumnTD" nowrap>&nbsp;<a href='clients_report.php?sort=client_name&order={cl_sort}'><font class="ColumnFONT">Client</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a href='clients_report.php?sort=company_name&order={cn_sort}'><font class="ColumnFONT">Company</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a href='clients_report.php?sort=client_email&order={ce_sort}'><font class="ColumnFONT">Client e-mail</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a href='clients_report.php?sort=spent_hours&order={sh_sort}'><font class="ColumnFONT">Spent hours</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a href='clients_report.php?sort=sayu_cost&order={sc_sort}'><font class="ColumnFONT">"Cost"</font></a1></td>
+		<!--
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=percent&order={p_sort}'><font class="ColumnFONT">%</font></a1></td>
+		-->
+		<td class="ColumnTD" nowrap>&nbsp;<a href='clients_report.php?sort=tasks_count&order={tc_sort}'><font class="ColumnFONT">Tasks Count</font></a1></td>
+		<!--
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=tasks&order={t_sort}'><font class="ColumnFONT">Tasks</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=projects&order={p_sort}'><font class="ColumnFONT">Project</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=working_days&order={wd_sort}'><font class="ColumnFONT">Working days</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=developers&order={d_sort}'><font class="ColumnFONT">Developers</font></a1></td>
+		-->
+	</tr>
+	<!-- END clients_header -->
+
+	<!-- BEGIN ClientParent -->
+	<tr>
+		<td class="{colorrow}" nowrap>&nbsp;<font class="DataFONT"><a href="clients_report.php?client_id={client_id}{search}#task"><b>{client_name}</b></a></font></td>
+		<td class="{colorrow}" nowrap>&nbsp;<font class="DataFONT">{company_name}</font></td>
+		<td class="{colorrow}" nowrap>&nbsp;<font class="DataFONT"><a href="mailto:{client_email}">{cutted_client_email}</a></font></td>
+		<td  align="center" class="{colorrow}" nowrap>&nbsp;<font class="DataFONT"><b>{total_time}</b></font></td>
+		<td  align="center" class="{colorrow}" nowrap>&nbsp;<font class="DataFONT"><b>{sayu_cost}</b></font></td>
+		<!-- <td  align="center" class="DataTDP" nowrap>&nbsp;<font class="DataFONT">&nbsp;</font></td> -->
+		<td  align="center" class="{colorrow}" nowrap>&nbsp;<font class="DataFONT">{task_count}</font></td>
+		<!--
+		<td class="DataTDP">&nbsp;<font class="DataFONT">&nbsp;</font></td>
+		<td class="DataTDP" nowrap>&nbsp;<font class="DataFONT">&nbsp;</font></td>
+		<td class="DataTDP" nowrap>&nbsp;<font class="DataFONT">&nbsp;</font></td>
+		<td class="DataTDP" nowrap>&nbsp;<font class="DataFONT">&nbsp;</font></td>
+		-->
+	</tr>
+		<!-- BEGIN clients -->
+		<!--
+		<tr>
+			<td align="left"	  class="DataTDE" nowrap><font class="DataFONT">&nbsp;</font></td>
+			<td align="left"	  class="DataTDE" nowrap><font class="DataFONT">&nbsp;</font></td>
+			<td align="left"	  class="DataTDE" nowrap><font class="DataFONT">&nbsp;</font></td>
+			<td align="center" class="DataTDE" nowrap><font class="DataFONT">{spent_hours}</font></td>
+			<td align="center" class="DataTDE" nowrap><font class="DataFONT">&nbsp;</font></td>
+			<td align="center" class="DataTDE" nowrap><font class="DataFONT">{percent}</font></td>
+			<td align="center" class="DataTDE"><font class="DataFONT">&nbsp;</font></td>
+			<td align="left"	  class="DataTDE"><font class="DataFONT">{task_title}</font></td>
+			<td class="DataTDE" nowrap>&nbsp;<font class="DataFONT">{project_title}</font></td>
+			<td align="center" class="DataTDE" nowrap><font class="DataFONT">{working_days}</font></td>
+			<td align="left"	  class="DataTDE"><font class="DataFONT">{developers}</font></td>
+		</tr>
+		-->
+		<!-- END clients -->
+  <!-- END ClientParent -->
+
+    <!-- BEGIN no_records -->
+    <tr><td colspan="6" class="Headline">No data for this period</td></tr>
+    <!-- END no_records -->
+		
+		<!-- BEGIN totals -->
+		<tr class="FormHeaderTD" style="color:#FFFFFF;">
+			<td>&nbsp;<b>Totals:</b></td>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td  align="center" nowrap>&nbsp;<b>{total_hours}</b></td>
+			<td  align="center" nowrap>&nbsp;<b>{total_cost}</b></td>
+			<td  align="center" nowrap>&nbsp;<b>{total_tasks}</b></td>
+		</tr>
+		<!-- END totals -->
+		
+    <tr>
+    	<td class="FormHeaderTD" colspan="6"><font class="FormHeaderFONT">&nbsp;</font></td>
+    </tr>
+	<!-- BEGIN navigation_bottom -->
+	<tr>
+		<td colspan="6">Navigation: {navigator_bottom}</td>
+	</tr>
+	<!-- END navigation_bottom -->
+
+</table>
+<!-- END result -->
+
+<!-- BEGIN client_task_view-->
+<br><br>
+<a name="task"></a>
+<table class="FormTABLE" align="center" width="70%" border=0>
+	<tr>
+    	<td class="FormHeaderTD" colspan="5"><font class="FormHeaderFONT">{task_client_name}</font></td>
+    </tr>
+	<!-- BEGIN header_task_view -->
+	<tr>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=tasks&order={t_sort}'><font class="ColumnFONT">Tasks</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=projects&order={p_sort}'><font class="ColumnFONT">Project</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=working_days&order={wd_sort}'><font class="ColumnFONT">Time</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=percent&order={p_sort}'><font class="ColumnFONT">%</font></a1></td>
+		<td class="ColumnTD" nowrap>&nbsp;<a1 href='clients_report.php?sort=developers&order={d_sort}'><font class="ColumnFONT">Developers</font></a1></td>
+	</tr>
+	<!-- END header_task_view -->
+	<!-- BEGIN task_view -->
+	<tr>
+		<td align="left"	  class="{colorrow}"><font class="DataFONT">{task_title}</font></td>
+		<td class="{colorrow}" nowrap>&nbsp;<font class="DataFONT">{project_title}</font></td>
+		<td align="center" class="{colorrow}" nowrap><font class="DataFONT">{spent_hours}</font></td>
+		<td align="center" class="{colorrow}" nowrap><font class="DataFONT">{percent}</font></td>
+		<td align="left"	  class="{colorrow}"><font class="DataFONT">{developers}</font></td>
+	</tr>
+	<!-- END task_view -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="5"><font class="FormHeaderFONT">&nbsp;</font></td>
+    </tr>
+</table>
+<!-- END client_task_view-->
+<script language="javascript" type="text/javascript">
+setFilterOption("person_selected", "{person_selected}");
+setFilterOption("project_selected", "{project_selected}");
+setFilterOption("period_selected", "{period}");
+selectPeriod();
+</script>
+</body>
+</html>

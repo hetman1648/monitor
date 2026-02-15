@@ -1,0 +1,106 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script type="text/javascript">
+	function move_select(sel1, sel2) {
+		var select1 = document.getElementById(sel1);
+		var select2 = document.getElementById(sel2);
+		var remove_list = new Array();
+		for (i=0; i < select1.length; i++) {
+			if (select1.options[i].selected == true) {
+				var opt = document.createElement('option');
+				opt.text = select1.options[i].text;
+				opt.value = select1.options[i].value;
+				try {
+					select2.add(opt,null);
+				} catch(ex) {
+					select2.add(opt); // IE
+				}
+				remove_list.push(i);
+			}
+		}
+		for (i=0; i < remove_list.length; i++) {
+			if (i == 0) {
+				select1.remove(remove_list[i]);
+			} else {
+				select1.remove(remove_list[i]-i);
+			}
+		}
+	}
+	
+	function select_projects() {
+		var delim = ',';
+		var selObj = document.getElementById('sel_projects');
+		var hideObj = document.getElementById('selected_projects');
+		hideObj.value = '';
+		for (var i = 0; i < selObj.options.length; i++) {
+			hideObj.value = 
+				hideObj.value == '' ? selObj.options[i].value : hideObj.value + delim + selObj.options[i].value;
+		}
+		}
+</script>
+
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+	<h1>{type_title}</h1>
+		<form name="projects_species_edit" action="projects_species_edit.php?species_id={type_id}" onsubmit="select_projects();" method="POST">
+		
+		
+<table>
+	<tr>
+		<th>
+			All projects
+		</th>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<th>
+			Selected projects
+		</th>
+	</tr>
+	<tr>
+		<td>
+			<select multiple size="20" name="all_projects" id="all_projects">
+			<!-- BEGIN all_projects -->
+				<option value="{project_id}">{project_title}</option>
+			<!-- END all_projects -->
+			</select>
+		</td>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<td align="center" valign="top">
+			<select multiple size="10" name="sel_projects" id="sel_projects" style="width:275px;">
+			<!-- BEGIN selected_projects -->
+				<option value="{project_id}">{project_title}</option>
+			<!-- END selected_projects -->
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="center">
+			<a href="#" id="btn_moveLR" onclick="move_select('all_projects', 'sel_projects');" ><img src="images/move_right.gif" border="0"></a>
+		</td>
+		<td>&nbsp;&nbsp;&nbsp;</td>
+		<td align="center">
+			<a href="#" id="btn_moveRL" onclick="move_select('sel_projects', 'all_projects');"><img src="images/move_left.gif" border="0"></a>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="3" align="center">
+			<input type="submit" name="update" value="Update">
+		</td>
+	</tr>
+</table>
+		
+		<input type="hidden" value="" name="selected_projects" id="selected_projects" />
+		</form>
+</div>
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,137 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+
+</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+<!--BEGIN error-->
+<table><tr><td><div style="padding: 10px; background-color: red; font-color:white;">{error_message}</div></td></tr></table>
+<!--END error-->
+<form name="frmFilter" action="create_client.php" method="GET">
+<input type="hidden" name="client_type" value="{client_type}">
+<table cellpadding="2" >
+	<tr>
+		<td class="FormHeaderTD" colspan="6"><font class="FormHeaderFONT">Client {client_name}</font></td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Client</td>
+		<td colspan=4 class="DataTD">
+			<input type=text size='40' name='client_name' value='{client_name}'>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Company</td>
+		<td colspan=4 class="DataTD">
+			<input type=text size='40' name='company_name' value='{company_name}'>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Client Viart ID</td>
+		<td colspan=4 class="DataTD">
+			<input type=text size='10' name='sayu_user_id' value='{sayu_user_id}'>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Clients E-mail</td>
+		<td colspan=4 class="DataTD">
+			<input type=text size='40' name='client_email' value='{client_email}'>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">MCC</td>
+		<td colspan=4 class="DataTD">
+			<input type=text size='40' name='mcc_account' value='{mcc_account}'>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Google ID</td>
+		<td colspan=4 class="DataTD">
+			<input type=text size='40' name='google_id' value='{google_id}'>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Notes</td>
+		<td colspan=4 class="DataTD"><textarea type="text" name="notes" cols="80" rows="5">{notes}</textarea></td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD">Date Added</td>
+		<td colspan=4 class="DataTD">{date_added}</td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD"> Is Viart</td><td colspan=4 class="DataTD"><input type="checkbox" name="is_viart" {is_viart}></td>
+	</tr>
+	<tr>
+		<td class="FieldCaptionTD" >Is Viart Hosting</td><td colspan=4 class="DataTD"><input type="checkbox" name="is_viart_hosted" {is_viart_hosted}></td>
+	</tr>
+	<!-- BEGIN sayu_clients-->
+	<tr>
+		<td class="FieldCaptionTD" >Client Active</td><td colspan=4 class="DataTD"><input type="checkbox" name="is_sayu_active" {is_sayu_active} DISABLED value="1"></td>
+	</tr>
+	<!-- END sayu_clients-->
+	<tr>
+		<td colspan=6 class="DataTD"><input type="submit" name="action_value" value="{action_value}">
+			{delete_button}
+			<input name="client_id" value="{client_id}" type="hidden">
+			<input type="submit" name="action" value="Cancel">
+		</td>
+	</tr>
+</table>
+</form>
+
+
+<table CELLPADDING=2  cols=6>
+	<tr>
+		<td colspan=6 class="FieldCaptionTD">&nbsp;</td>
+	</tr>
+	<tr>
+		<td align=center class="DataTD" colspan="6">Sites</td>
+	</tr>
+	<tr>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Web Adress&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Admin&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;FTP&nbsp;</font></td>
+		<!--<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Date Added&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Date Changed&nbsp;</font></td>-->
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;SVN&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Notes&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Tags&nbsp;</font></td>
+	</tr>
+	<!-- BEGIN sites -->
+	<tr>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='{web_address}' target='_blank'>{web_address}</a>&nbsp;&nbsp;<a href='create_site.php?site_id={site_id}'>edit</a>&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT"><a href="{web_address}{admin_url}admin_login.php?{adress_params}&operation=login&login={admin_login}&password={admin_password}">{admin}</a></font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">{ftp}</font></td>
+		<!--<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;{date_added_web}&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;{date_changed}&nbsp;</font></td>-->
+		<td class="ColumnTD"><font class="ColumnFONT">&nbsp;<a style="font-weight:normal" href="svn?repository={domain_name}">svn://web1.sayu.co.uk/mnt/drive2/webclients/{domain_name}</a>&nbsp;</font></td>
+		<td class="ColumnTD"><font class="ColumnFONT">&nbsp;{notes}&nbsp;</font></td>
+		<td class="ColumnTD"><font class="ColumnFONT"><!--BEGIN tag-->&nbsp;<a href="view_clients.php?ftag=[{tag_title}]&submit=1">{tag_title}</a><!--END tag--></font></td>
+	</tr>
+	<!-- END sites -->
+	<!-- BEGIN no_sites -->
+	<tr>
+		<td class="ColumnTD" colspan='6' nowrap><font class="ColumnFONT">&nbsp;No sites for this user&nbsp;</font></td>
+	</tr>
+	<!-- END no_sites -->
+	<tr>
+		<td colspan=6>
+			<a href='create_site.php?client_id={client_id}'>{add_site}</a>
+		</td>
+	</tr>
+</table>
+
+
+</body>
+</html>

@@ -1,0 +1,107 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+  <table width=100%>
+  <tr>
+  <td valign="center" align="center">
+    {ITEMPLATE=header.html}
+  </td>
+
+  <td valign="top">{ITEMPLATE=searchbox1.html}</td>
+
+  <td valign="top" align="right" rowspan=2 width=20%>
+    <!-- BEGIN FormProjects -->
+
+    <table class="FormTABLE">
+    <tr><td class="FormHeaderTD" colspan="3"><a name="Projects"><font class="FormHeaderFONT">Projects</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD"><a href="{FileName}?{TransitParams}FormProjects_Sorting=1&FormProjects_Sorted={Form_Sorting}&"><font class="ColumnFONT">Title</font></a></td>
+      <td class="ColumnTD"><a href="{FileName}?{TransitParams}FormProjects_Sorting=2&FormProjects_Sorted={Form_Sorting}&"><font class="ColumnFONT">Status</font></a></td>
+      <td class="ColumnTD"><a href="{FileName}?{TransitParams}FormProjects_Sorting=3&FormProjects_Sorted={Form_Sorting}&"><font class="ColumnFONT">Person</font></a></td>
+    </tr>
+
+    <!-- BEGIN DListProjects -->
+
+    <tr><td class="DataTD" nowrap>
+        <a href="view_project.php?project_id={Prm_project_id}"><font class="DataFONT">{project_title}</font></a>&nbsp;
+</td><td class="DataTD" nowrap>
+        <font class="DataFONT">{project_status_id}&nbsp;</font>
+      </td><td class="DataTD">
+        <font class="DataFONT">{responsible_user_id}&nbsp;</font>
+      </td></tr>
+
+    <!-- END DListProjects -->
+    <!-- BEGIN ProjectsNoRecords -->
+    <tr><td colspan="3" class="DataTD"><font class="DataFONT">No records!</font></td></tr>
+    <!-- END ProjectsNoRecords -->
+
+    <tr><td colspan="3" class="ColumnTD"><font class="ColumnFONT">
+
+<!-- BEGIN ProjectsScroller -->
+    <a href{ProjectsScrollerPrevSwitch}="{FileName}?{TransitParams}{SortParams}FormProjects_Page={PrevPage}#Projects"><font class="ColumnFONT">Previous</font></a>
+    [ {ProjectsCurrentPage} ]
+    <a href{ProjectsScrollerNextSwitch}="{FileName}?{TransitParams}{SortParams}FormProjects_Page={NextPage}#Projects"><font class="ColumnFONT">Next</font></a>
+    <!-- END ProjectsScroller -->
+    </font></td></tr>
+    </table>
+
+    <!-- END FormProjects -->
+    </td></tr>
+    </table>
+
+<!-- Search & Tasks -->
+    <!-- BEGIN FormTasks -->
+    <a name="tasks">
+    <table class="FormTABLE" width=100%>
+    <tr><td class="FormHeaderTD" colspan="7"><a name="Tasks"><font class="FormHeaderFONT">Tasks</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD" nowrap><a href="{FileName}?{TransitParams}FormTasks_Sorting=1&FormTasks_Sorted={Form_Sorting}&"><font class="ColumnFONT">Project</font></a></td>
+      <td class="ColumnTD"><a href="{FileName}?{TransitParams}FormTasks_Sorting=2&FormTasks_Sorted={Form_Sorting}&"><font class="ColumnFONT">Title</font></a></td>
+      <td class="ColumnTD" nowrap><a href="{FileName}?{TransitParams}FormTasks_Sorting=3&FormTasks_Sorted={Form_Sorting}&"><font class="ColumnFONT">Status</font></a></td>
+      <td class="ColumnTD" nowrap><a href="{FileName}?{TransitParams}FormTasks_Sorting=5&FormTasks_Sorted={Form_Sorting}&"><font class="ColumnFONT">Created</font></a></td>
+      <td class="ColumnTD" nowrap><a href="{FileName}?{TransitParams}FormTasks_Sorting=6&FormTasks_Sorted={Form_Sorting}&"><font class="ColumnFONT">Complete by</font></a></td>
+      <td class="ColumnTD" nowrap><a href="{FileName}?{TransitParams}FormTasks_Sorting=7&FormTasks_Sorted={Form_Sorting}&"><font class="ColumnFONT">Priority</font></a></td>
+    </tr>
+
+    <!-- BEGIN DListTasks -->
+
+      <tr class="Task{STATUS}" ><td class="GridRecordHeader" nowrap>{project_id}&nbsp;</td>
+    	<td>
+          <a class="Task{STATUS}" href="{task_title_URLLink}?task_id={Prm_task_id}&{TransitParams}">{task_title}</a>&nbsp;
+	</td>
+	<td nowrap>{task_status_id}&nbsp;</td>
+        <td nowrap>{creation_date}&nbsp;</td>
+        <td nowrap>{planed_date}&nbsp;</td>
+        <td nowrap>{priority_id}&nbsp;</td>
+      </tr>
+
+    <!-- END DListTasks -->
+    <!-- BEGIN TasksNoRecords -->
+    <tr><td colspan="7" class="DataTD"><font class="DataFONT">No records!</font></td></tr>
+    <!-- END TasksNoRecords -->
+
+    <tr><td colspan="7" class="ColumnTD"><font class="ColumnFONT">
+
+    <!--
+    <a href="{FormAction}?{TransitParams}"><font class="ColumnFONT">Add new one</font></a>
+    -->
+
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<!-- BEGIN TasksScroller -->
+    <a href{TasksScrollerPrevSwitch}="{FileName}?{TransitParams}{SortParams}FormTasks_Page={PrevPage}#Tasks"><font class="ColumnFONT">Previous</font></a>
+    [ {TasksCurrentPage} ]
+    <a href{TasksScrollerNextSwitch}="{FileName}?{TransitParams}{SortParams}FormTasks_Page={NextPage}#Tasks"><font class="ColumnFONT">Next</font></a>
+    <!-- END TasksScroller -->
+    </font></td></tr>
+    </table>
+
+    <!-- END FormTasks -->
+
+</body>
+</html>

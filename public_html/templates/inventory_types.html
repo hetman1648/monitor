@@ -1,0 +1,109 @@
+<html>
+
+<head>
+<title>
+	Control
+</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript">
+	function DeleteType(num)
+	{
+		if(confirm('Are you sure you want to delete this Property?') && (num > -1))
+		{
+			document.location="inventory_type.php?operation=delete&type_id=" + num;
+		}
+	}
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<table cellpadding="0" cellspacing="0" width=100% border="0">
+	<tr align="center">
+		<td>
+			<div id="menu_body">
+			<table>
+ 	 			<tr>
+  					<td nowrap>
+						<a href="inventory.php" class="DataTD">Inventories</a>
+  					</td>
+  					<td nowrap>
+						|&nbsp;<a href="inventory_types.php" class="DataTD">Types</a>
+					</td>
+  					<td nowrap>
+						|&nbsp;<a href="inventory_types_properties.php" class="DataTD">Properties</a>
+  					</td>
+  					<td nowrap>
+						|&nbsp;<a href="inventory_offices.php" class="DataTD">Offices</a>
+  					</td>
+  					<td nowrap>
+						|&nbsp;<a href="inventory_report.php" class="DataTD">Report</a>
+					</td>
+ 	 			</tr>
+			</table>
+			</div>
+		</td>
+	</tr>
+	<tr align="center">
+		<td>
+			<table class="FormTABLE" border="0">
+     			<form name="frmTypeEdit" action="inventory_type.php" method="POST">
+	 			<tr>
+    				<td class="FormHeaderTD" colspan="{colpan}">
+		     			<font class="FormHeaderFONT">Types List</font>
+					</td>
+	 			</tr>
+	 			<!--
+				<tr>
+    				<td class="ColumnTD" colspan="{colpan}">
+			     		<font class="ColumnFONT">Details</font>
+					</td>
+				</tr>
+				-->
+				<tr>
+    				<td class="DataRow1">
+		    			<CENTER>Title</CENTER>
+					</td>
+            		<td class="DataRow1">
+		    			<CENTER>Description</CENTER>
+					</td>
+					<!-- BEGIN title_operation -->
+					<td class="DataRow1" colspan="3">
+		 				<CENTER>Operations</CENTER>
+					</td>
+					<!-- END title_operation -->
+				</tr>
+				<!-- BEGIN types_orders -->
+				<tr>
+    				<td class="{colorrow}" align="left" nowrap>
+                    	{inventory_type_title}
+					</td>
+    				<td class="{colorrow}" align="left" nowrap>
+      			    	{inventory_type_desc}
+					</td>
+					<!-- BEGIN control_operation -->
+    				<td class="{colorrow}" align="center">
+      					<a href="inventory_types_properties.php?operation=view&type_id={type_id}">Properties</a>
+					</td>
+    				<td width="40" class="{colorrow}" align="center">
+      					<a href="inventory_type.php?operation=view&type_id={type_id}">Edit</a>
+					</td>
+    				<td class="{colorrow}" align="center">
+      	        		<a href="javascript:DeleteType({type_id})">Delete</a>
+      				</td>
+      				<!-- END control_operation -->
+				</tr>
+				<!-- END types_orders -->
+				<tr valign="bottom" height="50">
+					<td colspan="{colpan}" align="right">
+						<input type="submit" name="submit" value="Add">
+					</td>
+				</tr>
+				</form>
+			</table>
+		</td>
+	</tr>
+</table>
+</body>
+
+</html>

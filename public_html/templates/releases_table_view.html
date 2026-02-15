@@ -1,0 +1,81 @@
+<html>
+
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<form name="frmFilter" action="view_releases.php?project_id={proid}" method="POST">
+<table width="100%">
+<tr>
+	<td>
+	<select name="year_select">
+		<option>Select Year</option>
+		<option>2004</option>
+		<option>2005</option>
+		<option>2006</option>
+		<option>2007</option>
+	</select>
+	<select name="month_select">
+		<option>Select Month</option>
+		<option>January</option>
+		<option>February</option>
+		<option>March</option>
+		<option>April</option>
+		<option>May</option>
+		<option>June</option>
+		<option>July</option>
+		<option>August</option>
+		<option>September</option>
+		<option>October</option>
+		<option>November</option>
+		<option>December</option>
+	</select>
+	<select name="release"><option>All Releases</option><!-- BEGIN filter -->{rel_options}<!-- END filter --></select>
+	<select name="task_type"><option>All Tasks</option><option>Planned Only</option></select>
+	<input name="filter" type="submit" value="Filter">
+	<td align="right">View mode: <select name="view_mode"><option>Normal View</option><option>Stat View</option></select></td>
+</tr>
+</table>
+</form>
+
+<table class="FormTABLE" width=100%>
+
+<!-- BEGIN project_name -->
+<tr>
+<td colspan="{day_number}" class="FormHeaderTD" ><a name="Tasks"><font class="FormHeaderFONT">Project {proj_name} Releases</font></a></td>
+</tr>
+
+<tr>
+<td  class="ColumnTD">Task title</td>{day_numbers}
+</tr>
+<!-- END project_name -->
+
+<!-- BEGIN releases -->
+<tr>
+<td colspan="{day_number}" class="FieldCaptionTD">
+<font class="ColumnFONT"><a href="create_release.php?release_id={release_id}">{release_tit_dat}</a></font></td>
+</tr>
+
+<!-- BEGIN release_tasks -->
+<tr>
+<td>{task_id_tit}</td>
+{days}
+</tr>
+<!-- END release_tasks -->
+<tr><td colspan="{day_number}">&nbsp;</td></tr>
+<!-- END releases -->
+
+</table>
+
+
+<!-- BEGIN pro_id -->
+<a href="create_release.php?project_id={proid}"><font class="ColumnFONT">Add New Release</font></a>
+<!-- END pro_id -->
+
+</body>
+
+</html>

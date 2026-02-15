@@ -1,0 +1,352 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.period_selected.selectedIndex = 0;
+		document.frmFilter.start_date.value = "";
+		document.frmFilter.end_date.value = "";
+		document.frmFilter.team.value = "";
+		document.frmFilter.person_selected.value = 0;
+		document.frmFilter.project_selected.value = 0;
+		
+	}
+	
+	function setPeriod(iPeriod)
+	{
+		document.frmFilter.period_selected.selectedIndex = iPeriod;
+	}
+	
+	function selectPeriod()
+	{
+		var period = document.frmFilter.period_selected.options[document.frmFilter.period_selected.selectedIndex].value;
+		var startDate = ""; var endDate = "";
+		if (period == "none") {
+			startDate = "{start_date}"; endDate = "{end_date}";
+		} else if(period == "this_week") {
+			startDate = "{this_week_start}"; endDate = "{this_week_end}";
+		} else if(period == "last_week") {
+			startDate = "{last_week_start}"; endDate = "{last_week_end}";
+		} else if(period == "prev_week") {
+			startDate = "{prev_week_start}"; endDate = "{prev_week_end}";
+		} else if(period == "this_month") {
+			startDate = "{this_month_start}"; endDate = "{this_month_end}";
+		} else if(period == "last_month") {
+			startDate = "{last_month_start}"; endDate = "{last_month_end}";
+		} else if(period == "prev_month") {
+			startDate = "{prev_month_start}"; endDate = "{prev_month_end}";
+		} else if(period == "this_year") {
+			startDate = "{this_year_start}"; endDate = "{this_year_end}";
+		}
+		document.frmFilter.start_date.value = startDate;
+		document.frmFilter.end_date.value = endDate;
+	}
+	
+	var UserTeam = new Array();
+	var UserID = new Array(); 
+	var UserName = new Array();	
+	<!-- BEGIN PeopleArray -->
+	UserTeam[{ID}]={IDteam};	UserID[{ID}]={IDuser};		UserName[{ID}]="{user_name}";<!-- END PeopleArray -->
+
+	function MkPeopleList(index,plist)
+	{
+	var aCurrValues = UserID;
+	var nCurrValuesCnt = (aCurrValues ? aCurrValues.length : 0);
+	var oList = document.forms["frmFilter"].elements["person_selected"];
+	oList.length = 0;
+	
+	var team=1;
+	switch (index)
+	{
+		case "yoonoo"	: team= 0;break;
+		case "viart"	: team= 1;break;
+		case "all"	: team=-1;break;
+		default		: team= 0;
+	}
+	
+	var txt="";
+	
+	if (nCurrValuesCnt)
+	{
+		for (i = -1; i < nCurrValuesCnt; i++)
+		{
+			if ((UserID[i] && ((team==-1)||(team>-1 && UserTeam[i]==team) )  ) || i==-1) 
+			{
+				txt+="\n"+i;
+				if (document.createElement)
+				{
+					if (i>=0)
+					{
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = UserName[i];
+						newListOption.value = UserID[i];
+					} else {
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = "------ All people ------";
+						newListOption.value = "0";
+					}
+					(oList.options.add) ? oList.options.add(newListOption) : oList.add(newListOption, null);
+				}
+			}	
+		}
+	  }  
+	}
+	
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+<table border=0>
+	<tr><td valign="top">
+		<form name="frmFilter" action="estimates_report.php">		
+		<table border=0 cellpadding=2 cellspacing=0>
+		<tr>
+			<td align="right">
+				Select period:
+			</td>              
+			<td>
+				<select name="period_selected" style="width:150px" onChange="selectPeriod()">
+					<option value="none">-------- Period --------</option>
+					{periods}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Start Date: 
+			</td>
+			<td>
+				<input type="text" name="start_date" value="{start_date}" style="width:150px" onChange="setPeriod(0)">
+					
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.start_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0></A>
+				
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				End Date: 
+			</td>
+			<td>
+				<input type="text" name="end_date" value="{end_date}" style="width:150px" onChange="setPeriod(0)">
+
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.end_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0></A>
+
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Filter by project:
+			</td>              
+			<td>
+				<select name="project_selected" style="width:150px">
+					<option value="">----- All projects -----</option>
+					{projects}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Team: 
+			</td>
+			<td>
+				<select name="team" style="width:150px" onchange="MkPeopleList(this.value,'id_people')">
+				<option value="all" {aselected}>All teams</option>
+				<option value="viart" {vselected}>ViArt team</option>
+				<option value="yoonoo" {yselected}>YooNoo team</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Filter by person:
+			</td>              
+			<td>
+				<select name="person_selected" style="width:150px">
+				<option value="">------ All people ------</option></select>
+			</td>
+		</tr>
+		<script language="javascript">
+		<!--
+			selectPeriod();
+			MkPeopleList(document.frmFilter.elements["team"].value,'id_people');
+			document.frmFilter.elements["person_selected"].value={person_selected};
+			//-->
+		</script>
+		<tr>
+			<td align="right">
+				Show tasks with no estimates:
+			</td>              
+			<td>
+				<input name="est" type="checkbox" {est_checked}/>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Only completed tasks:
+			</td>              
+			<td>
+				<input name="cpl" type="checkbox" {cpl_checked}/>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Top 20 tasks in report:
+			</td>              
+			<td>
+				<input name="top" type="checkbox" {top_checked}/>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>
+	</td>
+		<!-- BEGIN people_est -->
+	<td>
+		<table border="0" cellpadding="0" class="FormTABLE">
+		<tr>
+			<td class="FormHeaderTD" colspan="13"><font class="FormHeaderFONT">Summary</font></td>
+		</tr>
+		<tr align="center">
+			<td class="ColumnTD" rowspan="2"><font class="ColumnFONT">Person</font></td>
+			<td class="ColumnTD" colspan="3"><font class="ColumnFONT">Tasks</font></td>
+			<td class="ColumnTD" colspan="2"><font class="ColumnFONT">Max time</font></td>
+			<td class="ColumnTD" colspan="2"><font class="ColumnFONT">Total time</font></td>
+			<td class="ColumnTD" colspan="2"><font class="ColumnFONT">Avg diff</font></td>
+			<td class="ColumnTD" colspan="3"><font class="ColumnFONT">Avg ratio</font></td>
+		</tr>
+		<tr align="center">
+			<td class="ColumnTD"><font class="ColumnFONT">over est</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">under est</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">without</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">over</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">under</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">over</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">under</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">over</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">under</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">over</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">under</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">total</font></td>
+		</tr>
+		<!-- BEGIN people_rec -->
+		<tr align="center">
+			<td class="DataTDE" align="left">{user_name}</td>
+			<td class="DataTDEred" ><a href="estimates_report.php?period_selected={period_selected}&start_date={start_date}&end_date={end_date}&project_selected={project_selected}&team={team_selected}&person_selected={user_id}&cpl={cpl}&sort={sort}&submit=+Filter+"><font class="DataFONT">{count_over}</font></a></td>
+			<td class="DataTDEblue"><a href="estimates_report.php?period_selected={period_selected}&start_date={start_date}&end_date={end_date}&project_selected={project_selected}&team={team_selected}&person_selected={user_id}&cpl={cpl}&sort={sort}&submit=+Filter+"><font class="DataFONT">{count_under}</font></a></td>
+			<td class="DataTDE"    ><a href="estimates_report.php?period_selected={period_selected}&start_date={start_date}&end_date={end_date}&project_selected={project_selected}&team={team_selected}&person_selected={user_id}&est=on&cpl={cpl}&sort={sort}&submit=+Filter+"><font class="DataFONT">{count_wo}</font></a></td>
+			<td class="DataTDEred" >{max_over}</td>
+			<td class="DataTDEblue">{max_under}</td>
+			<td class="DataTDEred" >{ttl_over}</td>
+			<td class="DataTDEblue">{ttl_under}</td>
+			<td class="DataTDEred" >{avg_over}</td>
+			<td class="DataTDEblue">{avg_under}</td>
+			<td class="DataTDEred" >{ratio_over}</td>
+			<td class="DataTDEblue">{ratio_under}</td>
+			<td class="DataTDE" ><b>{ratio_total}</b></td>
+		</tr>
+		<!-- END people_rec -->
+		<tr align="center">
+			<td class="ColumnTD"><font class="ColumnFONT">Totals/Averages</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_count_over}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_count_under}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_count_wo}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{o_max_over}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{o_max_under}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_ttl_over}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{sum_ttl_under}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{o_avg_over}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{o_avg_under}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{o_ratio_over}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{o_ratio_under}</font></td>
+			<td class="ColumnTD"><font class="ColumnFONT">{o_ratio_total}</font></td>
+		</tr>
+			
+		</table>
+		<br>
+	</td>		
+		<!-- END people_est -->
+
+	</tr>
+</table>		
+</div>
+<!-- BEGIN result_t -->
+<table class="FormTABLE" align="center">
+
+    <tr>
+    	<td class="FormHeaderTD" colspan="10"><font class="FormHeaderFONT">Estimates Report</font></td>
+    </tr>
+    
+    <!-- BEGIN tasks_report_header -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap rowspan="2"><font class="ColumnFONT">Project</font></td>
+	    <td class="ColumnTD" nowrap rowspan="2"><font class="ColumnFONT">Task</font></td>
+	    <td class="ColumnTD" nowrap rowspan="2"><font class="ColumnFONT">Status</font></td>
+	    <td class="ColumnTD" nowrap rowspan="2"><font class="ColumnFONT">Completion,<br>%</font></td>
+	    <td class="ColumnTD" nowrap colspan="2"><font class="ColumnFONT">Spent hours</font></td>
+	    <td class="ColumnTD" nowrap rowspan="2"><a href="estimates_report.php?period_selected={period_selected}&start_date={start_date}&end_date={end_date}&project_selected={project_selected}&team={team_selected}&person_selected={person_selected}&est={est}&cpl={cpl}&top={top}&sort=diff&submit=+Filter+" ><font class="ColumnFONT">Act-Est<br>difference</font></a></td>
+	    <td class="ColumnTD" nowrap rowspan="2"><a href="estimates_report.php?period_selected={period_selected}&start_date={start_date}&end_date={end_date}&project_selected={project_selected}&team={team_selected}&person_selected={person_selected}&est={est}&cpl={cpl}&top={top}&sort=ratio&submit=+Filter+"><font class="ColumnFONT">Act/Est<br>ratio, %</font></a></td>
+	    <td class="ColumnTD" nowrap rowspan="2"><font class="ColumnFONT">Developers</font></td>
+    </tr>
+    <tr>
+	<td class="ColumnTD" nowrap><font class="ColumnFONT">Actual</font></td>
+	<td class="ColumnTD" nowrap><font class="ColumnFONT">Estimate</font></td>
+    </tr>
+    <!-- END tasks_report_header -->
+    
+<!-- BEGIN result_tasks -->
+
+    
+    
+    <!-- BEGIN tasks_report_records -->
+    <tr  align="center">
+	    <td class="DataTDE{color}" nowrap align="left"><font color="#555555">{project_title}</font></td>
+	    <td class="DataTDE{color}" align="left"><a href="edit_task.php?task_id={task_id}"><font color="black">{task_title}</font></a></td>
+	    <td class="DataTDE{color}" nowrap style="padding-left:0.6em;padding-right:0.6em;">{task_status}</td>
+	    <td class="DataTDE{color}" nowrap><font color="#555555">{completion}</font></td>
+	    <td class="DataTDE{color}" nowrap>{spent_actual}</td>
+	    <td class="DataTDE{color}" nowrap>{spent_estimate}</td>
+	    <td class="DataTDE{color}" nowrap>{ae_diff}</td>
+	    <td class="DataTDE{color}" nowrap><b>{ae_ratio}</b></td>
+	    <td class="DataTDE{color}" nowrap align="left">{task_developers}</td>
+    </tr>	    
+    <!-- END tasks_report_records -->
+
+    <!-- BEGIN tasks_averages -->
+    <tr  align="center">
+	    <td class="ColumnTD" colspan="4" nowrap align="left"><b>Average:</b></td>
+	    <td class="ColumnTD" nowrap><b>{av_spent_actual}</b></td>
+	    <td class="ColumnTD" nowrap><b>{av_spent_estimate}</b></td>
+	    <td class="ColumnTD" nowrap><b>{av_ae_diff}</b></td>
+	    <td class="ColumnTD" nowrap><b>{av_ae_ratio}</b></td>
+	    <td class="ColumnTD" nowrap>&nbsp;</td>
+    </tr>	    
+    <!-- END tasks_averages -->
+        
+    <!-- BEGIN tasks_report_norecords -->
+    <!--<tr><td colspan="10" class=Headline>No tasks for this selection</td></tr>	    -->
+    <!-- END tasks_report_norecords -->
+
+
+<!-- END result_tasks -->
+</table>
+<!-- END result_t -->
+</body>
+</html>

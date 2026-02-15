@@ -1,0 +1,41 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+    <table class="FormTABLE" >
+    <form action="privilege.php" method="POST">
+    <input type="hidden" name="pid" value="{pid}">
+    <input type="hidden" name="operation" value="submit">
+    <tr><td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Privilege Group</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD" colspan="2"><font class="ColumnFONT">Privilege Details</font></td>
+    </tr>
+    
+    <tr>
+    	<td>Privilege Group Name:</td>
+      	<td nowrap>
+      		<input type="text" name="privilege_desc" size="50" value="{privilege_desc}">
+		</td>
+    </tr>
+    <tr>
+    	<td colspan="2">
+    	<br><b>Permissions:</b><br>
+    	<!-- BEGIN list -->
+    	<input type="checkbox" {checked} name="{privilege_name}" value="1">{privilege_title}<br>
+    	<!-- END list -->
+    	</td>
+    </tr>
+    <tr>
+    	<td colspan="2">
+	    	<input type="submit" value="Submit">
+    	</td>
+    </tr>
+    
+	</form>
+ 	</table>
+</body>
+</html>

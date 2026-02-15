@@ -1,0 +1,119 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.year_selected.value = "";
+		document.frmFilter.month_selected.value = "";
+		document.frmFilter.person_selected.value = "";
+	}
+-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<div align="center">
+
+		<form name="frmFilter" action="quarterly_report.php">
+		<table border=0>
+		<tr>
+			<td align="right">
+				Select Sub Team: 
+			</td>
+			<td>
+				<select name="team_id_selected" style="width:150px">
+					<!--BEGIN team_id_block-->
+					<option value="{team_id}" {team_id_selected}>{team_name}</option>
+					<!--END team_id_block-->
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<table border="0">
+					<tr class="DataTDP">
+						<td><font class="DataFONT">
+							From
+						</font></td>
+						<td><font class="DataFONT">
+							Period
+						</font></td>
+					</tr>
+					<tr>             
+						<td>
+							<select name="year_selected" style="width:150px">
+								<option value="">--------- Year ---------</option>
+								{years}
+							</select>
+						</td>
+						<td valign="middle" rowspan="2">
+							<input type="text" maxlength="2" value="{total_months}" name="total_months">
+						</td>
+					</tr>
+					<tr>             
+						<td>
+							<select name="month_selected" style="width:150px">
+								<option value="">-------- Month --------</option>
+								{months}
+							</select>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>
+</div>
+<div align="center">
+	<!--BEGIN records-->
+	<table>
+		<tr>
+    		<td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">from {start_date} to {end_date}</font></td>
+    	</tr>
+	    <tr align="center">
+	    	<td class="ColumnTD" nowrap><font class="ColumnFONT">
+	   			Person
+	   		</font></td>
+	   		<td class="ColumnTD" nowrap><font class="ColumnFONT">
+	   			Task
+	   		</font></td>
+			<td class="ColumnTD" nowrap><font class="ColumnFONT">
+				Time spent
+			</font></td>
+		</tr>
+	<!--BEGIN user_block-->
+		<tr>
+			<td colspan="3" class="DataTDP"><font class="DataFONT">
+				{user}
+			</font></td>
+		</tr>
+		<!--BEGIN task_row-->
+		<tr>
+			<td>
+				&nbsp;
+			</td>
+			<td class="DataTD"><font class="DataFONT">
+				<a href="edit_task.php?task_id={task_id}">{task_title}</a>
+			</font></td>
+			<td class="DataTD"><font class="DataFONT">
+				{sum_hours}
+			</font></td>
+		</tr>
+		<!--END task_row-->
+	<!--END user_block-->
+	</table>
+	<!--END records-->
+</div>
+</body>
+</html>

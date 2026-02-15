@@ -1,0 +1,126 @@
+<html>
+
+<head>
+<title>
+	Control
+</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script>
+	function DeleteTypeProperty(num)
+	{
+		if(confirm('Are you sure you want to delete this Property of Type?') && (num > -1))
+		{
+			document.frmTypePropertyEdit.operation.value ="delete";
+			document.frmTypePropertyEdit.property_id.value = num;
+			document.frmTypePropertyEdit.submit();
+		}
+	}
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<table cellpadding="0" cellspacing="0" width=100% border="0">
+<tr>
+ <td valign="top">
+ 	<table>
+ 		<tr>
+ 			<td>
+ 				<!-- BEGIN error --><div style="padding: 10px; background-color: red;"><font color=white>{err}</font></div><!-- END error -->
+ 			</td>
+ 		</tr>
+ 	</table>
+ </td>
+</tr>
+<tr>
+ <td align="center">
+	<div id="menu_body">
+	<table>
+ 		<tr>
+  			<td nowrap>
+				<a href="inventory.php" class="DataTD">Inventories</a>
+  			</td>
+  			<td nowrap>
+				|&nbsp;<a href="inventory_types.php" class="DataTD">Types</a>
+  			</td>
+  			<td nowrap>
+				|&nbsp;<a href="inventory_types_properties.php" class="DataTD">Properties</a>
+  			</td>
+  			<td nowrap>
+				|&nbsp;<a href="inventory_offices.php" class="DataTD">Offices</a>
+  			</td>
+  			<td nowrap>
+				|&nbsp;<a href="inventory_report.php" class="DataTD">Report</a>
+			</td>
+ 		</tr>
+	</table>
+	</div>
+
+	<table class="FormTABLE" border="0">
+	<form name="frmTypePropertyEdit" action="inventory_types_property.php" method="POST">
+	<input type="hidden" name="operation" value="{operation}">
+    <input type="hidden" name="property_id" value="{property_id}">
+		<tr>
+			<td class="FormHeaderTD" colspan="3">
+				<font class="FormHeaderFONT">Create New Property</font></a>
+			</td>
+		</tr>
+		<!--
+		<tr>
+			<td class="ColumnTD" colspan="2">
+				<font class="ColumnFONT">Details</font>
+			</td>
+		</tr>
+		-->
+		<tr>
+    		<td>
+		    	Property title: *
+			</td>
+      		<td nowrap>
+      			<input type="text" style="width:220px" name="type_property_name" value="{edit_type_property_title}">
+			</td>
+		</tr>
+		<tr>
+		    <td>
+		    	Description:
+			</td>
+			<td nowrap>
+				<textarea type="text" name="type_property_desc" cols="80" rows="10">{edit_type_property_desc}</textarea>
+			</td>
+		<tr>
+			<td>
+				Value:
+			</td>
+			<td nowrap>
+				<input type="text" style="width:220px" name="type_property_value" value="{edit_type_property_value}">
+			</td>
+		</tr>
+		<tr>
+			<td>
+				Type:
+			</td>
+			<td>
+				<select style="width:220px" name="inventory_type_title">
+					<option value="-1"> </option>
+					{edit_inventory_type_title}
+				</select>
+			</td>
+		</tr>
+		<tr>
+    		<td colspan="2" align="right">
+				<input type="submit" value="Save">
+				<!-- BEGIN delete -->
+					<input type="button" value="Delete" {enable} onClick="javascript:DeleteTypeProperty({property_id})">
+				<!-- END delete -->
+				<input type="button" value="Cancel" onclick="javascript:document.location='{urlback}'">
+			</td>
+		</tr>
+	</form>
+	</table>
+ </td>
+</tr></table>
+
+</body>
+
+</html>

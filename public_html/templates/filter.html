@@ -1,0 +1,168 @@
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+
+<script language="JavaScript">
+<!--
+	function selectPeriod()
+	{
+		var period = document.frmFilter.period.options[document.frmFilter.period.selectedIndex].value;
+		var startDate = ""; var endDate = "";
+		if (period == 0) {
+			startDate = "{start_date}"; endDate = "{end_date}";
+		} else if(period == 1) {
+			startDate = "{today_date}"; endDate = "{today_date}";
+		} else if(period == 2) {
+			startDate = "{yesterday_date}"; endDate = "{yesterday_date}";
+		} else if (period == 3) {
+			startDate = "{week_start_date}"; endDate = "{week_end_date}";
+		} else if (period == 4) {
+			startDate = "{month_start_date}"; endDate = "{month_end_date}";
+		} else if (period == 5) {
+			startDate = "{this_month_start}"; endDate = "{this_month_end}";
+		}
+		document.frmFilter.start_date.value = startDate;
+		document.frmFilter.end_date.value = endDate;
+	}
+
+	var UserTeam = new Array();
+	var UserID = new Array();
+	var UserName = new Array();
+	<!-- BEGIN PeopleArray -->
+	UserTeam[{ID}]={IDteam};	UserID[{ID}]={IDuser};		UserName[{ID}]="{user_name}";<!-- END PeopleArray -->
+
+	function MkPeopleList(index,plist)
+	{
+	var aCurrValues = UserID;
+	var nCurrValuesCnt = (aCurrValues ? aCurrValues.length : 0);
+	var oList = document.forms["frmFilter"].elements["person_selected"];
+	oList.length = 0;
+
+	var team=1;
+	switch (index)
+	{
+		case "yoonoo"	: team= 0;break;
+		case "viart"	: team= 1;break;
+		case "all"	: team=-1;break;
+		default		: team= 0;
+	}
+
+	var txt="";
+
+	if (nCurrValuesCnt)
+	{
+		for (i = -1; i < nCurrValuesCnt; i++)
+		{
+			if ((UserID[i] && ((team==-1)||(team>-1 && UserTeam[i]==team) )  ) || i==-1)
+			{
+				txt+="\n"+i;
+				if (document.createElement)
+				{
+					if (i>=0)
+					{
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = UserName[i];
+						newListOption.value = UserID[i];
+					} else {
+						var newListOption = document.createElement("OPTION");
+						newListOption.text = "------ All people ------";
+						newListOption.value = "0";
+					}
+					(oList.options.add) ? oList.options.add(newListOption) : oList.add(newListOption, null);
+				}
+			}
+		}
+	  }
+	}
+
+	function clearFilter()
+	{
+		document.frmFilter.period.value = "";
+		document.frmFilter.start_date.value = "";
+		document.frmFilter.end_date.value = "";
+		document.frmFilter.person_selected.value = "";
+	}
+
+	function setPeriod(iPeriod)
+	{
+		document.frmFilter.period.selectedIndex = iPeriod;
+	}
+
+-->
+</script>
+
+<form name="frmFilter" action={action}>
+		<table border=0>
+		<tr>
+			<td align="right">
+			  Select period:
+			</td>
+			<td>
+				<select name="period" onChange="selectPeriod()" style="width:150px">
+					<!-- BEGIN period_options -->
+					<option value="{period_value}" {period_selected}>{period_description}</option>
+					<!-- END period_options -->
+				</select>
+			</td>
+ 		</tr>
+		<tr>
+			<td align="right">
+				Start Date:
+			</td>
+			<td>
+				<input type="text" name="start_date" value="{start_date}" onChange="setPeriod(0)" style="width:150px">
+
+				<A HREF="javascript:doNothing()"
+					onClick="setDateField(document.frmFilter.start_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				End Date:
+			</td>
+			<td>
+				<input type="text" name="end_date" value="{end_date}" onChange="setPeriod(0)" style="width:150px">
+
+				<A HREF="javascript:doNothing()"
+					onClick="setDateField(document.frmFilter.end_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select Team:
+			</td>
+			<td>
+				<select name="team" style="width:150px" onchange="MkPeopleList(this.value,'id_people')">
+				<option value="all" {aselected}>All teams</option>
+				<option value="viart" {vselected}>Sayu Kyiv office</option>
+				<option value="yoonoo" {yselected}>Sayu Stockton office</option>
+				</select>
+			</td>
+		</tr>
+		<tr style='display:{display_person_tr}'>
+			<td align="right">
+				Filter by person:
+			</td>
+			<td>
+				<select name="person_selected" style="width:150px">
+				<option value="">------ All people ------</option></select>
+			</td>
+		</tr>
+		<script language="javascript">
+		
+			MkPeopleList(document.frmFilter.elements["team"].value,'id_people');
+			document.frmFilter.elements["person_selected"].value={person_selected};
+		
+		</script>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>

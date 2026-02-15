@@ -1,0 +1,381 @@
+RewriteEngine On
+RewriteCond %{SERVER_PORT} ^80$
+RewriteRule ^(/)?(.*) https://monitor.sayu.co.uk/$2 [R=301,L,QSA]
+
+<Files "*">
+    AuthUserFile /etc/.htpasswd
+    AuthType Basic
+    AuthName Restricted
+    Require user mextern
+    Order allow,deny
+
+# Gerda
+    Allow from 217.123.103.44
+
+#chloe home
+    Allow from 95.149.45.163
+    Allow from 2.26.21.71
+    Allow from 91.110.211.133
+    Allow from 109.180.104.1
+    Allow from 95.150.190.188
+    Allow from 91.110.211.166
+
+#catherine
+    Allow from 86.159.27.67
+    Allow from 86.180.34.13
+
+# Olexiy
+Allow from 195.211.141.201
+    Allow from 92.249.78.0
+Allow from 176.100.17.25
+
+# Anton home
+#    Allow from 178.94.171.210
+
+# Jul home
+    Allow from 109.86.36.87
+    Allow from 78.137.32.0/19
+    Allow from 37.139.168.0/24
+    Allow from 109.227.96.0/19
+    Allow from 212.55.93.234
+    Allow from 91.244.59.139
+    Allow from 91.244.59.151
+    Allow from 194.44.17.50
+    Allow from 176.67.7.148
+    Allow from 185.36.196.7
+
+# UMC CDMA pool
+    Allow from 77.52.0.0/16
+
+# Victor Loctionov
+    Allow from 95.134.0.0/18
+    Allow from 212.90.63.61
+    Allow from 212.90.60.11
+
+# Vital's Neapol connection
+    Allow from 91.215.62.66
+    Allow from 91.215.60.21
+
+# Vital's CRELCOM connection
+    Allow from 80.245.112.0/20
+
+# Vital's IP-NET network
+    Allow from 82.193.96.0/19
+
+# Vital's PRIVAT-ONLINE connection
+    Allow from 217.117.72.154
+
+# Vital's CRIMEACOM connection
+    Allow from 195.3.244.0/23
+
+# Vital's PRIVAT-ONLINE connection
+    Allow from 87.238.159.
+
+# Vital's PEOPLE-NET connection
+    Allow from 77.109.24.0/21
+    Allow from 92.49.224.0/21
+    Allow from 109.167.53.0/24
+    Allow from 92.49.192.0/18
+    Allow from 94.248.0.0/18
+    Allow from 91.215.60.2
+    Allow from 109.167.70.206
+    Allow from 91.215.61.1
+    Allow from 109.251.200.123
+
+# Vital's SWIFT-TRACE connection
+    Allow from 195.49.200.0/21
+
+
+# For internal proxy connections
+    Allow from 127.0.0.1
+#    Allow from 62.149.0.96
+
+# Sayu
+    Allow from 81.143.68.198
+    Allow from 213.131.107.146
+    Allow from 87.81.199.87
+    Allow from 213.210.27.226
+    Allow from 5.22.142.41
+
+# Tunnel
+    Allow from 78.47.48.96
+
+# Artem Hora
+    Allow from 193.194.107.253
+    Allow from 193.194.107.69
+    Allow from 185.242.21.213
+	Allow from  193.194.107.
+#Artem Krakiv
+Allow from 37.47.111.66
+#artem shynomontaj
+Allow from 94.45.138.18
+
+#Artem Kyivstar
+Allow from 46.211.137.221
+Allow from 46.211.128.155
+Allow from 46.211.66.210
+Allow from  46.211.110.157
+Allow from 46.211.67.137
+Allow from 46.211.84.214
+Allow from 46.211.151.6
+Allow from 46.211.72.79
+Allow from 46.211.74.102
+Allow from 46.211.150.140
+Allow from  46.211.67.178
+
+#ARTEM bookstore
+Allow from 95.164.54.89
+
+#Artem airport
+Allow from 89.248.140.16
+
+#Artem
+Allow from 217.76.202.68
+Allow from 46.211.67.93
+Allow from 94.154.222.101
+Allow from 46.211.205.89
+Allow from 82.1.143.95
+Allow from 46.211.98.173
+Allow from 96.22.185.22
+    Allow from 85.223.168.204
+    Allow from 195.66.138.18
+    Allow from 93.73.92.163
+    Allow from 81.253.27.41
+    Allow from 93.73.89.200
+    Allow from 95.109.128.0/17
+    Allow from 93.190.176.0/21
+    Allow from 217.175.0.0/21
+    Allow from 217.175.8.0/21
+    Allow from 46.200.0.0/14
+    Allow from 93.73.193.40
+    Allow from 80.242.107.153
+    Allow from 80.242.99.122
+    Allow from 217.175.12.209
+    Allow from 37.75.221.170
+    Allow from 80.242.106.37
+    Allow from 37.75.218.31
+    Allow from 93.75.233.249
+    Allow from 93.72.44.212
+    Allow from 193.194.107.53
+    Allow from 46.211.152.122
+    Allow from 82.2.169.132
+
+#Yarm
+    Allow from 81.106.89.201
+
+# Kiev's Office
+    Allow from 89.252.12.64
+    Allow from 109.251.118.117
+    Allow from 82.193.110.209
+
+# Tony Tailand
+Allow from 183.89.161.3 
+Allow from 95.154.201.199 
+  Allow from 14.207.20.106
+    Allow from 185.43.110.49
+    Allow from 180.183.208.23
+    Allow from 14.207.20.99
+    Allow from 183.89.2.159
+    Allow from 14.207.20.54
+Allow from 183.89.164.52
+Allow from 183.89.160.125
+    Allow from 183.89.118.84
+    Allow from 183.89.114.132
+    Allow from 125.25.63.35
+    Allow from 180.180.82.9
+    Allow from 183.89.114.132
+    Allow from 125.26.124.232
+
+#TOny
+    Allow from 125.27.178.142
+    Allow from 176.227.133.30
+    Allow from 151.230.120.100
+    Allow from 95.210.70.30
+    Allow from 95.210.72.54
+    Allow from 31.95.132.44
+    Allow from 103.40.135.162
+    Allow from 103.40.132.0/22
+    Allow from 101.109.0.0/16
+    Allow from 180.183.246.31
+    Allow from 183.88.213.1
+    Allow from 185.29.1.194
+    Allow from 14.207.22.82
+    Allow from 183.89.162.69
+    Allow from 180.183.209.90
+    Allow from 180.183.208.190
+    Allow from 14.207.16.98
+    Allow from 183.89.113.238
+    Allow from 14.207.23.231
+    Allow from 14.207.21.71
+    Allow from 185.192.69.50
+    Allow from 180.183.5.18
+    Allow from 183.89.166.93
+    Allow from 183.89.4.30
+    Allow from 183.89.113.160
+    Allow from 83.89.164.52
+    Allow from 183.89.164.52
+    Allow from 183.89.160.125
+    Allow from 183.89.113.245
+    Allow from 14.207.22.38
+    Allow from 180.183.215.24
+    Allow from 180.183.4.78
+    Allow from 183.89.161.3
+    Allow from 183.89.164.55
+    Allow from 183.89.164.201
+    Allow from 180.183.214.188
+    Allow from 183.89.4.73
+    Allow from 183.89.4.8
+
+# Simon
+    Allow from 213.123.216.198
+
+# Ravi
+    Allow from 217.35.102.250
+    Allow from 92.2.208.45
+    Allow from 31.50.204.7
+    Allow from 86.133.229.7
+    Allow from 31.50.204.37
+    Allow from 62.7.176.249
+    Allow from 81.143.205.5
+    Allow from 82.14.253.122
+    Allow from 90.253.3.3
+    Allow from 81.133.76.62
+    Allow from 183.83.44.116
+    Allow from 81.150.78.146
+    Allow from 86.147.100.96
+    Allow from 109.146.170.244
+    Allow from 81.133.175.237
+
+#Katie
+    Allow from 90.241.117.
+    Allow from 90.253.30.176
+    Allow from 81.107.158.194
+    Allow from 90.253.18.93
+    Allow from 90.253.18.93
+    Allow from 90.241.68.
+
+# Vlad
+    Allow from 194.44.20.124
+    Allow from 188.230.211.111
+
+# Roman
+    Allow from 89.252.16.109
+
+# Max
+#    Allow from 188.163.3.72
+#    Allow from 134.249.120.156
+#    Allow from 46.118.51.68
+
+# Maryna
+    Allow from 89.252.5.19
+
+# Andrew
+#    Allow from 5.248.165.142
+
+# Volodimir
+#    Allow from 93.73.202.178
+
+# Ludmila
+#    Allow from 193.201.83.9
+
+# Vera
+#    Allow from 93.73.226.100
+#    Allow from 93.73.88.184
+#    Allow from 93.75.229.243
+#    Allow from 93.73.200.116
+#    Allow from 93.72.38.255
+
+# Kate
+    Allow from 89.252.18.53
+    Allow from 193.93.118.54
+    Allow from 193.93.118.53
+    Allow from 89.200.252.252
+    Allow from 188.231.153.39
+    Allow from 82.144.204.119
+    Allow from 188.163.72.93
+    Allow from 85.209.46.202
+
+# Victor
+    Allow from 89.252.10.29
+    Allow from 178.159.231.67
+
+# Egor
+    Allow from 89.252.32.104
+    Allow from 89.252.41.100
+    Allow from 46.219.218.209
+    Allow from 46.219.213.89
+    Allow from 46.219.215.17
+    Allow from 109.251.102.130
+
+# Yura
+#    Allow from 195.128.182.0/23
+#    Allow from 78.111.176.0/20
+#    Allow from 95.158.0.0/19
+#    Allow from 78.155.56.47
+#    Allow from 37.122.168.238
+
+# Chris O'Rourke
+    Allow from 92.40.249.130
+    Allow from 82.69.9.88
+    Allow from 86.191.130.53
+
+# Chris Sutherland
+#    Allow from 80.47.223.9
+
+# Natasha Recovec
+#    Allow from 93.73.246.212
+#    Allow from 176.36.164.127
+#    Allow from 109.40.0.0/13
+#    Allow from 212.90.58.142
+
+# Iuliia
+    Allow from 46.219.215.178
+    Allow from 46.219.220.202
+    Allow from 46.219.214.154
+    Allow from 46.219.222.82
+    Allow from 46.219.213.58
+    Allow from 94.244.19.100
+
+# Roman
+    Allow from 82.144.204.93
+
+# Volodymyr Shalata
+#    Allow from 77.47.170.36
+
+#Sergiy Svincickiy
+#    Allow from  188.163.10.29
+#    Allow from 188.163.10.157
+
+#Ryan
+    Allow from 80.7.192.146
+    Allow from 81.107.25.195
+    Allow from 81.106.87.88
+	Allow from 81.103.195.217
+
+#Tracy
+    Allow from 86.17.191.7
+    Allow from 31.111.86.46
+    Allow from 86.8.136.149
+    Allow from 146.90.181.215
+
+#Rayan
+    Allow from 81.97.201.11
+    Allow from 31.94.15.28
+    Allow from 31.94.62.45
+    Allow from 31.94.14.49
+    Allow from 31.94.28.26
+    Allow from 31.94.31.22
+    Allow from 81.100.251.31
+
+#Yaroslav
+#    Allow from 91.195.249.87
+
+    Satisfy any
+</Files>
+
+#RewriteEngine On
+#RewriteBase /monitor/
+#RewriteCond %{SERVER_PORT} ^80$|^443$
+#RewriteCond %{HTTP_HOST} ^viart.com.ua$
+#RewriteRule ^(.*)$ https://www.viart.com.ua%{REQUEST_URI}
+

@@ -1,0 +1,94 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="templates/tasks.js"></SCRIPT>
+
+</head>
+<body class="PageBODY">
+<h2 align="center">Monitoring and Control</h2>
+<div align="center">Logged as: <b>{user_name}</b> | <a href="login.php?FormAction=logout" class="aLogout">Logout</a></div>
+
+<br>
+
+<table class="FormTABLE" width=100%>
+    <tr><td class="FormHeaderTD" colspan="9"><a name="Tasks"><font class="FormHeaderFONT">My Tasks</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Project</font></td>
+      <td class="ColumnTD"><font class="ColumnFONT">Title</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Priority</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Status</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Type</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Created</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Estimate</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Actual</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Complete by</font></td>
+    </tr>
+
+    <!-- BEGIN mytasks -->
+
+      <tr class="Task{STATUS}" ><td class="GridRecordHeader" nowrap><b>{project_title}</b>&nbsp;</td>
+    	<td>
+          <a class="Task{STATUS}" href="edit_task.php?task_id={task_id}">{task_title}</a>&nbsp;
+	    </td>
+        <td nowrap align ="center">{priority_id}&nbsp;</td>
+     	<td nowrap>{status_desc}&nbsp;</td>
+        <td nowrap>{type_desc}&nbsp;</td>
+        <td nowrap>{creation_date}&nbsp;</td>
+        <td nowrap>{estimated_title}&nbsp;</td>
+        <td nowrap>{actual_hours}&nbsp;</td>
+        <td nowrap>{planed_date}&nbsp;</td>
+      </tr>
+
+    <!-- END mytasks -->
+    <!-- BEGIN no_mytasks -->
+    <tr><td colspan="9" class="DataTD"><font class="DataFONT">There are no tasks assigned to me</font></td></tr>
+    <!-- END no_mytasks -->
+
+</table>
+
+<br>
+
+<table class="FormTABLE" width=100%>
+    <tr><td class="FormHeaderTD" colspan="9"><font class="FormHeaderFONT">Created Tasks</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Project</font></td>
+      <td class="ColumnTD"><font class="ColumnFONT">Title</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Priority</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Status</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Type</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Created</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Estimate</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Actual</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Complete by</font></td>
+    </tr>
+
+    <!-- BEGIN myctasks -->
+
+      <tr class="Task{cSTATUS}" onMouseOut="this.style.backgroundColor=lastBG;" onMouseOver="lastBG=this.style.backgroundColor; this.style.backgroundColor='#FCFFD5';"><td class="GridRecordHeader" nowrap><b>{cproject_title}</b>&nbsp;</td>
+    	<td>{ctask_title}</td>
+        <td nowrap align ="center">{cpriority_id}&nbsp;</td>
+     	<td nowrap>{cstatus_desc}&nbsp;</td>
+        <td nowrap>{ctype_desc}&nbsp;</td>
+        <td nowrap>{ccreation_date}&nbsp;</td>
+        <td nowrap>{cestimated_title}&nbsp;</td>
+        <td nowrap>{cactual_hours}&nbsp;</td>
+        <td nowrap>{cplaned_date}&nbsp;</td>
+      </tr>
+
+    <!-- END myctasks -->
+    <!-- BEGIN no_myctasks -->
+    <tr><td colspan="9" class="DataTD"><font class="DataFONT">There are no tasks assigned to others</font></td></tr>
+    <!-- END no_myctasks -->
+
+    <tr><td colspan="9" class="ColumnTD"><font class="ColumnFONT">
+
+    <a href="create_task.php"><font class="ColumnFONT">Add New Task</font></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="create_multiple_tasks.php?project_id=37"><font class="ColumnFONT">Add Health Checks</font></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="create_multiple_tasks.php?project_id=37"><font class="ColumnFONT">Add Trial</font></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="reassign_multiple_tasks.php"><font class="ColumnFONT">Reassign Tasks</font></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td></tr>
+</table>
+
+</body>
+</html>

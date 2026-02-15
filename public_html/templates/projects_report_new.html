@@ -1,0 +1,412 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.period_selected.selectedIndex = 0;
+		document.frmFilter.start_date.value = "";
+		document.frmFilter.end_date.value = "";
+	}
+	
+	function setPeriod(iPeriod)
+	{
+		document.frmFilter.period_selected.selectedIndex = iPeriod;
+	}
+	
+	function selectPeriod()
+	{
+		var period = document.frmFilter.period_selected.options[document.frmFilter.period_selected.selectedIndex].value;
+		var startDate = ""; var endDate = "";
+		if (period == "none") {
+			startDate = "{start_date}"; endDate = "{end_date}";
+		} else if(period == "this_week") {
+			startDate = "{this_week_start}"; endDate = "{this_week_end}";
+		} else if(period == "last_week") {
+			startDate = "{last_week_start}"; endDate = "{last_week_end}";
+		} else if(period == "prev_week") {
+			startDate = "{prev_week_start}"; endDate = "{prev_week_end}";
+		} else if(period == "this_month") {
+			startDate = "{this_month_start}"; endDate = "{this_month_end}";
+		} else if(period == "last_month") {
+			startDate = "{last_month_start}"; endDate = "{last_month_end}";
+		} else if(period == "prev_month") {
+			startDate = "{prev_month_start}"; endDate = "{prev_month_end}";
+		} else if(period == "this_year") {
+			startDate = "{this_year_start}"; endDate = "{this_year_end}";
+		}
+		document.frmFilter.start_date.value = startDate;
+		document.frmFilter.end_date.value = endDate;
+	}
+	
+var subProjectsIDs = new Array();
+var subProjectsTitles = new Array();
+<!-- BEGIN SubProjectArray -->
+	<!-- BEGIN SubProjectParent -->
+	subProjectsIDs[{IDparent}] = new Array();
+	subProjectsTitles[{IDparent}] = new Array();
+	<!-- END SubProjectParent -->
+subProjectsIDs[{IDparent}][{I}] = "{IDchild}"
+subProjectsTitles[{IDparent}][{I}] = "{subproject_title}"
+<!-- END SubProjectArray -->
+
+function SelectedProject()
+{
+	var SelectedProject = document.frmFilter.projects.selectedIndex;
+	var ProjectID = document.frmFilter.projects.options[SelectedProject].value;
+	var OldList = document.frmFilter.elements["sub_projects"];
+  	OldList.length = 0;
+	
+	if (subProjectsIDs[ProjectID]) {
+		if (document.createElement) {
+			var newListOption = document.createElement("OPTION");
+			newListOption.text = " ";
+			newListOption.value = "-1";
+			(OldList.options.add) ? OldList.options.add(newListOption) : OldList.add(newListOption, null);
+			OldList.options[0] = new Option(" ", -1, false, false);
+		} else {
+			OldList.options[0] = new Option(-1, " ", false, false);
+		}
+		for (i=1; i<subProjectsIDs[ProjectID].length; i++) {
+			if (document.createElement) {
+				var newListOption =  document.createElement("OPTION");
+				newListOption.text = subProjectsTitles[ProjectID][i];
+				newListOption.value = subProjectsIDs[ProjectID][i];
+				(OldList.options.add) ? OldList.options.add(newListOption) : OldList.add(newListOption, null);
+			} else {
+				OldList.options[i] = new Option(subProjectsIDs[ProjectID][i], subProjectsTitles[ProjectID][i], false, false);
+			}
+		}
+	}
+}
+
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+		<form name="frmFilter" action="projects_report_new.php">		
+		<table border=0>
+		<tr>
+			<td align="right">
+				Select period:
+			</td>              
+			<td>
+				<select name="period_selected" style="width:150px" onChange="selectPeriod()">
+					<option value="none">-------- Period --------</option>
+					{periods}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Start Date: 
+			</td>
+			<td>
+				<input type="text" name="start_date" value="{start_date}" style="width:150px" onChange="setPeriod(0)">
+					
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.start_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+				
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				End Date: 
+			</td>
+			<td>
+				<input type="text" name="end_date" value="{end_date}" style="width:150px" onChange="setPeriod(0)">
+
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.end_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Hours multiplier (M): 
+			</td>
+			<td>
+				<input type="text" name="multiplier" value="{multiplier}" style="width:150px">
+			</td>
+		</tr>		
+		<tr>
+			<td align="right">
+				Team: 
+			</td>
+			<td>
+				<select name="team" style="width:150px">
+				<option value="all" {aselected}>All teams</option>
+				<option value="viart" {vselected}>ViArt team</option>
+				<option value="yoonoo" {yselected}>YooNoo team</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Project:</td>
+			<td>
+				<select name="projects" id="projects" style="width:150px" onChange="javascript:SelectedProject();">
+					<OPTION value='-1'>&nbsp;
+					{filter_project}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">Sub-Project:</td>
+			<td>
+				<select name="sub_projects" style="width:150px">
+				<OPTION value='-1'>&nbsp;
+				{filter_sub_project}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>
+</div>
+
+
+<!-- BEGIN result -->
+<table class="FormTABLE" align="center">
+    <tr>
+        <td colspan="11" align="center" style="padding-bottom:10px">Date filter: {start_date} till {end_date}</td>
+    </tr>
+    <tr>
+    	<td class="FormHeaderTD" colspan="11"><font class="FormHeaderFONT">Projects Report</font></td>
+    </tr>
+	<!-- BEGIN records_header -->	
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Project</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Hours</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">M</font></td>	    
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">%</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Per task</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Working days</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Man-hours per day</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks per day</font></td>
+	    <td class="ColumnTD"><font class="ColumnFONT">Average reaction time</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Developers</font></td>
+	</tr>
+	<!-- END records_header -->
+	    
+    <!-- BEGIN records_parent -->
+    <tr  align="center">
+	    <td class="DataTDP{ifselected}" nowrap align="left"><font class="DataFONT"><a href='projects_report_new.php?start_date={start_date}&end_date={end_date}&period_selected={period_selected}&project_selected={project_id}&person_selected=all&team={team_selected}&multiplier={multiplier}&projects={projects}&sub_projects={sub_projects}&action=dev&submit=+Filter+'>{project_title}</a></font></td>
+	    <td class="DataTDP{ifselected}" nowrap><font class="DataFONT">{spent_hours}</font></td>
+	    <td class="DataTDP{ifselected}" nowrap><font class="DataFONT">{spent_hours_multiplied}</font></td>	    
+	    <td class="DataTDP{ifselected}" nowrap><font class="DataFONT">{hours_percents}%</font></td>
+	    <td class="DataTDP{ifselected}" nowrap><font class="DataFONT"><a href="projects_report_new.php?start_date={start_date}&end_date={end_date}&period_selected={period_selected}&project_selected={project_id}&action=tasks&team={team_selected}&multiplier={multiplier}&submit=+Filter+">{tasks}</a></font></td>
+	    <td class="DataTDP{ifselected}"><font class="DataFONT">{time_per_task}</font></td>
+	    <td class="DataTDP{ifselected}"><font class="DataFONT">{working_days}</font></td>
+	    <td class="DataTDP{ifselected}"><font class="DataFONT">{hours_per_day}</font></td>
+	    <td class="DataTDP{ifselected}"><font class="DataFONT">{tasks_per_day}</font></td>
+	    <td class="DataTDP{ifselected}"><font class="DataFONT">{reaction_time}</font></td>
+	    <td class="DataTDP{ifselected}" align="left"><font class="DataFONT">{users_list}</a></font></td>
+    </tr>
+	    <!-- BEGIN records -->
+	    <tr  align="center">
+		    <td class="DataTD{sifselected}" nowrap align="left" style="padding-left:20px"><font class="DataFONT"><a href="projects_report_new.php?start_date={start_date}&end_date={end_date}&period_selected={period_selected}&project_selected={sproject_id}&person_selected=all&team={team_selected}&multiplier={multiplier}&projects={projects}&sub_projects={sub_projects}&action=dev&submit=+Filter+">{sproject_title}</font></a></td>
+		    <td class="DataTD{sifselected}" nowrap><font class="DataFONT">{sspent_hours}</font></td>
+		    <td class="DataTD{sifselected}" nowrap><font class="DataFONT">{sspent_hours_multiplied}</font></td>
+		    <td class="DataTD{sifselected}" nowrap><font class="DataFONT">{shours_percents}%</font></td>
+		    <td class="DataTD{sifselected}" nowrap><font class="DataFONT"><a href="projects_report_new.php?start_date={start_date}&end_date={end_date}&period_selected={period_selected}&project_selected={sproject_id}&team={team_selected}&multiplier={multiplier}&action=tasks&submit=+Filter+">{stasks}</a></font></td>
+		    <td class="DataTD{sifselected}"><font class="DataFONT">{stime_per_task}</font></td>
+		    <td class="DataTD{sifselected}"><font class="DataFONT">{sworking_days}</font></td>
+		    <td class="DataTD{sifselected}"><font class="DataFONT">{shours_per_day}</font></td>
+		    <td class="DataTD{sifselected}"><font class="DataFONT">{stasks_per_day}</font></td>
+		    <td class="DataTD{sifselected}"><font class="DataFONT">{sreaction_time}</font></td>
+		    <td class="DataTD{sifselected}" align="left"><font class="DataFONT">{susers_list}</a></font></td>
+	    </tr>
+	    <!-- END records -->    
+    <!-- END records_parent -->
+    
+    <!-- BEGIN records_footer -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Total</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{total_hours}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{total_hours_multiplied}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{total_tasks}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{av_time_per_task}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{total_working_days}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{mh_per_day}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{av_tasks_per_day}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;</font></td>
+    </tr>
+    <!-- END records_footer -->
+
+    <!-- BEGIN no_records -->
+    <tr><td colspan="11" class=Headline>No data for this period</td></tr>
+    <!-- END no_records -->
+</table>
+<!-- END result -->
+
+<!-- BEGIN dev_result -->
+<BR>
+<table class="FormTABLE" align="center">
+	<tr>
+		<td class="FormHeaderTD" colspan="9"><font class="FormHeaderFONT">Developers Report for {project_report_title}</font></td>
+	</tr>
+	<!-- BEGIN dev_header -->
+	<tr align="center">
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Person</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Hours</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">M</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Per task</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Working days</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Hours per day</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks per day</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Average reaction time</font></td>
+	</tr>	
+	<!-- END dev_header -->	
+	
+	<!-- BEGIN dev_records -->
+	<tr align="center">
+		<td class="DataTD{dev_selected}" nowrap align="left">{dev_name}</td>
+		<td class="DataTD{dev_selected}" nowrap>{dev_spent_hours}</td>
+		<td class="DataTD{dev_selected}" nowrap>{dev_spent_hours_multiplied}</td>
+		<td class="DataTD{dev_selected}" nowrap><a href="projects_report_new.php?start_date={start_date}&end_date={end_date}&period_selected={period_selected}&project_selected={dev_project_id}&person_selected={dev_user_id}&team={team_selected}&multiplier={multiplier}&action=devtasks&submit=+Filter+">{dev_count_tasks}</a></td>
+		<td class="DataTD{dev_selected}" nowrap>{dev_time_per_task}</td>
+	    <td class="DataTD{dev_selected}" nowrap>{dev_working_days}</td>
+		<td class="DataTD{dev_selected}" nowrap>{dev_hours_per_day}</td>
+		<td class="DataTD{dev_selected}" nowrap>{dev_tasks_per_day}</td>
+		<td class="DataTD{dev_selected}" nowrap>{dev_reaction_time}</td>
+	</tr>
+	<!-- END dev_records -->
+
+	<!-- BEGIN dev_no_records -->
+	<tr align="center">
+		<td nowrap colspan="9" class=Headline>No data for this period</td>
+	</tr>
+	<!-- END dev_no_records -->		
+</table>
+<!-- END dev_result -->
+
+<!-- BEGIN result_person -->
+<BR>
+<table class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="10"><font class="FormHeaderFONT">Projects Report for {user_name}</font></td>
+    </tr>
+	<a name ="projects_user"></a>
+	<!-- BEGIN person_records_header -->	
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Project</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Hours</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">M</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">%</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Per task</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Working days</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Hours per day</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Tasks per day</font></td>
+	    <td class="ColumnTD"><font class="ColumnFONT">Average reaction time</font></td>
+	</tr>
+	<!-- END person_records_header -->
+	    
+    <!-- BEGIN person_records_parent -->
+    <tr  align="center">
+	    <td class="DataTDP{pifselected}" nowrap align="left"><font class="DataFONT">{pproject_title}</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{pspent_hours}</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{pspent_hours_multiplied}</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{phours_percents}%</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT"><a href="projects_report_new.php?start_date={start_date}&end_date={end_date}&period_selected={period_selected}&project_selected={project_id}&person_selected={pperson_id}&multiplier={multiplier}&team={team_selected}&action=projects&submit=+Filter+">{ptasks}</a></font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{ptime_per_task}</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{pworking_days}</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{phours_per_day}</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{ptasks_per_day}</font></td>
+	    <td class="DataTDP{pifselected}" nowrap><font class="DataFONT">{preaction_time}</font></td>
+    </tr>
+	    <!-- BEGIN person_records -->
+	    <tr  align="center">
+		    <td class="DataTD{psifselected}" nowrap align="left" style="padding-left:20px"><font class="DataFONT">{psproject_title}</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{psspent_hours}</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{psspent_hours_multiplied}</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{pshours_percents}%</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT"><a href="projects_report_new.php?start_date={start_date}&end_date={end_date}&period_selected={period_selected}&project_selected={pproject_id}&person_selected={pperson_id}&multiplier={multiplier}&team={team_selected}&&action=projects&submit=+Filter+#tasks_user">{pstasks}</a></font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{pstime_per_task}</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{psworking_days}</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{pshours_per_day}</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{pstasks_per_day}</font></td>
+		    <td class="DataTD{psifselected}" nowrap><font class="DataFONT">{psreaction_time}</font></td>
+	    </tr>
+	    <!-- END person_records -->    
+    <!-- END person_records_parent -->
+
+    
+    <!-- BEGIN person_records_footer -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Total</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{person_total_hours}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{person_total_hours_multiplied}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{person_total_tasks}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{person_av_time_per_task}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{person_ov_working_days}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{person_av_hours_per_day}</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">{person_av_tasks_per_day}</font></td>
+	    <td class="ColumnTD" nowrap>&nbsp;</font></td>
+    </tr>    
+    <!-- END person_records_footer -->
+    
+
+    <!-- BEGIN person_no_records -->
+    <tr><td colspan="10" class=Headline>No data for this period</td></tr>
+    <!-- END person_no_records -->
+</table>
+<!-- END result_person -->
+
+<!-- BEGIN result_tasks -->
+<BR>
+<table class="FormTABLE" align="center">
+
+    <tr>
+    	<td class="FormHeaderTD" colspan="5"><font class="FormHeaderFONT">Tasks Report for {project_report_title} project{person_report}</font></td>
+    </tr>
+	<a name ="tasks_user"></a>
+
+    <!-- BEGIN tasks_report_header -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Task</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Hours</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">M</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Status</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Developers</font></td>
+    </tr>
+    <!-- END tasks_report_header -->
+    
+    <!-- BEGIN tasks_report_records -->
+    <tr  align="center">
+	    <td class="DataTD" nowrap align="left"><font class="DataFONT"><a href="edit_task.php?task_id={task_id}">{task_title}</a></font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{task_spent_hours}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{task_spent_hours_multiplied}</font></td>
+	    <td class="DataTD" nowrap style="padding-left:0.6em;padding-right:0.6em;"><font class="DataFONT">{task_status}</font></td>
+	    <td class="DataTD" nowrap align="left"><font class="DataFONT">{task_developers}</font></td>
+    </tr>	    
+    <!-- END tasks_report_records -->
+        
+    <!-- BEGIN tasks_report_norecords -->
+    <tr><td colspan="5" class=Headline>No tasks for this period and this project</td></tr>	    
+    <!-- END tasks_report_norecords -->
+
+</table>
+<!-- END result_tasks -->
+</body>
+</html>

@@ -1,0 +1,238 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<style>
+.open { cursor: hand; cursor:pointer;border: solid 1px black; border-right: none; border-bottom: none; text-align: center; font-weight: bold;}
+.close { cursor: hand; cursor:pointer; border: solid 1px black; border-right: none; text-align: center; background: #cfd6d4; }
+.hyper {color:black; text-decoration: none;}
+</style>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<script language="JavaScript">
+	function clearFilter()
+	{
+		document.frmFilter.fname.value = "";
+		document.frmFilter.fmail.value = "";
+		document.frmFilter.fsite.value = "";
+		document.frmFilter.fuser_id.value = "";
+	}
+
+</script>
+
+
+
+
+
+<form name="frmFilter" method="GET" action="view_clients.php">
+
+<table border=0 align=center>
+<tr>
+	<td colspan=2 class="FormHeaderTD"><font class="FormHeaderFONT">Filter</font></td>
+</tr>
+
+<tr>
+	<td>Client's name include:</td>
+	<td><input type=text name="fname" value="{fname}"></td>
+</tr>
+<tr>
+	<td >Client's e-mail include:</td>
+	<td><input type=text name="fmail" value="{fmail}"></td>
+</tr>
+<tr>
+	<td >Client's site URL:</td>
+	<td><input type=text name="fsite" value="{fsite}"></td>
+</tr>
+<tr>
+	<td >Client's ViArt user id:</td>
+	<td><input type=text name="fuser_id" value="{fuser_id}"></td>
+</tr>
+<tr>
+	<td>Tags<a href="view_sites_tags.php">[cloud]</a>:</td>
+	<td><input type=text name="ftag" value="{ftag}"></td>	
+</tr>
+<!-- BEGIN sayu_search-->
+<tr>
+	<td >Client's Company:</td>
+	<td><input type=text name="fcompany" value="{fcompany}"></td>
+</tr>
+<tr>
+	<td >Client's Google ID:</td>
+	<td><input type=text name="fgoogle_id" value="{fgoogle_id}"></td>
+</tr>
+<!-- END sayu_search-->
+<tr align=right>
+    <td></td>
+	<td align=right><input type=submit name='submit' value='Find'>
+	<input type="button" value="Clear" onclick="clearFilter()">
+	<input type="hidden" name="show_table" value="{show_table}">
+	</td>
+</tr>
+<tr>
+	<td><br></td>
+</tr>
+</table>
+</form>
+
+<script>
+	function allclose(id, show_tab)
+	{
+		document.getElementById('sayu_td').className='close';
+		document.getElementById('sayu_table').style.display='none';
+		document.getElementById('viart_td').className='close';
+		document.getElementById('viart_table').style.display='none';
+	    document.getElementById('all_sayu_td').className='close';
+	    document.getElementById('all_sayu_table').style.display='none';
+		document.getElementById(id).className='open';
+		document.getElementById('wait_table').style.display='';
+		window.location='view_clients.php?show_table='+show_tab;
+	}
+</script>
+
+
+<table align=center width="100%" border=0 cellspacing=0 cellpadding=4>
+	<tr>
+		<td width="12%" align=center style="border-bottom: solid 1px black"> </td>
+		<td id='viart_td' onclick="allclose('viart_td', '1');" width="25%" class="{tab1_class}">ViArt Clients</td>
+		<td id='sayu_td' onclick="allclose('sayu_td', '2');" width="25%" class="{tab2_class}">Sayu Active Clients</td>
+		<td id='all_sayu_td' onclick="allclose('all_sayu_td', '3');" width="25%" style="border-right: solid 1px black;" class="{tab3_class}">Sayu All Clients</td>
+		<td width="12%" align=center style="border-left: solid 1px black; border-right: solid 1px black; border-bottom: solid 1px black"> </td>
+	</tr>
+</table>
+
+
+<table  width="75%" style="display:{viart_display}" id='viart_table' class="FormTABLE" align="center" border=0>
+	<tr><td  colspan="7"><font class="ColumnFONT">{pages_navigator}</font></td></tr>
+    <tr>
+    	<td class="FormHeaderTD" colspan="7"><font class="FormHeaderFONT">Viart Clients</font></td>
+    </tr>
+	<!-- BEGIN viart_header -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=sayu_user_id{reverse}&show_table={show_table}{page}'>ID</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=client_name{reverse}&show_table={show_table}{page}'>Name</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=client_email{reverse}&show_table={show_table}{page}'>E-mail</a>&nbsp;</font></td>
+	    <!--<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=is_viart{reverse}&show_table={show_table}{page}'>Is viart</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=is_viart_hosted{reverse}&show_table={show_table}{page}'>Viart hosted</a>&nbsp;</font></td>-->
+	    <!--<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;SVN&nbsp;</font></td>-->
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=sites{reverse}&show_table={show_table}{page}'>Sites</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=date_added{reverse}&show_table={show_table}{page}'>Creation date</a>&nbsp;</font></td>
+	</tr>
+	<!-- END viart_header -->
+
+    <!-- BEGIN viart_records -->
+    <tr>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{sayu_user_id}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href="create_client.php?client_id={client_id}">{client_name}</a>&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" align='left' nowrap><font class="DataFONT">&nbsp;{client_email}&nbsp;</font></td>
+	    <!--<td style='background-color: #{color}' class="DataTD" align='center' nowrap><font class="DataFONT">&nbsp;{is_viart}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" align='center' nowrap><font class="DataFONT">&nbsp;{is_viart_hosted}&nbsp;</font></td>-->
+	    <!--<td style='background-color: #{color}' class="DataTD" align='left' nowrap><font class="DataFONT">&nbsp;<a href="svn?repository={domain_name}">svn://web1.sayu.co.uk/mnt/drive2/webclients/{domain_name}</a>&nbsp;</font></td>-->
+	    <td style='background-color: #{color}' class="DataTD" align='left' nowrap><font class="DataFONT">&nbsp;<a href="http://{sites}">{sites}</a>&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{date_added}&nbsp;</font></td>
+	</tr>
+	<!-- END viart_records -->
+
+	<!-- BEGIN no_viart_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No clients
+		</td>
+	</tr>
+	<!-- END no_viart_records -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="7">&nbsp;</td>
+    </tr>
+	<tr>
+	  <td colspan=2><a href="create_client.php">Add Client</a>
+	  </td>
+	</tr>
+
+</table>
+
+
+<table  width='75%' id='sayu_table' style="display:{sayu_display}" class="FormTABLE" align="center">
+	<tr><td  colspan="5"><font class="ColumnFONT">{pages_navigator}</font></td></tr>
+    <tr>
+    	<td class="FormHeaderTD" colspan="5"><font class="FormHeaderFONT">Sayu Active Clients</font></td>
+    </tr>
+	<!-- BEGIN sayu_header -->
+    <tr>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=sayu_user_id{reverse}&show_table={show_table}{page}'>ID</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=client_name{reverse}&show_table={show_table}{page}'>Name</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=client_email{reverse}&show_table={show_table}{page}'>E-mail</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=sites{reverse}&show_table={show_table}{page}'>Sites</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=date_added{reverse}&show_table={show_table}{page}'>Date Added</a>&nbsp;</font></td>
+	</tr>
+	<!-- END sayu_header -->
+
+    <!-- BEGIN sayu_records -->
+    <tr>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{sayu_user_id}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href="create_client.php?client_id={client_id}">{client_name}&nbsp;</a></font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{client_email}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href='http://{sites}'>{sites}</a>&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{date_added}&nbsp;</font></td>
+	</tr>
+	<!-- END sayu_records -->
+
+	<!-- BEGIN no_sayu_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No clients
+		</td>
+	</tr>
+	<!-- END no_sayu_records -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="5">&nbsp;</td>
+    </tr>
+
+</table>
+
+<table width="75%" style="display:{all_sayu_display}" id="all_sayu_table" class="FormTABLE" align="center">
+	<tr><td  colspan="6"><font class="ColumnFONT">{pages_navigator}</font></td></tr>
+    <tr>
+    	<td class="FormHeaderTD" colspan="6"><font class="FormHeaderFONT">All Sayu Clients</font></td>
+    </tr>
+	<!-- BEGIN all_sayu_header -->
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=sayu_user_id{reverse}&show_table={show_table}{page}'>ID</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=client_name{reverse}&show_table={show_table}{page}'>Name</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=client_email{reverse}&show_table={show_table}{page}'>E-mail</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=is_active{reverse}&show_table={show_table}{page}'>Is active</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=sites{reverse}&show_table={show_table}{page}'>Sites</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_clients.php?sort=date_added{reverse}&show_table={show_table}{page}'>Date Added</a>&nbsp;</font></td>
+	</tr>
+	<!-- END all_sayu_header -->
+    <!-- BEGIN all_sayu_records -->
+    <tr>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{sayu_user_id}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href="create_client.php?client_id={client_id}">{client_name}</a>&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{client_email}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{is_active}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href='http://{sites}'>{sites}</a>&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{date_added}&nbsp;</font></td>
+	</tr>
+	<!-- END all_sayu_records -->
+
+	<!-- BEGIN no_all_sayu_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No clients
+		</td>
+	</tr>
+	<!-- END no_all_sayu_records -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="6">&nbsp;</td>
+    </tr>
+</table>
+
+<table  width="75%" style='display:none' id="wait_table" class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">Wait Please...</font></td>
+    </tr>
+</table>
+</body>
+</html>

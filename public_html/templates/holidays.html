@@ -1,0 +1,77 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   <script>
+	<!--
+	function addTemplateHolidays()
+	{
+	  var add = document.getElementById("add");
+	  if (confirm("Are you sure you want to add holidays from template?"))
+	  {
+	  	add.value = "1";
+	  	document.add_hol_templ.submit();
+	  }	else {
+	  	add.value = "0";
+	  }	
+	
+	 	
+	}
+	//-->
+	</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+			<!-- BEGIN holiday_error -->
+			<br><center><font color=red>There is no added holiday.</font>
+			<!-- END holiday_error -->
+<table width=50% align=center>
+
+			<!-- BEGIN holiday_header --> 
+			<tr>
+      			<td class="FormHeaderTD" colspan="5"><font class="FormHeaderFONT">{country} National Holidays</font></td>
+   			</tr>
+   			<tr>
+      			<td class="ColumnTD" align=center><b>Date</b></td>
+      			<td class="ColumnTD"><b>Name</b></td>
+      			<td class="ColumnTD">&nbsp;</td>
+   			</tr>
+   			<!-- END holiday_header -->
+   			<!-- BEGIN holiday_rows -->
+   			<tr>
+   				<td  class="DataTD" nowrap>{holiday_title}</td>
+   				<td class="DataTD" nowrap>{holiday_date}</td>
+   				<td class="DataTD" nowrap><a href="edit_holiday.php?holiday_id={holiday_id}&type={type}">Edit</a></td>
+   			</tr>
+   			<!-- END holiday_rows -->
+   			
+		</td>
+   			<tr>
+   				<td colspan=3>
+   					<form name="add_hol_templ" action="holidays.php" method="POST">
+					<input type="hidden" name="add" id="add" value="{add}">					
+   					<br><br>
+   					<!-- BEGIN template_holidays -->
+   					<a href="holidays.php?add=1&type={type}" onClick="addTemplateHolidays(); return false;">
+					   Add holidays from template</a>
+					  &nbsp;&nbsp;|&nbsp;&nbsp;<a href="holidays_templates.php?add=1">Edit holiday template</a>
+					  &nbsp;&nbsp;|&nbsp;&nbsp;
+					  
+					<!-- END template_holidays -->					  
+					   <a href="edit_holiday.php?add=1&type={type}">Add new holiday</a>
+					   </form> 
+					   
+   				</td>
+   				
+   					
+   				
+   			</tr>
+</table>
+
+</body>
+</html>

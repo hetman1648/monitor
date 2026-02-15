@@ -1,0 +1,156 @@
+RewriteBase /monitor/
+RewriteCond %{SERVER_PORT} ^80$
+RewriteRule ^(/)?(.*) https://www.viart.com.ua/monitor/$2 [R=301,L,QSA]
+
+<Files "*">
+    Order deny,allow
+    Deny from all
+
+# Jul home
+    Allow from 109.86.36.87
+
+
+# UMC CDMA pool
+    Allow from 77.52.0.0/16
+
+# Vital's Neapol connection
+    Allow from 91.215.62.66
+    Allow from 91.215.60.21
+
+# Vital's CRELCOM connection
+    Allow from 80.245.112.0/20
+
+# Vital's IP-NET network
+    Allow from 82.193.96.0/19
+
+# Vital's PRIVAT-ONLINE connection
+    Allow from 217.117.72.154
+
+# Vital's CRIMEACOM connection
+    Allow from 195.3.244.0/23
+
+# Vital's PRIVAT-ONLINE connection
+    Allow from 87.238.159.
+
+# Vital's PEOPLE-NET connection
+    Allow from 77.109.24.0/21
+    Allow from 92.49.224.0/21
+    Allow from 109.167.53.0/24
+    Allow from 92.49.192.0/18
+    Allow from 94.248.0.0/18
+    Allow from 91.215.60.2
+    Allow from 109.167.70.206
+    Allow from 91.215.61.1
+    Allow from 109.251.200.123
+
+# Vital's SWIFT-TRACE connection
+    Allow from 195.49.200.0/21
+
+
+# For internal proxy connections
+    Allow from 127.0.0.1
+    Allow from 62.149.0.96
+
+# Sayu
+    Allow from 81.143.68.190
+    Allow from 81.143.68.198
+    Allow from 213.131.107.146
+    Allow from 81.149.185.237
+    Allow from 94.13.89.213
+    Allow from 94.193.245.131
+
+# Artem
+    Allow from 85.223.168.204
+    Allow from 195.66.138.18
+    Allow from 93.73.92.163
+    Allow from 81.253.27.41
+    Allow from 93.73.89.200
+    Allow from 95.109.128.0/17
+    Allow from 93.190.176.0/21
+    Allow from 217.175.0.0/21
+    Allow from 217.175.8.0/21
+    Allow from 46.200.0.0/14
+    Allow from 93.73.193.40
+    Allow from 80.242.107.153
+    Allow from 80.242.99.122
+    Allow from 217.175.12.209
+    Allow from 37.75.221.170
+    Allow from 80.242.106.37
+    Allow from 37.75.218.31
+    Allow from 93.75.233.249
+    Allow from 93.72.44.212
+# Kiev's Office
+    Allow from 89.252.12.64
+    Allow from 109.251.118.117
+    Allow from 82.193.106.28
+
+# Tony
+  	Allow from 86.168.158.235  
+        Allow from 151.230.120.100
+ 
+# Simon
+    Allow from 213.123.216.198
+
+# Ravi
+    Allow from 217.35.102.250
+
+# Michael Page
+    Allow from 86.19.238.24
+    Allow from 82.44.218.99
+    Allow from 86.4.89.200
+    Allow from 78.147.206.19
+
+# Vlad
+    Allow from 159.224.236.125
+    Allow from 94.178.168.222
+
+# Ludmila
+    Allow from 193.201.83.9
+
+# Vera
+    Allow from 93.73.226.100
+    Allow from 93.73.88.184
+    Allow from 93.75.229.243
+    Allow from 93.73.200.116
+
+# Kate
+    Allow from 89.252.18.53
+    Allow from 193.93.118.54
+    Allow from 193.93.118.53
+    Allow from 89.200.252.252
+    Allow from 89.200.252.253
+
+
+# Victor
+    Allow from 89.252.10.29
+    Allow from 178.159.231.67
+
+# Egor
+    Allow from 89.252.32.104
+    Allow from 89.252.41.100
+
+
+# Yura
+    Allow from 195.128.182.0/23
+    Allow from 78.111.176.0/20
+    Allow from 95.158.0.0/19
+
+# Chris O'Rourke
+    Allow from 5.66.47.35
+
+# Natasha Recovec
+    Allow from 93.73.246.212
+
+# Volodymyr Shalata
+    Allow from 77.47.170.36
+
+
+
+</Files>
+
+RewriteEngine On
+RewriteBase /monitor/
+RewriteCond %{SERVER_PORT} ^80$|^443$
+RewriteCond %{HTTP_HOST} ^viart.com.ua$
+RewriteRule ^(.*)$ https://www.viart.com.ua%{REQUEST_URI}
+

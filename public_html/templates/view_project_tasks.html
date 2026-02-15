@@ -1,0 +1,135 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<script>
+<!--
+function show_tasks()
+{
+	var check = document.getElementById("close_tasks");
+	var project_id = {project_id};
+	var host = document.domain;
+	var url = "http://" + host + "/view_project_tasks.php?project_id=" +project_id;
+	
+	if (check.checked) {
+		url = url + "&close_tasks=1";
+	}
+	document.location = url;
+}
+-->
+</script>
+<script type="text/javascript" src="scripts/prototype.js"></script>
+<!-- DOMAINS function -->
+<script>
+  			
+  			function changeStatus(projectId) {
+  				var selectedStatus = $("project_status_id").selectedIndex;
+  				var statusID =  $("project_status_id").options[selectedStatus].value;
+					new Ajax.Request('ajax_responder_clients.php?action=change_status',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'project_id': projectId,
+				    		'status_id': statusID
+				    	},
+						onSuccess: function(transport){
+							var response = transport.responseText || "no response text";
+						},
+						onFailure: function(){
+						}
+					});
+  			}
+  		
+</script>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<table class="FormTABLE" align="center" border="0">
+	<tr>
+    	<td colspan="13">
+			<input type="checkbox" id="close_tasks" name="close_tasks" value="1" {close_tasks_checked} onClick="show_tasks();">Show closed tasks
+		</td>
+    </tr>
+    <tr>
+    	<td class="FormHeaderTD" colspan="13">
+    		<table width="100%">
+    			<tr>
+    				<td width="5%"><a style="color: white;" href="edit_project.php?project_id={project_id}&return_page=view_project_tasks.php?project_id={project_id}">Edit</a></td>
+    				<td align="center"><font class="FormHeaderFONT">Tasks for project {project_title}</font></td>
+    			</tr>
+    		</table>
+    	</td>
+    </tr>
+    <tr>
+    	<td colspan="13">
+    		<table width="100%">
+    			<tr>
+    				<td align="left"><b>Assigned users:</b></td>
+    				<td align="right"><b>Project Status:</b>
+    				<select name="project_status_id" id="project_status_id" onchange="changeStatus({project_id});">
+						<!-- BEGIN project_status_id --><option value="{project_status_id_value}" {project_status_id_selected}>{project_status_id_description}</option><!-- END project_status_id -->
+					</select>
+    				<td> 
+    			</tr>
+    			<tr><td><ul>
+    			<!-- BEGIN assigned_users -->
+    				<li>{assigned_user}</li>
+    			<!-- END assigned_users -->
+    			</ul></td></tr>
+    		</table>
+    	</td>
+    </tr>
+	<!-- BEGIN records_header -->
+    <tr align="center">		
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_project_tasks.php?sort=by_title&project_id={project_id}'>Tasks title</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_project_tasks.php?sort=by_responsible&project_id={project_id}'>Responsible person&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_project_tasks.php?sort=by_created&project_id={project_id}'>Created person&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_project_tasks.php?sort=by_hours&project_id={project_id}'>Spent Hours&nbsp;</font></td>
+   	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_project_tasks.php?sort=by_planed_date&project_id={project_id}'>Deadline&nbsp;</font></td>
+   	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='view_project_tasks.php?sort=by_completion&project_id={project_id}'>Completion&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;Close&nbsp;</font></td>
+	</tr>
+	<!-- END records_header -->
+
+    <!-- BEGIN records -->
+		<tr class="Task{STATUS}" onMouseOut="this.style.backgroundColor=lastBG; 
+      							document.getElementById('title{task_id}').style.backgroundColor=lastBGtitle;" 
+      							onMouseOver="lastBG=this.style.backgroundColor; 
+      							lastBGtitle=document.getElementById('title{task_id}').style.backgroundColor; 
+      							this.style.backgroundColor='#FCFFD5'; 
+      							document.getElementById('title{task_id}').style.backgroundColor='#FCFFD5';">
+		<td >&nbsp;<a id='title{task_id}' class="Task{STATUS}" href='edit_task.php?task_id={task_id}'>{task_title}</a>&nbsp;</td>
+	    <td nowrap>&nbsp;<a href="report_people.php?report_user_id={responsible_id}">{responsible}</a>&nbsp;</td>
+	    <td nowrap>&nbsp;<a href="report_people.php?report_user_id={created_id}">{created}</a>&nbsp;</td>
+	    <td nowrap align="center">{spent_hours}</td>
+	    <td nowrap align="center">{planed_date}</td>
+	    <td nowrap align="center">{completion}%</td>
+		<td nowrap align="center">{is_closed}</td>
+	</tr>
+	<!-- END records -->
+	<!-- BEGIN records_footer -->
+	<tr align="center">
+		<td class="ColumnTD" nowrap colspan="3" align="right"><font class="ColumnFONT">&nbsp;Total&nbsp;</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;{total_time}&nbsp;</font></td>
+		<td class="ColumnTD" nowrap colspan="4" align="right"><font class="ColumnFONT">&nbsp;</font></td>
+	</tr>
+	<!-- END records_footer -->
+
+	<!-- BEGIN no_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No tasks for this project
+		</td>
+	</tr>
+	<!-- END no_records -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="13"><font class="FormHeaderFONT">&nbsp;</font></td>
+    </tr>
+</table>
+
+
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<script type="text/javascript">
+function findPosY(obj, addHeight)
+{
+	var curtop = 0;
+	if (addHeight) {
+		curtop += obj.offsetHeight;
+	}
+	if (obj.offsetParent)
+	{
+		while (obj.offsetParent)
+		{
+			curtop += obj.offsetTop
+			obj = obj.offsetParent;
+		}
+	}
+	else if (obj.y) {
+	curtop += obj.y;
+	}
+	return curtop;
+
+}
+
+function findPosX(obj, addWidth)
+{
+	var curleft = 0;
+	if (addWidth) {
+		curleft += obj.offsetWidth;
+	}
+	if (obj.offsetParent)
+	{
+		while (obj.offsetParent)
+		{
+			curleft += obj.offsetLeft
+			obj = obj.offsetParent;
+		}
+	}
+	else if (obj.x)
+		curleft += obj.x;
+	return curleft;
+}
+
+function show_block() {
+	var block = document.getElementById('t');
+	block.style.display="block";
+	var element = document.getElementById("report");
+	block.style.left = findPosX(element, false) + "px";
+	block.style.top = findPosY(element, true) + "px";
+}
+
+function show_documents(link, block_id) {
+	var block = document.getElementById(block_id);
+	if (block) {
+		block.style.display = "block";
+		block.style.left = findPosX(link, false) + "px";
+		block.style.top = findPosY(link, true) + "px";
+	}	
+}
+</script>
+<table>
+	<tr>
+	<td>
+	<a href="index.php"><img src="images/logo.png" border=0></a>
+	</td>
+	</tr>
+	</table>
+<div id="menu_body">
+<table>
+	<tr>
+		<td nowrap>
+			<a href="create_task.php" class="DataTD">Add New Task</a>
+		</td>
+		<td nowrap>
+			| <a href="users.php" class="DataTD">Maintenance</a>
+		</td>
+		<td nowrap>
+			| <a href="user_profile.php?action=self" class="DataTD">Profile</a>
+		</td>
+		<!--<td nowrap>
+			| <a href="search.php" class="DataTD">Search</a>
+	   	</td>
+	   	-->
+		<td nowrap>
+			| <a href="search" class="DataTD">Search</a>
+	   	</td>	   	
+		<!--<td nowrap>
+			| <a id='xxx' href="project_plan.php" class="DataTD">Project plan</a>
+		</td>-->
+		<td nowrap>
+			<!-- | <a id='xxx' href="index_prj.php" class="DataTD">Project List</a> -->
+			 | <a id='xxx' href="svn/projects.php" class="DataTD">Project List</a> 
+		</td>
+		<td nowrap>
+			| <a href="view_vacations.php" class="DataTD">Holidays</a>
+		</td>
+		<td nowrap>
+			| <a href="emergency.php">Emergency Page</a>
+		</td>
+		<td nowrap>
+			| <a href="my_stats.php">My stats</a>
+		</td>
+		<td nowrap>
+			| <a href="view_clients.php" class="DataTD">Clients</a>
+		</td>
+		<td nowrap>
+			| <a href="svn" class="DataTD">SVN</a>
+		</td>
+		<td nowrap>
+			| <a href="view_warnings.php">Warnings</a>
+		</td>
+		<td nowrap>
+			| <a href="inventory.php">Inventory</a>
+		</td>
+		<td nowrap>
+<div  id='report' onmouseover='show_block()' onmouseout='document.getElementById("t").style.display="none"' id='menu' style='z-index:0'>
+| <a  href="#" onClick="return false;">Reports</a>
+	<div id='t' style='position: absolute;left:0;top:13;border-style:outset;border-width:1px;color:blue;background-color:white;display:none;'>
+	<table><tr><td></td>
+	<td nowrap>
+	<a href="summary_report.php" class="DataTD">Summary</a></br>
+	<a href="projects_report.php" class="DataTD">Projects</a></br>
+	<a href="projects_report_small.php" class="DataTD">Projects (small)</a></br>
+	<a href="quarterly_report.php" class="DataTD">Quarterly</a></br>	
+	<a href="clients_report.php" class="DataTD">Clients</a></br>
+	<a href="time_report.php" class="DataTD">Time</a></br>
+	<a href="tasks_report.php" class="DataTD">Tasks</a></br>
+	<a href="estimates_report.php" class="DataTD">Estimates</a></br>
+	<a href="bugs_tracking.php" class="DataTD">Bugs</a></br>
+	<a href="inventory_report.php" class="DataTD">Iventory</a></br>
+	<!--<a href="managing_reports.php" class="DataTD">Managers</a></br>-->
+	<a href="responses_report.php" class="DataTD">Responses</a></br>	
+	<a href="productivity_report.php" class="DataTD">Productivity</a></br>
+	<a href="quotations_report.php" class="DataTD">Quotations</a></br>
+	<a href="monthly_report.php" class="DataTD">Monthly</a></br>	
+	<a href="cvs_warnings.php" class="DataTD">CVS report</a></br>
+	</td><td></td>
+	</tr></table>
+	</div>
+
+</div>
+		</td>
+		<!--<td nowrap> | <a href="http://slayer.viart.com.ua/forum/forums.php">Forum</a></td>		
+		<td nowrap> | <a href="http://www.viart.com/va/admin_support.php">Support</a></td>-->
+		<td nowrap>	| <a class="aLogout" href="login.php?FormAction=logout">Logout</a></td>
+	</tr>
+	</table>
+</div>

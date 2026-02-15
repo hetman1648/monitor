@@ -1,0 +1,294 @@
+.PageBODY {background-color: #FFFFFF; color: #000000; font-family: Tahoma,Verdana,Helvetica; font-size: 10pt}
+/*.FormTABLE {border-style: outset; border-width: 2}*/
+.FormHeaderTD {background-color: navy; text-align: center; border-style: outset; border-width: 1}
+.FormHeaderFONT {font-size: 12pt; color: #FFFFFF; font-weight: bold}
+.FieldCaptionTD {background-color: #F0F0F0; border-style: inset; border-width: 0; font-size: 10pt}
+.FieldCaptionFONT {font-size: 10pt; color: #000000}
+.DataTD {background-color: #FAFAFA; border-style: inset; border-width: 0; font-size: 10pt}
+.DataTDP {background-color: #EEEEEE; border-style: inset; border-width: 0; font-size: 10pt}
+.DataTDPYellow {background-color: #F6FABE; border-style: inset; border-width: 0; font-size: 10pt}
+.DataTDYellow {background-color: #FCFFD5; border-style: inset; border-width: 0; font-size: 10pt}
+.DataTDE {background-color: #f6f2f2; border-style: inset; border-width: 0; font-size: 10pt; padding: 0.05em 0.6em;}
+.DataTDEred {background-color: #fff2f2; border-style: inset; border-width: 0; font-size: 10pt; padding: 0.05em 0.6em;}
+.DataTDEblue {background-color: #f2f2ff; border-style: inset; border-width: 0; font-size: 10pt; padding: 0.05em 0.6em;}
+.DataTDred {background-color: #FFF5F5; border-style: inset; border-width: 0; font-size: 10pt}
+.DayoffTD    {background-color: #F0F0F0; border-style: inset; border-width: 0; font-size: 10pt}
+.DayoffTDred {background-color: #F7E7E7; border-style: inset; border-width: 0; font-size: 10pt}
+.Spent1 {width:18px; background-color: #66CCFF}
+.Spent2 {width:18px; background-color: #3388FF}
+.Spent3 {width:18px; background-color: #0033DD}
+.Spent4 {width:18px; background-color: #000099}
+.DayDeadline {width:18px; background-color: #F65050}
+.DayPlanned {width:18px; background-color: #A0FFA0}
+
+/*
+.Spent1red {width:18px; background-color: #FF9898}
+.Spent2red {width:18px; background-color: #F65151}
+.Spent3red {width:18px; background-color: #DF2626}
+.Spent4red {width:18px; background-color: #B60000}
+.Spent1green {width:18px; background-color: #AFFFAF}
+.Spent2green {width:18px; background-color: #4DEE66}
+.Spent3green {width:18px; background-color: #00CC66}
+.Spent4green {width:18px; background-color: #009966}
+*/
+
+.DataFONT {font-size: 10pt; color: #000000}
+.DataFONTred {font-size: 10pt; color: red}
+.DataFONTgreen {font-size: 10pt; color: green}
+.ColumnFONT {font-size: 10pt; color: #000000; font-weight: bold}
+.ColumnTD {background-color: #D0D0D0; border-style: inset; border-width: 0}
+.GridRecordHeader {background-color: #FAFAFA; font-size: 10pt; color: navy}
+
+.TaskInProgress {background-color: #CCFFCC; font-size: 10pt; color: blue}
+.TaskOnHold {background-color: #FAFAFA; font-size: 10pt; color: #D0D0D0}
+.TaskDone {background-color: #FAFAFA; font-size: 10pt; color: green}
+.TaskRejected {background-color: #FAFAFA; font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.TaskQuestion {background-color: #FAFAFA; font-size: 10pt; color: #CC3399}
+.TaskAnswer {background-color: #FAFAFA; font-size: 10pt; color: #CC3399}
+.TaskWaiting {background-color: #FAFAFA; font-size: 10pt; color: #808080}
+.TaskNew {background-color: #FAFAFA; font-size: 10pt; color: black}
+.TaskReassigned {background-color: #FAFAFA; font-size: 10pt; color: black}
+.TaskBug {background-color: #FAFAFA; font-size: 10pt; color: #FF0090}
+.TaskToday {background-color: #FAF3E4; font-size: 10pt; color: #D49100}
+.TaskDeadline {background-color: #FFE5E5; font-size: 10pt; color: red}
+.TaskYellow {background-color: yellow; font-size: 10pt; color: red}
+.TaskBugResolved {background-color: #FAFAFA; font-size: 10pt; color: #14631B}
+.TaskDocumented {background-color: #FAFAFA; font-size: 10pt; color: #0098A2}
+.TaskReadyToDocument {background-color: #FAFAFA; font-size: 10pt; color: #0098A2}
+
+.TaskInProgress2 {background-color: #CCFFCC; font-size: 10pt; color: blue}
+.TaskOnHold2 {background-color: #EEEEEE; font-size: 10pt; color: #D0D0D0}
+.TaskDone2 {background-color: #EEEEEE; font-size: 10pt; color: green}
+.TaskRejected2 {background-color: #EEEEEE; font-size: 10pt; color: #D0D0D0;text-decoration:line-through}
+.TaskQuestion2 {background-color: #EEEEEE; font-size: 10pt; color: #CC3399}
+.TaskAnswer2 {background-color: #EEEEEE; font-size: 10pt; color: #CC3399}
+.TaskWaiting2 {background-color: #EEEEEE; font-size: 10pt; color: #808080}
+.TaskNew2 {background-color: #EEEEEE; font-size: 10pt; color: black}
+.TaskReassigned2 {background-color: #EEEEEE; font-size: 10pt; color: black}
+.TaskBug2 {background-color: #EEEEEE; font-size: 10pt; color: #FF0090}
+.TaskToday2 {background-color: #FAF3E4; font-size: 10pt; color: #D49100}
+.TaskDeadline2 {background-color: #FFE5E5; font-size: 10pt; color: red}
+.TaskBugResolved2 {background-color: #EEEEEE; font-size: 10pt; color: #14631B}
+.TaskDocumented2 {background-color: #EEEEEE; font-size: 10pt; color: #0098A2}
+.TaskReadyToDocument2 {background-color: #EEEEEE; font-size: 10pt; color: #0098A2}
+
+.TaskInProgressRow div  {background-color: #CCFFCC; font-size: 10pt; color: blue}
+.TaskOnHoldRow  div {background-color: #EEEEEE; font-size: 10pt; color: #D0D0D0}
+.TaskDoneRow  div {background-color: #EEEEEE; font-size: 10pt; color: green}
+.TaskRejectedRow div {background-color: #EEEEEE; font-size: 10pt; color: #D0D0D0;text-decoration:line-through}
+.TaskQuestionRow div {background-color: #EEEEEE; font-size: 10pt; color: #CC3399}
+.TaskAnswerRow div {background-color: #EEEEEE; font-size: 10pt; color: #CC3399}
+.TaskWaitingRow  div {background-color: #EEEEEE; font-size: 10pt; color: #808080}
+.TaskNewRow div  {background-color: #EEEEEE; font-size: 10pt; color: black}
+.TaskReassignedRow  div {background-color: #EEEEEE; font-size: 10pt; color: black}
+.TaskBugRow div  {background-color: #EEEEEE; font-size: 10pt; color: #FF0090}
+.TaskTodayRow div  {background-color: #FAF3E4; font-size: 10pt; color: #D49100}
+.TaskDeadlineRow div {background-color: #FFE5E5; font-size: 10pt; color: red;}
+.TaskBugResolvedRow div {background-color: #EEEEEE; font-size: 10pt; color: #14631B}
+.TaskDocumentedRow div {background-color: #EEEEEE; font-size: 10pt; color: #0098A2}
+.TaskReadyToDocumentRow div {background-color: #EEEEEE; font-size: 10pt; color: #0098A2}
+
+
+
+.TaskBoldInProgressRow div  {background-color: #CCFFCC; font-size: 10pt; font-weight: bold; color: blue}
+.TaskBoldOnHoldRow  div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #D0D0D0}
+.TaskBoldDoneRow  div {background-color: #EEEEEE; font-size: 10pt;  font-weight: bold; color: green}
+.TaskBoldRejectedRow div {background-color: #EEEEEE; font-size: 10pt;  font-weight: bold; color: #D0D0D0;text-decoration:line-through}
+.TaskBoldQuestionRow div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #CC3399}
+.TaskBoldAnswerRow div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #CC3399}
+.TaskBoldWaitingRow  div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #808080}
+.TaskBoldNewRow div  {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: black}
+.TaskBoldReassignedRow  div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: black}
+.TaskBoldBugRow div  {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #FF0090}
+.TaskBoldTodayRow div  {background-color: #FAF3E4; font-size: 10pt; font-weight: bold; color: #D49100}
+.TaskBoldDeadlineRow div {background-color: #FFE5E5; font-size: 10pt; font-weight: bold; color: red;}
+.TaskBoldBugResolvedRow div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #14631B}
+.TaskBoldDocumentedRow div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #0098A2}
+.TaskBoldReadyToDocumentRow div {background-color: #EEEEEE; font-size: 10pt; font-weight: bold; color: #0098A2}
+
+.aTaskInProgressRow {font-size: 10pt; color: blue}
+.aTaskOnHoldRow {font-size: 10pt; color: #D0D0D0}
+.aTaskDoneRow {font-size: 10pt; color: green}
+.aTaskRejectedRow {font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.aTaskQuestionRow {font-size: 10pt; color: #CC3399}
+.aTaskAnswerRow {font-size: 10pt; color: #CC3399}
+.aTaskWaitingRow {font-size: 10pt; color: #808080}
+.aTaskNewRow {font-size: 10pt; color: black}
+.aTaskReassignedRow {font-size: 10pt; color: black}
+.aTaskTodayRow {font-size: 10pt; color: #D49100}
+.aTaskBugRow {font-size: 10pt; color: #FF0090}
+.aTaskDeadlineRow {font-size: 10pt; color: red;}
+.aTaskDocumentedRow {font-size: 10pt; color: #00555A;}
+.aTaskReadyToDocumentRow {font-size: 10pt; color: #00555A;}
+
+.aTaskBoldInProgressRow {font-size: 10pt; color: blue}
+.aTaskBoldOnHoldRow {font-size: 10pt; color: #D0D0D0}
+.aTaskBoldDoneRow {font-size: 10pt; color: green}
+.aTaskBoldRejectedRow {font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.aTaskBoldQuestionRow {font-size: 10pt; color: #CC3399}
+.aTaskBoldAnswerRow {font-size: 10pt; color: #CC3399}
+.aTaskBoldWaitingRow {font-size: 10pt; color: #808080}
+.aTaskBoldNewRow {font-size: 10pt; color: black}
+.aTaskBoldReassignedRow {font-size: 10pt; color: black}
+.aTaskBoldTodayRow {font-size: 10pt; color: #D49100}
+.aTaskBoldBugRow {font-size: 10pt; color: #FF0090}
+.aTaskBoldDeadlineRow {font-size: 10pt; color: red;}
+.aTaskBoldDocumentedRow {font-size: 10pt; color: #00555A;}
+.aTaskBoldReadyToDocumentRow {font-size: 10pt; color: #00555A;}
+
+.aTaskInProgress {font-size: 10pt; color: blue}
+.aTaskOnHold {font-size: 10pt; color: #D0D0D0}
+.aTaskDone {font-size: 10pt; color: green}
+.aTaskRejected {font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.aTaskQuestion {font-size: 10pt; color: #CC3399}
+.aTaskAnswer {font-size: 10pt; color: #CC3399}
+.aTaskWaiting {font-size: 10pt; color: #808080}
+.aTaskNew {font-size: 10pt; color: black}
+.aTaskReassigned {font-size: 10pt; color: black}
+.aTaskToday {font-size: 10pt; color: #D49100}
+.aTaskBug {font-size: 10pt; color: #FF0090}
+.aTaskDocumented {font-size: 10pt; color: #00555A;}
+.aTaskReadyToDocument {font-size: 10pt; color: #00555A;}
+
+.aLogout {}
+
+.aTaskInProgress2 {font-size: 10pt; color: blue}
+.aTaskOnHold2 {font-size: 10pt; color: #D0D0D0}
+.aTaskDone2 {font-size: 10pt; color: green}
+.aTaskRejected2 {font-size: 10pt; color: #D0D0D0; text-decoration: line-through}
+.aTaskQuestion2 {font-size: 10pt; color: #CC3399}
+.aTaskAnswer2 {font-size: 10pt; color: #CC3399}
+.aTaskWaiting2 {font-size: 10pt; color: #808080}
+.aTaskNew2 {font-size: 10pt; color: black}
+.aTaskReassigned2 {font-size: 10pt; color: black}
+.aTaskToday2 {font-size: 10pt; color: #D49100}
+.aTaskBug2 {font-size: 10pt; color: #FF0090}
+.aTaskDocumented2 {font-size: 10pt; color: #00555A;}
+.aTaskReadyToDocument2 {font-size: 10pt; color: #00555A;}
+
+.link2 {color:white;}
+.link2:hover {color:#D0D0D0;}
+
+.LargeHeader {font-size:12pt; font-weight:bold;}
+TextArea,Select,Input {font-family: "Tahoma", "Verdana", "Arial"; font-size:10pt}
+TD {font-size: 10pt;}
+
+A {
+    Font-family: "Tahoma", "Verdana", "Arial";
+    font-size: 10pt;
+    color: #003366;
+    text-decoration: none;}
+
+A:hover {
+    Font-family: "Tahoma", "Verdana", "Arial";
+    font-size: 10pt;
+    text-decoration: underline;}
+
+A.redlink {
+    color: red;
+}
+A.greenlink {
+    color: green;
+}
+a.manager { font-size: 9pt;}
+a.manager:hover { font-size: 9pt;}
+.manager {font-size: 9pt;}
+a.user { font-size: 9pt; padding-left:13px;}
+a.user:hover { font-size: 9pt;}
+.user {font-size: 9pt;}
+
+/* styles for rollover tabs */
+.menuact {background: #FCFFD5; border-top: 2px solid #FF8200; border-right:1px solid #919B9C; border-left:1px solid #919B9C; text-align: center; cursor:pointer;}
+.menu {border: 2px solid #FFFFFF; text-align: center; background: #F5F3EB; cursor:pointer; }
+.menu div {border: 1px solid #919B9C; text-align: center; cursor:pointer;}
+.menu div.noborder {border: 0px;cursor:pointer;}
+.cont {border-top:1px solid #919B9C;}
+
+acronym { border-bottom:1px dotted #333;cursor:help; }
+
+.DataRow1 {background-color: #EFEFEF; border-style: inset; border-width: 0; font-size: 10pt}
+.DataRow2 {background-color: #DEE3E7; border-style: inset; border-width: 0; font-size: 10pt}
+.DataRow3 {background-color: #D1D7C8; border-style: inset; border-width: 0; font-size: 10pt}
+
+.user_name {margin: 0px 0px 0px 20px;}
+.manager_name {margin: 0px 0px 0px 10px;}
+
+
+
+/* new styles from Egor */
+a {color: #005981;}
+
+body > table img {display: inline-block;}
+
+#menu_body {float: right; margin: -3.8em 0 1em;}
+#menu_body table {border-collapse: collapse;}
+#menu_body td {font-size: 0;}
+#menu_body td a {background: none; display: block; padding: 1em .5em;}
+#menu_body td a:hover {background: rgba(0,0,0,.05); text-decoration: none;}
+#menu_body td a + div table {border-collapse: collapse;}
+#menu_body td a + div td {padding: 0;}
+#menu_body td a + div a {padding: .2em .5em;}
+
+#users_list {margin: 2px 0 0; height: 23em; overflow: auto;}
+.viart_team_list, 
+.sayu_team_list {padding-left: 1em;}
+.viart_team_list table, 
+.sayu_team_list table {background: #fff !important; border: 0 !important;}
+.viart_team_list th, 
+.sayu_team_list th, 
+.viart_team_list td, 
+.sayu_team_list td {border-bottom: 1px solid rgba(0,0,0,.05); padding: .2em .4em;}
+.viart_team_list tr:last-child td, 
+.sayu_team_list tr:last-child td {border-bottom: 0;}
+.viart_team_list th, 
+.sayu_team_list th {background: rgba(0,0,0,.15);}
+tr[bgcolor="white"] td {background: rgba(0,0,0,.05); font-weight: 700;}
+tr[bgcolor="white"] td + td {text-align: center;}
+
+#current_task table {background: linear-gradient(to bottom, #fff, #b0dff5) !important; border: 0 !important; border-collapse: collapse;}
+#current_task table th, 
+#current_task table td {border-bottom: 1px solid rgba(0,0,0,.05); padding: .2em .4em;}
+#current_task table tr:last-child td {border-bottom: 0;}
+#current_task table tr:first-child td {background: rgba(0,0,0,.15);}
+#current_task table td[bgcolor="white"] {background: rgba(0,0,0,.05);}
+#current_task table form {margin: 0; padding: .4em 0;}
+
+#lunches_div {display: block; margin: 0 0 .5em;}
+#lunches_div + br {display: none !important;}
+#lunches_div table td {border: 0 !important; background-color: rgba(0,0,0,.15) !important; padding: .2em;}	
+    
+div[name="messages"] div table {display: block; padding: .4em .8em; width:auto; }
+div[name="messages"] div tbody, 
+div[name="messages"] div tr {display: block;}
+div[name="messages"] div .FieldCaptionTD, 
+div[name="messages"] div .FieldCaptionTD + td {display: block; width: auto;}
+div[name="messages"] div .FieldCaptionTD a ~ b {margin-left: 1em;}
+div[name="messages"] div .FieldCaptionTD br {display: none;}
+div[name="messages"] div table + div {padding: .4em .8em;}
+
+input[type="reset"], 
+input[type="button"], 
+input[type="submit"] {background: #efefef; border: 1px solid #ccc; color: #333; border-radius: 4px; cursor: pointer; padding: .4em 1.2em; transition: all 0.4s ease 0s;}
+input[type="reset"]:hover, 
+input[type="button"]:hover, 
+input[type="submit"]:hover {background: #dfdfdf;}
+
+.FormTABLE {border-collapse: collapse;}
+.FormTABLE td {padding: .4em;}
+.FormHeaderTD {background: #0095d7; border: 0; padding: .4em;}
+.ColumnTD {background: rgba(0,0,0,.15);}
+.TaskWaiting2 {background: rgba(0,0,0,.05);}
+.TaskWaiting2 .TaskWaiting2 {background: none;}
+.GridRecordHeader {background: none; color: #444; }
+.TaskInProgress2, 
+.TaskInProgress {background-color: #b0dff5; color: #444;}
+
+.menu, 
+.menuact {background: #fff !important; border: 0 !important; cursor: pointer; padding: 0 .2em !important; text-align: center;}
+.menu div, 
+.menuact div {background: #efefef; border: 1px solid #ccc; border-bottom: 0; border-radius: 4px 4px 0 0; cursor: pointer; padding: .4em; text-align: center;}
+.menu:hover div, 
+.menuact div {background: #dfdfdf;}
+
+#manager_note, 
+#manager_note ~ a {display: inline-block; clear: both; vertical-align: middle;}

@@ -1,0 +1,147 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="JavaScript">
+<!--
+	function clearFilter()
+	{
+		document.frmFilter.year_selected.value = "";
+		document.frmFilter.month_selected.value = "";
+		document.frmFilter.person_selected.value = "";
+	}
+-->
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<div align="center">
+
+		<form name="frmFilter" action="projects_report_4nata.php">
+		<table border=0>
+		<tr>
+			<td align="right">
+				Select Sub Team: 
+			</td>
+			<td>
+				<select name="team_id_selected" style="width:150px">
+					<!--BEGIN team_id_block-->
+					<option value="{team_id}" {team_id_selected}>{team_name}</option>
+					<!--END team_id_block-->
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select Projects: 
+			</td>
+			<td>
+				<select name="project_id[]" style="width:150px" multiple>
+					<option value="">--------- All ---------</option>
+					<!--BEGIN project_id_block-->
+						<option value="{project_id}" {project_id_selected}>{project_name}</option>
+					<!--END project_id_block-->
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Filter Task: 
+			</td>
+			<td>
+				<input name="filter_task" value="{filter_task}">
+			</td>
+		</tr>
+		
+		
+		<tr>
+			<td colspan="2">
+				<table border="0">
+					<tr class="DataTDP">
+						<td><font class="DataFONT">
+							From
+						</font></td>
+						<td><font class="DataFONT">
+							Period
+						</font></td>
+					</tr>
+					<tr>             
+						<td>
+							<select name="year_selected" style="width:150px">
+								<option value="">--------- Year ---------</option>
+								{years}
+							</select>
+						</td>
+						<td valign="middle" rowspan="2">
+							<input type="text" maxlength="2" value="{total_months}" name="total_months">
+						</td>
+					</tr>
+					<tr>             
+						<td>
+							<select name="month_selected" style="width:150px">
+								<option value="">-------- Month --------</option>
+								{months}
+							</select>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="checkbox" value="1" {show_per_user_checked} name="show_per_user"> show per users time
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit" onclick="document.frmFilter.to_csv.value=0;">&nbsp;
+				<input type="submit" value=" To CSV " name="submit" onclick="document.frmFilter.to_csv.value=1;">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+				<input type="hidden" value="0" name="to_csv" id="to_csv">
+			</td>
+		</tr>
+		</table>
+		</form>
+</div>
+<div align="center">
+	<!--BEGIN records-->
+	<table>
+		<tr>
+    		<td class="FormHeaderTD" colspan="{total_columns}">
+    			<font class="FormHeaderFONT">
+    				from {start_date} to {end_date}
+    			</font>
+    		</td>
+    	</tr>
+	    <tr align="center">
+	    	
+	    	<td class="ColumnTD" nowrap><font class="ColumnFONT">
+	   			Task
+	   		</font></td>
+	    	<!--BEGIN user_col--><td class="ColumnTD" nowrap><font class="ColumnFONT">
+	    	{person_name}
+	   		</font></td><!--END user_col-->		
+			<td class="ColumnTD" nowrap><font class="ColumnFONT">
+				Total
+			</font></td>			
+		</tr>
+		<!--BEGIN task_row-->
+		<tr>
+			<td class="DataTD"><font class="DataFONT">
+				<a href="edit_task.php?task_id={task_id}">{task_title}</a>
+			</font></td>
+			<!--BEGIN user_time_col--><td  class="DataTD" nowrap><font class="DataFONT">
+	    	{sum_hours}
+	   		</font></td><!--END user_time_col-->
+	   		<td  class="DataTD" nowrap><font class="DataFONT">
+	    	{total_hours}
+	   		</font></td>
+		</tr>
+		<!--END task_row-->
+	</table>
+	<!--END records-->
+</div>
+</body>
+</html>

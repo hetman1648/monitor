@@ -1,0 +1,54 @@
+<!-- BEGIN domains-->	
+	<!-- BEGIN domain-->
+		<a href="#" onclick="selectDomain('{domain_id}', '{domain_url}', '{client_id}', '{client_name}'); return false;">{domain_url}</div>
+	<!--END domain-->
+	<!-- BEGIN no_domain-->
+		<div>No domains found for <b>{search_domain}</b></div>
+	<!--END no_domain-->
+<!-- END domains-->
+
+
+<!-- BEGIN clients-->
+<table>
+<tr><td>Type</td><td>Client</td></tr>	
+	<!-- BEGIN client-->
+		<tr><td>
+			<a href="#" onclick="selectClient('{client_id}', '{client_name}', '{task_id}'); return false;">{client_name}</a><br>
+		</td><td>{client_type}</td></tr>
+	<!--END client-->
+	<!-- BEGIN no_client-->
+		<tr><td colspan="2">No clients found for <b>{search_client}</b></td></tr>
+		<tr><td colspan="2"><a href="create_client.php?new_sayu_user=1&client_email={search_client}">Add this client</a></td></tr>
+	<!--END no_client-->
+<!-- END clients-->
+
+<!-- BEGIN tasks-->
+	<table cellpadding="1" cellspacing="2">
+		<!-- BEGIN task-->
+		<tr class="Task{task_class}">
+			<td>
+				{priority_id}
+			</td>
+			<td>
+				<a href='edit_project.php?project_id={project_id}'>{project_title}</a>
+			</td>
+			<td>
+				<a href='edit_task.php?task_id={task_id}'>{task_title}</a>				
+			</td>
+			<td>
+				<a href='#' onclick="moveTask({task_id}, -1); return false;">
+					<img src="images/move_down.gif" border="0">
+				</a>
+			</td>
+			<td>
+				<a href='#' onclick="moveTask({task_id}, 1); return false;">
+					<img src="images/move_up.gif" border="0">
+				</a>
+			</td>	
+		</tr>
+		<!--END task-->
+	</table>
+	<!-- BEGIN no_task-->
+		<div>No tasks found</div>
+	<!--END no_task-->
+<!-- END tasks-->

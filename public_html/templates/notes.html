@@ -1,0 +1,52 @@
+<html>
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<!-- BEGIN error -->
+<table width="100%"><tr><td align="center" style="background-color:#FFCCCC; color:red;">{error_message}<br><br></td></tr></table>
+<!-- END error -->
+<!-- BEGIN notes_table -->
+<table cellpadding="2" width="100%">
+	<tr>
+		<td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">Notes</font></td>
+	</tr>
+	<!-- BEGIN notes -->
+	<tr>
+		<td class="FieldCaptionTD" width="250px" valign="top">
+		<table border="0" cellpadding="2" cellspacing="0" width="100%">
+			<tr>
+				<td>Added By</td>
+				<td align="center">{created_user_name}<br>{date_added}</td>
+			</tr>
+			<!-- BEGIN modified_row -->
+			<tr>
+				<td>Modified</td>
+				<td align="center">{modified_user_name}<br>{date_last_modified}</td>
+			</tr>
+			<!-- END modified_row -->
+			<!-- BEGIN note_edit_link -->			
+			<tr>
+				<td colspan="2"><a href="note_edit.php?note_id={note_id}">edit</a></td>				
+			</tr>
+			<!-- END note_edit_link -->
+		</table>
+		</td>
+		<td class="DataTD" valign="top">
+		<table border="0" cellpadding="1" cellspacing="0" width="100%">
+			<tr>
+				<td><b>{note_title}</b></td>
+			</tr><tr>
+				<td>{note_description}</td>
+			</tr>
+		</table>
+		</td>
+	</tr>
+	<!-- END notes -->
+</table>
+<a href="note_edit.php?task_id={task_id}">add new</a>
+<!-- END notes_table -->
+</body>
+</html>

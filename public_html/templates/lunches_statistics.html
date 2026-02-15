@@ -1,0 +1,96 @@
+<html>
+<head>
+<title>Lunch statistics</title>
+<link rel="stylesheet" href="site.css" type="text/css">
+<style>
+	.Eat0 {width:28px; height:30px; background-color: #EEEEEE}
+	.Eat1 {width:28px; height:30px; background-color: #FFEA80}
+	.Eat2 {width:28px; height:30px; background-color: #FFBF3E}
+	.Eat3 {width:28px; height:30px; background-color: #FF7F00}
+	.Eat4 {width:28px; height:30px; background-color: #E54C00}
+</style>
+</head>
+<body class="PageBODY" valign="center" margin="0">
+
+	<form name="filter" method="POST">
+	<table align="center" width="99%" height="99%" valign="center" cellspacing="0" cellpadding="0" border="0"><tr><td align="center">
+	<table align="center" cellspacing="2" cellpadding="2"><tr><td>
+	<a href="./index.php">Monitor</a>&nbsp; &nbsp; 	
+	<a href="./lunches_edit_menu.php">Edit Menu</a>&nbsp; &nbsp; 	
+	<a href="./lunches_edit_order.php">Edit Order</a>&nbsp; &nbsp; 	
+	<a href="./lunches_users.php">Permissions</a>&nbsp; &nbsp; 
+	<a href="./lunches_statistics.php"><b>Statistics</b></a><br><br>
+	
+	<select name="month">
+		<option value= "1">January</option>
+		<option value= "2">February</option>
+		<option value= "3">March</option>
+		<option value= "4">April</option>
+		<option value= "5">May</option>
+		<option value= "6">June</option>
+		<option value= "7">July</option>
+		<option value= "8">August</option>
+		<option value= "9">September</option>
+		<option value="10">October</option>
+		<option value="11">November</option>
+		<option value="12">December</option>
+	</select>
+	<select name="year">
+	<!-- BEGIN year_block -->
+		<option value= "{this_year}">{this_year}</option>
+	<!-- END year_block -->
+	</select>
+	</td></tr><tr><td>
+	<b>Subsidy:</b> <input type="text" name="subsidy" value="{subsidy}" size="3">
+	<input type="submit" value="Filter">
+	<br>
+	</td></tr></table>
+	<!-- BEGIN records -->
+	<table class="FormTABLE" cellpadding="1" cellspacing="3" align="center">
+		<tr>
+			<td class="FormHeaderTD" colspan="{headcolspan}"><font class="FormHeaderFONT">Lunch statistics</font>
+			</td>
+		</tr>
+		<tr>	
+			<td class="FieldCaptionTD" align="center"><b>Person / Day</b></td>
+			<!-- BEGIN days_header -->
+			<td class="FieldCaptionTD" align="center"><a href="lunches_edit_order.php?menu_date={menu_date}"><b>{dayofmonth}</b></a></td>
+			<!-- END days_header -->		
+			<td class="FieldCaptionTD" align="center"><b>Total</b></td>
+			<td class="FieldCaptionTD" align="center"><b>Total with discount<br>{discount}%</b></td>
+		</tr>
+		<!-- BEGIN people_records -->
+		<tr>
+			<td class="DataTD"><b>{user_name}</b></td>
+			<!-- BEGIN days_records -->
+			<td class="Eat{ec}" align="center">
+			<a href="lunches_edit_order.php?menu_date={menu_date}&user_id={user_id}"><img src="images/1x1.gif" border="0" width="28px" height="28px" alt=""></a></td>
+			<!-- END days_records -->
+			<td class="DataTD" align="right"><b>{user_total_price}</b></td>
+			<td class="DataTD" align="center"><b>{price_discount}</b></td>
+		</tr>
+		<!-- END people_records -->
+		<tr>
+			<td class="FieldCaptionTD">&nbsp;</td>
+			<!-- BEGIN days_footer -->
+			<td class="FieldCaptionTD" align="center"><b style="font-size:8px">{day_total_price}</b></td>
+			<!-- END days_footer -->
+			<td class="FieldCaptionTD" align="right"><b style="font-size:12px">{ttl}</b></td>
+			<td class="FieldCaptionTD" align="center"><b style="font-size:18px">{total_price_discount}</b></td>
+		</tr>
+	</table>
+	<!-- END records -->
+	<!-- BEGIN no_records -->
+		No records for this period
+	<!-- END no_records -->
+
+	</td></tr></table>	
+	</form>
+	<script language="JavaScript">
+	<!--
+		document.filter.elements.month.value={month};
+		document.filter.elements.year.value={year};
+	//-->
+	</script>
+</body>
+</html>

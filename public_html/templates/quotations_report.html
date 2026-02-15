@@ -1,0 +1,275 @@
+<html>
+<head>
+<title>Control</title>
+
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<body class="PageBODY" onLoad="setPeriod({period});selectPeriod();">
+{ITEMPLATE=header.html}
+
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+
+<script language="JavaScript">                           
+
+	function redirectClose(task_id_value) {
+		document.frmFilter.task_id.value = task_id_value;
+		document.frmFilter.operation.value = "close";
+	
+		document.frmFilter.submit();
+		return false;
+	}
+	
+
+	function selectPeriod()
+	{
+		var period = document.frmFilter.period.options[document.frmFilter.period.selectedIndex].value;
+		var startDate = ""; var endDate = "";
+		
+		if (period == 0) {
+			startDate = "{start_date}"; endDate = "{end_date}";
+		} else if(period == 1) {
+			startDate = "{today_date}"; endDate = "{today_date}";
+		} else if(period == 2) {
+			startDate = "{yesterday_date}"; endDate = "{yesterday_date}";
+		} else if (period == 3) {
+			startDate = "{week_start_date}"; endDate = "{week_end_date}";
+		} else if (period == 4) {
+			startDate = "{month_start_date}"; endDate = "{month_end_date}";
+		} else if (period == 5) {
+			startDate = "{this_month_start}"; endDate = "{this_month_end}";
+		} else if (period == 6) {
+			startDate = "{this_year_start}"; endDate = "{this_year_end}";
+		} else if (period == 7) {
+			startDate = ""; endDate = "";
+		}
+		document.frmFilter.start_date.value = startDate;
+		document.frmFilter.end_date.value = endDate;
+	}
+
+	var UserTeam = new Array();
+	var UserID = new Array();
+	var UserName = new Array();
+
+	function clearFilter()
+	{
+		document.frmFilter.period.value = "";
+		document.frmFilter.start_date.value = "";
+		document.frmFilter.end_date.value = "";
+	}
+
+	function setPeriod(iPeriod)
+	{
+		document.frmFilter.period.value = iPeriod;
+	}
+
+</script>
+<div align="center">
+<table width='90%'>
+<tr>
+	
+	<td >
+	<div>  
+	<form name="frmFilter" action="{action}" method="GET">
+	<table border="0">
+	<tr>
+		<td align="left">
+		  Select period:
+		</td>
+		<td>
+			<select name="period" onChange="selectPeriod()" style="width:150px">
+				<option value="0">...
+<!--				<option value="1">Today
+				<option value="2">Yesterday
+				<option value="3">Last 7 Days-->
+				<option value="5">This Month
+				<option value="4">Last Month				
+				<option value="6">This Year
+				<option selected value="7" >All Time
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="right">
+			Start Date:
+		</td>
+		<td>
+			<input type="text" name="start_date" value="{start_date}" onChange="setPeriod(0)" style="width:150px">
+
+			<A HREF="javascript:doNothing()"
+				onClick="setDateField(document.frmFilter.start_date);
+				top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+			<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+		</td>
+	</tr>
+	<tr>
+		<td align="right">
+			End Date:
+		</td>
+		<td>
+			<input type="text" name="end_date" value="{end_date}" onChange="setPeriod(0)" style="width:150px">
+
+			<A HREF="javascript:doNothing()"
+				onClick="setDateField(document.frmFilter.end_date);
+				top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+			<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+		</td>
+	</tr>
+	
+	<tr>
+		<td align="right">
+		  Select project:
+		</td>
+		<td>
+			<select style="width:150px" name="project_id">
+			    <option value="">All projects
+			    <!-- BEGIN projects -->
+				<option value="{project_id}" {selected}>{project_title}
+				<!-- END projects -->
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="right">
+		  Project manager:
+		</td>
+		<td>
+			<select style="width:150px" name="user_id">
+			    <option value="">All managers
+			    <!-- BEGIN users -->
+				<option value="{user_id}" {selected}>{user_name}
+				<!-- END users -->
+			</select>
+		</td>
+	</tr>	
+	<tr>
+		<td align="right">
+			Show Closed:
+		</td>
+		<td>
+			<input type="checkbox" name="show_closed" value="show_closed" {show_closed_checked}>
+			
+			<input type="hidden" value="close" name="operation">
+			<input type="hidden" value="0" name="task_id">
+			
+		</td>
+	</tr>
+	<tr>
+		<td align="right">
+			Show Invoice:
+		</td>
+		<td>
+			<input type="checkbox" name="show_invoice" value="show_invoice" {show_invoice_checked}>
+		</td>
+	</tr>
+<!--	<tr>
+		<td align="right">
+			Group by Parent Task:
+		</td>
+		<td>
+			<input type="checkbox" name="group_child" value="group_child" {group_child_checked}>
+			
+		
+		</td>
+	</tr>	-->
+	<tr>
+		<td align="center" colspan="2">
+			<input type="submit" value=" Filter ">&nbsp;
+			<input type="button" value=" Clear " onclick="clearFilter()">
+		</td>
+	</tr>
+	</table>
+	</form>
+	</div>
+	</td>
+	
+	
+	
+</tr>
+</table>
+</div>
+
+<table class="FormTABLE" align="center" width = "95%">
+    <tr>
+    	<td class="FormHeaderTD" colspan="10"><font class="FormHeaderFONT">Quotations</font></td>
+    </tr>
+    <tr align="center">
+    	<td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=project"><font class="ColumnFONT">Project</font></a></td>
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=task"><font class="ColumnFONT">Task Title</font></a></td>
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=person"><font class="ColumnFONT">Person</font></a></td>
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=status"><font class="ColumnFONT">Status</font></a></td>
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=hours"><font class="ColumnFONT">Hours</font></a></td>	    
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=estimate"><font class="ColumnFONT">Estimate</font></a></td>	    
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=price"><font class="ColumnFONT">Price</font></a></td>	    
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=created"><font class="ColumnFONT">Created</font></a></td>
+	    <td class="ColumnTD" nowrap><a href="quotations_report.php?period={period}&start_date={start_date}&end_date={end_date}&project_id={project}&user_id={user_id_selected}&show_closed={show_closed}&show_invoice={show_invoice}&sort=deadline"><font class="ColumnFONT">Deadline</font></a></td>
+	    <td class="ColumnTD" nowrap></td>
+	</tr>
+
+    <!-- BEGIN records1 --><!-- class="Task{STATUS}" -->
+    	<tr>
+    		<td colspan="9" height="10px" style="height:10px;"></td>
+    	</tr>
+      <tr class="DataRow2" onMouseOut="this.style.backgroundColor=lastBG; 
+      							document.getElementById('title{title_id}').style.backgroundColor=lastBGtitle;" 
+      							onMouseOver="lastBG=this.style.backgroundColor; 
+      							lastBGtitle=document.getElementById('title{title_id}').style.backgroundColor; 
+      							this.style.backgroundColor='#FCFFD5'; 
+      							document.getElementById('title{title_id}').style.backgroundColor='#FCFFD5';">    
+      	<td ><b>{project_title}</b></td>
+	    <td ><a id="title{title_id}" class="Task{STATUS}" href="edit_task.php?task_id={task_id}"><b>{task_title}</b></a>&nbsp;</td>
+	    <td nowrap><b>{responsible_user}</b></td>
+	    <td nowrap align="center"><b>{status_name}</b></td>
+	    <td nowrap align="right" style="{actual_hours_style}"><b>{actual_hours}</b></td>
+	    <td nowrap align="right"><b>{estimate}</b></td>
+	    <td nowrap align="right"><b>{price}</b></td>
+	    <td nowrap align="center"><b>{date_created}</b></td>
+	    <td nowrap align="center" style="{deadline_style}"><b>{date_deadline}</b></td>
+	    <td nowrap><a href = "#" onClick="redirectClose({task_id});">Close</a></td>	    
+	</tr>
+    <!-- BEGIN task_records -->
+      <tr class="DataRow1" onMouseOut="this.style.backgroundColor=lastBG; 
+      							document.getElementById('title{s_title_id}').style.backgroundColor=lastBGtitle;" 
+      							onMouseOver="lastBG=this.style.backgroundColor; 
+      							lastBGtitle=document.getElementById('title{s_title_id}').style.backgroundColor; 
+      							this.style.backgroundColor='#FCFFD5'; 
+      							document.getElementById('title{s_title_id}').style.backgroundColor='#FCFFD5';">    
+      	<td >{s_project_title}</td>
+	    <td style="padding-left:36px;"><a id="title{s_title_id}" class="Task{s_STATUS}" href="edit_task.php?task_id={s_task_id}">{s_task_title}</a>&nbsp;</td>
+	    <td nowrap>{s_responsible_user}</td>
+	    <td nowrap align="center">{s_status_name}</td>
+	    <td nowrap align="right" style="{s_actual_hours_style}">{s_actual_hours}</td>
+	    <td nowrap align="right">{s_estimate}</td>
+	    <td nowrap align="right">{s_price}</td>
+	    <td nowrap align="center">{s_date_created}</td>
+	    <td nowrap align="center" style="{s_deadline_style}">{s_date_deadline}</td>
+	    <td nowrap><a href="#" onClick="redirectClose({s_task_id});">Close</a></td>	    
+	</tr>
+	<!-- END task_records -->
+	
+	
+	<!-- END records1 -->
+	
+    <!-- BEGIN records1 -->
+      <tr class="ColumnTD">
+      	<td colspan="5">Total</td>
+	    <td nowrap align="right">{estimate_total}</td>
+	    <td nowrap align="right">{price_total}</td>
+	    <td nowrap colspan="3">&nbsp;</td>
+	</tr>
+	
+	
+
+	<!-- BEGIN no_records1 -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No quotations for selected period
+		</td>
+	</tr>
+	<!-- END no_records1 -->
+</table>
+
+</body>
+</html>

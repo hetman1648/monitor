@@ -1,0 +1,375 @@
+<center>
+
+<script type="text/javascript" src="https://monitor.sayu.co.uk/scripts/jquery-1.2.6.pack.js"></script>
+<script type="text/javascript" src="https://monitor.sayu.co.uk/scripts/jquery.funcs.js"></script>
+<style>
+	.red {background-color: #FF3300; }
+	.yellow { background-color: #FFFF00; }
+	.high { background-color: #DDDDDD;}	
+	.highCenter { background-color: #D0D0D0;}	
+</style>
+
+<h1>{team_title}</h1>
+
+<table border="0" cellpadding="2" class="FormTABLE">
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Person</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Custom Work</font>
+		</td>
+		<!--BEGIN tickets_header-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Tickets</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Tickets Delayed</font>
+		</td>
+		<!--END tickets_header-->
+		<!--BEGIN manual_header-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Manual</font>
+		</td>
+		<!--END manual_header-->
+		<!--BEGIN viart_header-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Viart</font>
+		</td>
+		<!--END viart_header-->
+		<!--BEGIN sayu_header-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Sayu</font>
+		</td>
+		<!--END sayu_header-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Paid Days</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Bugs</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Total Points</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Bonus</font>
+		</td>
+	</tr>
+	<!--BEGIN row-->
+	<tr>
+		<td class="DataTDE" nowrap align="left" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			{name}
+			<!--BEGIN other_work_cell-->
+			<a href="#" onclick="showRow('ow_{user_id}'); return false;">Other Works ({other_work})</a>
+			<!--END other_work_cell-->
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			<a href="#" onclick="showRow('cw_{user_id}'); return false;">{custome_work}</a>
+			<!--BEGIN special_cell-->+ {special}<!--END special_cell-->
+		</td>
+		<!--BEGIN tickets_delayed_points_cell-->
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			{tickets_points}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			{tickets_delayed_points} / {tickets_delayed}
+		</td>
+		<!--END tickets_delayed_points_cell-->
+		<!--BEGIN manual_cell-->		
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			<a href="#" onclick="showRow('tw_5_{user_id}'); return false;">{manual}</a>
+		</td>
+		<!--END manual_cell-->
+		<!--BEGIN viart_cell-->
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			<a href="#" onclick="showRow('tw_2_{user_id}'); return false;">{viart}</a>
+		</td>
+		<!--END viart_cell-->
+		<!--BEGIN sayu_cell-->
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			<a href="#" onclick="showRow('tw_3_{user_id}'); showRow('sw_{user_id}'); return false;">{sayu}</a>
+		</td>
+		<!--END sayu_cell-->
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			{paid_days}
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			{bugs}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			<b>{total_points}</b>
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this)" onMouseOut="highlightCell(this)">
+			<font color='red'><b>{bonus}</b></font>
+			<small>{bonus_desc}</small>
+		</td>
+	</tr>
+	<!--BEGIN notes_block-->
+	<tr>
+		<td colspan="8">
+			{notes_text}			
+		</td>
+	</tr>
+	<!--END notes_block-->
+	<!--END row-->
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Totals</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_custome_work}</font>
+		</td>
+		<!--BEGIN tickets_footer-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_tickets_points}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_tickets_delayed_points} / {sum_tickets_delayed}</font>
+		</td>
+		<!--END tickets_footer-->
+		<!--BEGIN manual_footer-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_manual}</font>
+		</td>
+		<!--END manual_footer-->
+		<!--BEGIN viart_footer-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_viart}</font>
+		</td>
+		<!--END viart_footer-->
+		<!--BEGIN sayu_footer-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_sayu}</font>
+		</td>
+		<!--END sayu_footer-->
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_paid_days}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_bugs}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_total_points}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT" color='red'><b>{sum_bonus}</b></font>
+		</td>
+	</tr>
+</table>
+
+<!--BEGIN time_work_table-->
+<div id='tw_{sp_id}_{user_id}' style="display:none">
+	<table border="0" cellpadding="2" class="FormTABLE">
+	<tr align="center">
+		<td colspan="5" class="ColumnTD">
+			<font class="ColumnFONT">{title} Works of {name}</font>
+		</td>
+		<td align="right">
+			<a href="#" onclick="showRow('tw_{sp_id}_{user_id}'); return false;">[x]</a>
+		</td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Task</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Spent Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Actual Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Completion</font>
+		</td>
+	</tr>
+	<!--BEGIN time_work_row-->
+	<tr class='{color}'>
+		<td class="DataTDE" nowrap align="left" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			<a href="https://monitor.sayu.co.uk/edit_task.php?task_id={task_id}">{task_title}</a>
+		</td>			
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{spent_hours}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{actual_hours}
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{completion} %
+		</td>
+	</tr>
+	<!--END time_work_row-->
+	</table>
+</div>
+<!--END time_work_table-->
+
+<!--BEGIN custome_work_table-->
+<div id='cw_{user_id}' style="display:none">
+	<table border="0" cellpadding="2" class="FormTABLE">
+	<tr align="center">
+		<td colspan="5" class="ColumnTD">
+			<font class="ColumnFONT">Custom Works of {name}</font>
+		</td>
+		<td align="right">
+			<a href="#" onclick="showRow('cw_{user_id}'); return false;">[x]</a>
+		</td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Task</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Spent Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Actual Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Completion</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Cost</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Points</font>
+		</td>
+	</tr>
+	<!--BEGIN custome_work_row-->
+	<tr class='{color}'>
+		<td class="DataTDE" nowrap align="left" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			<a href="https://monitor.sayu.co.uk/edit_task.php?task_id={task_id}">{task_title}</a>
+		</td>			
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{spent_hours}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{actual_hours}
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{completion} %
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{task_cost}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			<b>{user_task_points}</b>
+		</td>
+	</tr>
+	<!--END custome_work_row-->
+	</table>
+</div>
+<!--END custome_work_table-->
+
+<!--BEGIN sayu_custome_work_table-->
+<div id='sw_{user_id}' style="display:none">
+	<table border="0" cellpadding="2" class="FormTABLE">
+	<tr align="center">
+		<td colspan="5" class="ColumnTD">
+			<font class="ColumnFONT">Sayu Works of {name}</font>
+		</td>
+		<td align="right">
+			<a href="#" onclick="showRow('sw_{user_id}'); return false;">[x]</a>
+		</td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Task</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Spent Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Actual Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Completion</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Cost</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Points</font>
+		</td>
+	</tr>
+	<!--BEGIN sayu_custome_work_row-->
+	<tr class='{color}'>
+		<td class="DataTDE" nowrap align="left" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			<a href="https://monitor.sayu.co.uk/edit_task.php?task_id={task_id}">{task_title}</a>
+		</td>			
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{spent_hours}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{actual_hours}
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{completion} %
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{task_cost}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			<b>{user_task_points}</b>
+		</td>
+	</tr>
+	<!--END sayu_custome_work_row-->
+	</table>
+</div>
+<!--END sayu_custome_work_table-->
+
+
+<!--BEGIN other_work_table-->
+<div id='ow_{user_id}' style="display:none">
+	<table border="0" cellpadding="2" class="FormTABLE">
+	<tr align="center">
+		<td colspan="4" class="ColumnTD">
+			<font class="ColumnFONT">Other Works of {name}</font>
+		</td>
+		<td align="right">
+			<a href="#" onclick="showRow('ow_{user_id}'); return false;">[x]</a>
+		</td>
+	</tr>
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Task</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Spent Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Actual Hours</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Completion</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Cost</font>
+		</td>
+	</tr>
+	<!--BEGIN other_work_row-->
+	<tr>
+		<td class="DataTDE" nowrap align="left" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			<a href="https://monitor.sayu.co.uk/edit_task.php?task_id={task_id}">{task_title}</a>
+		</td>			
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{spent_hours}
+		</td>
+		<td class="DataTDE" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{actual_hours}
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{completion} %
+		</td>
+		<td class="DataTDE"" nowrap align="center" onMouseOver="highlightCell(this,1)" onMouseOut="highlightCell(this,1)">
+			{task_cost}
+		</td>
+	</tr>
+	<!--END other_work_row-->
+	</table>
+</div>
+<!--END other_work_table-->
+
+<!--BEGIN manager_bonus_block-->
+Team Manager`s Bonus: <font color="red">{manager_bonus}</font>
+<!--END manager_bonus_block-->
+
+</center>

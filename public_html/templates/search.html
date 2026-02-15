@@ -1,0 +1,193 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="./scripts/calendar.js"></SCRIPT>
+<script language="JavaScript">
+<!--
+	function selectPeriod()
+	{
+		var period = document.frmFilter.period.options[document.frmFilter.period.selectedIndex].value;
+		var startDate = ""; var endDate = "";
+		if (period == 0) {
+			startDate = "{start_date}"; endDate = "{end_date}";
+		} else if(period == 1) {
+			startDate = "{today_date}"; endDate = "{today_date}";
+		} else if(period == 2) {
+			startDate = "{yesterday_date}"; endDate = "{yesterday_date}";
+		} else if (period == 3) {
+			startDate = "{week_start_date}"; endDate = "{week_end_date}";
+		} else if (period == 4) {
+			startDate = "{month_start_date}"; endDate = "{month_end_date}";
+		} else if (period == 5) {
+			startDate = "{this_month_start}"; endDate = "{this_month_end}";
+		}
+		document.frmFilter.start_date.value = startDate;
+		document.frmFilter.end_date.value = endDate;
+	}
+
+//-->
+</script>
+<script>
+	function clearFilter()
+	{
+		document.frmFilter.period.value = "";
+		document.frmFilter.start_date.value = "";
+		document.frmFilter.end_date.value = "";
+		document.frmFilter.person_selected.value = "";
+		document.frmFilter.project_selected.value = "";
+		document.frmFilter.keyword.value = "";
+		document.frmFilter.closed.checked = false;
+	}
+	
+	function setPeriod(iPeriod)
+	{
+		document.frmFilter.period.selectedIndex = iPeriod;
+	}
+</script>
+</head>
+
+<body class="PageBODY" onLoad="setPeriod({period});selectPeriod()">
+{ITEMPLATE=header.html}
+<div align="center">
+		<form name="frmFilter" action="search.php">
+		<table border=0>
+		<tr>
+			<td align="right">
+			  Select period:
+			</td>
+			<td>
+				<select name="period" onChange="selectPeriod()">
+					<option value="">
+					<option value="1">Today
+					<option value="2">Yesterday
+					<option value="3">Last 7 Days
+					<option value="4">Last Month
+					<option value="5">This Month
+				</select>
+			</td>
+ 		</tr>
+		<tr>
+			<td align="right">
+				Start Date: 
+			</td>
+			<td>
+				<input type="text" name="start_date" value="{start_date}" onClick="setPeriod(0)">
+					
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.start_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+				
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				End Date: 
+			</td>
+			<td>
+				<input type="text" name="end_date" value="{end_date}" onClick="setPeriod(0)">
+
+				<A HREF="javascript:doNothing()" 
+					onClick="setDateField(document.frmFilter.end_date);
+					top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Filter by project:
+			</td>              
+			<td>
+				<select name="project_selected" style="width:210px">
+					<option value="">------ All projects ------</option>
+					{projects}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Responsible person:
+			</td>              
+			<td>
+				<select name="person_selected" style="width:210px">
+					<option value="">------- All people -------</option>
+					{persons}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Keyword:
+			</td>              
+			<td>
+				<input type="text" name="keyword" style="width:210px" value="{keyword}">
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Search also in closed:
+			</td>              
+			<td>
+				<input type="checkbox" name="closed" {checked}>
+			</td>
+		</tr>
+		<tr>
+			<td align="center" colspan="2">
+				<input type="submit" value=" Filter " name="submit">&nbsp;
+				<input type="button" value=" Clear " onclick="clearFilter()">
+			</td>
+		</tr>
+		</table>
+		</form>
+</div>
+
+
+<!-- BEGIN result -->
+<table class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">Task Search Report</font></td>
+    </tr>
+	<!-- BEGIN records_header -->	
+    <tr align="center">
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Project</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Task Title</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Assigned To</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Priority</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Status</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Estimate</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Actual Spent</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Created</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Complete by</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">Closed</font></td>
+	</tr>
+	<!-- END records_header -->
+	    
+    <!-- BEGIN records -->
+    <tr>
+	   	<td class="DataTD" nowrap><font class="DataFONT">{project_title}</font></td>
+	    <td class="DataTD"><font class="DataFONT"><a href="./edit_task.php?task_id={task_id}">{task_title}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{user_name}</font></td>
+	    <td class="DataTD" nowrap align="center"><font class="DataFONT">{priority}</font></td>
+	    <td class="DataTD" nowrap align="center"><font class="DataFONT">{status}</font></td>
+	    <td class="DataTD" nowrap align="center"><font class="DataFONT">{estimate}</font></td>
+	    <td class="DataTD" nowrap align="center"><font class="DataFONT">{actual}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{created}</font></td>
+	    <td class="DataTD" nowrap><font class="DataFONT">{complete_by}</font></td>	    
+	    <td class="DataTD" nowrap align="center"><font class="DataFONT">{is_closed}</font></td>
+	</tr>
+	<!-- END records -->       
+
+	<!-- BEGIN no_records -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No data for this period
+		</td>
+	</tr>
+	<!-- END no_records -->
+</table>
+<!-- END result -->
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+	<!-- BEGIN report_body -->
+	<form name="frmSetTime" action="set_tr_time.php">
+		<table>
+			<tr>
+				<td>Set right end time for <b><a href="http://monitor.sayu.co.uk/edit_task.php?task_id={task_id}">{task_title}</a></b> for {started_date}:</td>
+				<td>
+					<input type="text" name="report_time">&nbsp;
+					<input type="submit" name="submit" value="Set time">&nbsp;(Time format <b>hh:mm</b>)
+					<input type="hidden" name="report_id" value="{report_id}">
+				</td>
+			</tr>
+		</table>
+	</form>
+	<!-- END report_body -->
+
+</body>
+</html>

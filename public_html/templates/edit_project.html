@@ -1,0 +1,428 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<style>
+	.ppdiv {position: relative; width:792px; height:275px;}
+	.pdiv {position: absolute; width:792px; height:275px; overflow: auto;}
+	.client_table {position:absolute; border-color:black;border-style:solid; border-color:#333333; width:400px; height:300px; z-index:1000;background-color:white; border-width: 1px; border-top-width: 1px; left: 300px}
+	.open { cursor: hand; width: 260px; cursor:pointer;border: solid 1px black; border-right: none; border-bottom: none; text-align: center; font-weight: bold;}
+	.close { cursor: hand; width: 260px; cursor:pointer; border: solid 1px black; border-right: none; text-align: center; background: #cfd6d4; }
+	.cl { cursor: hand; width: 1px; cursor:pointer; border: solid 1px black; text-align: center; border-right: none; text-align: center; background: #cfd6d4; }
+	.tablediv { display:  table; width:600px; border:1px solid  #666666; border-spacing:5px; margin:  5px 5px 5px 5px; padding:  5px 5px 5px 5px; border-collapse:separate; }
+	.celldiv { float:left; display:  table-cell;}
+	.rowdiv  {display:  table-row; width:auto; }
+	.hyper {color:black; text-decoration: none;}
+	.eediv {position: relative; width:400px; height:100px;}
+	.ediv {position: absolute; width:400px; height:100px; overflow: auto;}
+</style>
+<script type="text/javascript" src="./scripts/jquery-1.2.6.pack.js"></script>
+<script language="JavaScript">
+
+function modulesList() {
+	$.getJSON("./cvs_logger/modules_list.php?output=json",
+		function(data){
+			$("#cvs_module_list").remove();
+			var old_input        = $("#cvs_module");
+						
+			var select  = document.createElement('Select');
+			select.name = "cvs_module_list";
+			select.id   = "cvs_module_list";
+   			$.each(data, function(i,item){
+            	select.options.add(new Option(item.name, item.name), i);
+          	});
+          	$(select).val(old_input.val());          	
+          	old_input.val($(select).val());
+          	         	
+          	$(select).change(function(){
+          		$("#cvs_module").val($("#cvs_module_list").val());
+          	});
+          	old_input.hide();
+          	old_input.after(select);
+    	}
+    );
+}
+
+var client_id = 0;
+var last_client_id = 0;
+var req = 1;
+var clients_array = new Array();
+	clients_array[0] = "No Client";
+
+function open_clients_table()
+{
+	show_clients_table();
+	if (req == 1){
+		get_clients_table();
+	}
+}
+
+function show_clients_table()
+{
+	document.getElementById('id_client_table').style.display = 'block';
+}
+
+function allclose(id)
+{
+	document.getElementById('td_active').className='close';
+	document.getElementById('td_all').className='close';
+    document.getElementById('td_search').className='close';
+	document.getElementById(id).className='open';
+}
+
+function get_clients_table(query)
+{
+    req = null;
+    if (window.XMLHttpRequest) {
+        try {
+            req = new XMLHttpRequest();
+        } catch (e){}
+    } else if (window.ActiveXObject) {
+        try {
+            req = new ActiveXObject('Msxml2.XMLHTTP');
+        } catch (e){
+            try {
+                req = new ActiveXObject('Microsoft.XMLHTTP');
+            } catch (e){}
+        }
+    }
+	req.open("GET", "load_clients.php?" + query, false);
+	req.send(null);
+	xmlString = req.responseText;
+	if (document.implementation.createDocument) {
+	    var parser = new DOMParser();
+	    xmlobj = parser.parseFromString(xmlString, "text/xml");
+	// MSIE
+	}
+	else
+	if (window.ActiveXObject) {
+	    xmlobj = new ActiveXObject("Microsoft.XMLDOM");
+	    xmlobj.async="false";
+	    xmlobj.loadXML(xmlString);
+	}
+	document.getElementById("div_clients").innerHTML = "";
+
+	document.getElementById("div_clients").innerHTML = xmlobj.getElementsByTagName("b")[0].childNodes[0].data;
+	for (i = 0; i < xmlobj.getElementsByTagName('client_item').length; i++)
+	{
+		if (xmlobj.getElementsByTagName("client_item")[i].childNodes[1].childNodes[0]) {
+			var name_client = new String(xmlobj.getElementsByTagName('client_item')[i].childNodes[1].childNodes[0].data);
+			clients_array[xmlobj.getElementsByTagName('client_item')[i].childNodes[0].childNodes[0].data] = name_client.replace(/<br>(.*)/g,"");
+		}
+	}
+	change_selected_client('0');
+
+}
+
+function close_clients_table()
+{
+	document.getElementsByName('id_client_table')[0].style.display='none';
+}
+
+function select_none()
+{
+	change_selected_client("0");
+	submit_client();
+}
+
+function submit_client()
+{
+	if (last_client_id > 0)
+	{
+		document.forms[0].client_id.value = last_client_id;
+		document.getElementById('div_client_name').innerHTML = clients_array[document.forms[0].client_id.value];
+	}
+	else if (last_client_id <= 0)
+	{
+		document.forms[0].client_id.value = last_client_id;
+		document.getElementById('div_client_name').innerHTML = 'No Client';
+	}
+	close_clients_table();
+}
+
+function change_selected_client(client_id)
+{
+	if ((last_client_id > 0) && (document.getElementById('tr_' + last_client_id)))
+	{
+		row = document.getElementById('tr_' + last_client_id);
+		for(i=0; i<row.cells.length; i++)
+		{
+			row.cells[i].style.backgroundColor = last_bg_color;
+		}
+	}
+
+	if (client_id > 0)
+	{
+		row = document.getElementById('tr_' + client_id);
+		last_bg_color = row.cells[1].style.backgroundColor;
+		for(i = 0; i<row.cells.length; i++)
+		{
+			row.cells[i].style.backgroundColor = '#FCFFD5';
+		}
+		//document.getElementsByName("ok")[0].value='Select "' + clients_array[client_id].replace(/<br>.*/i, '') + '"';
+	}
+	else
+	{
+		//document.getElementsByName("ok")[0].value='Select nobody';
+		last_client_id = '0';
+	}
+
+	last_client_id = client_id;
+}
+
+function select_selected_client(client_id)
+{
+	if ((last_client_id > 0) && (document.getElementById('tr_' + last_client_id)))
+	{
+		row = document.getElementById('tr_' + last_client_id);
+		for(i=0; i<row.cells.length; i++)
+		{
+			row.cells[i].style.backgroundColor = last_bg_color;
+		}
+	}
+
+	if (client_id > 0)
+	{
+		row = document.getElementById('tr_' + client_id);
+		last_bg_color = row.cells[1].style.backgroundColor;
+		for(i = 0; i<row.cells.length; i++)
+		{
+			row.cells[i].style.backgroundColor = '#FCFFD5';
+		}
+		//document.getElementsByName("ok")[0].value='Select "' + clients_array[client_id].replace(/<br>.*/i, '') + '"';
+	}
+	else
+	{
+		//document.getElementsByName("ok")[0].value='Select nobody';
+		last_client_id = '0';
+	}
+
+	last_client_id = client_id;
+	submit_client();
+}
+
+function detectKeyUp(e) {
+	var evt = e || window.event;
+	var code = evt.keyCode;
+	if (code == 13 && document.getElementById('m_client_id')) {
+		var viart_id = document.getElementById('m_client_id').value;
+		var sayu_id = document.getElementById('o_client_id').value;
+		var client_type = document.getElementById('sclient_type').value;
+		var searchword = document.getElementById('keyword').value;		
+		var searchtype = document.getElementById('search_by').value;
+		
+		get_clients_table('viart_id=' + viart_id + '&sayu_id=' + sayu_id + '&show_table=3' + '&search_by=' + searchtype + '&client_type=' + client_type + '&searchword=' + searchword + '&searched=1');
+	}
+}
+
+document.onkeyup = detectKeyUp;
+
+</script>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<table>
+	<tr><td valign="top">
+	<!-- BEGIN FormForm -->
+
+		<table class="FormTABLE">
+			<tr><td class="FormHeaderTD" colspan="2" style="width:500px"><font class="FormHeaderFONT">Project</font></td></tr>
+			<!-- BEGIN FormError -->
+			<tr><td class="DataTD" colspan="2"><font class="DataFONT">{sFormErr}<font></td></tr>
+			<!-- END FormError -->
+			<form method="POST" action="{FileName}" name="Form">
+			<input type="hidden" name="return_page" value="{return_page}">
+			<input type="hidden" name="client_id" value="{this_client_id}">
+
+			<tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT">Project Title</font></td><td class="DataTD">
+				<input type="text" name="project_title" maxlength="80" value="{project_title}" size="70" style="width:500px;">
+			</td></tr>
+
+			<!-- BEGIN ParentTR -->
+			  <tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Parent Project</font></td>
+				<td>
+					<select name="parent_project_id">
+						<option value="0" {TopProjSelected}>-- none --</option>
+						<!-- BEGIN LBparent_project --><option value="{ID}" {Selected}>{Value}</option><!-- END LBparent_project -->
+					</select>
+				</td>
+			</tr>
+			<!-- END ParentTR -->
+
+			<!-- BEGIN SubprojectsTR -->
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Subprojects</font></td>
+				<td>{SubprojectsList}Title: 
+					<input type="text" name="subproject_title" maxlength="80" value="" size="30" style="width:120px;"><input type="submit" value="Add Subproject" onclick="document.Form.elements['FormAction'].value = 'addsub';"/>
+				</td>
+			</tr>
+			<!-- END SubprojectsTR -->
+
+			<tr>
+				<td class="FieldCaptionTD" valign="top"><font class="FieldCaptionFONT">Description</font></td>
+				<td><textarea  name="project_desc" cols="87" rows="5" style="width:500px">{project_desc}</textarea></td>
+			</tr>
+			<!-- -->
+			<tr>
+				<td class="FieldCaptionTD" valign="top"><font class="FieldCaptionFONT">Clients</font></td>
+				<td>
+					<div align='left' style='padding:5px; display:inline;' id='div_client_name'>
+					</div>
+					&nbsp;
+					<div align='right' style='padding:5px; display:inline; cursor:hand;' onclick="open_clients_table();">
+						<a href="#">Select&nbsp;client</a>
+					</div>
+					<div id="id_client_inf" style="display:none; position:absolute; background-color:white; border-color: #585858; border-width: 2px; border-style: solid;">
+						<!-- information -->
+					</div>
+					<div id="id_client_table" valign="top" name="id_client_table" style="positon:absolute; display:none;">
+						<table CELLSPACING='0' class="client_table">
+						    <tr>
+								<td><img src="images/tr.gif" width="1" height="1"></td>
+								<td  id='td_active' onclick="allclose('td_active'); get_clients_table('show_table=1');" class="close" style="border-left: solid 0px black;">ViArt Clients</td>
+								<td  id='td_all' onclick="allclose('td_all');get_clients_table('show_table=2');" class="close">Sayu Active Clients</td>
+								<td id='td_search' onclick="allclose('td_search');get_clients_table('show_table=3');" class="open" nowrap>Search Clients&nbsp;</td>
+								<td id='td_close' class="cl" onclick='close_clients_table();' nowrap><nobr>&nbsp;x&nbsp;</nobr></td>
+							</tr>
+							<tr>
+								<td><img src="images/tr.gif" width="1" height="275"></td>
+								<td colspan=4 height="275" id='table_clients' style="display:''; z-index:1000;">
+									<div class='ppdiv'><div class='pdiv' id='div_clients'></div></div>
+										<!--<input type="button" name='ok' value='&nbsp;Ok&nbsp;'
+										onclick="submit_client();">-->
+									<input type=button id='id_unselect_client' value='Unselect Client' onclick='select_none();'>
+								</td>
+							</tr>
+							<script>
+								last_client_id = {this_client_id};
+								clients_array[{this_client_id}] = "{this_client_name}";
+								submit_client({this_client_id});
+								close_clients_table();
+							</script>
+						</table>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Project URL</font></td>
+				<td><input type="text" name="project_url" value="{project_url}" size="87" style="width:500px"></td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Domain Required for Tasks</font></td>
+				<td class="DataTD">
+					<input type="checkbox" value="1" name="is_domain_required" {is_domain_required_checked}>
+				</td>
+			</tr>
+			
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Users copy</font></td>
+				<td class="DataTD">
+					<input type="text" name="emails_copy" value="{emails_copy}" size="87" style="width:500px">
+				</td>
+			</tr>
+
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Status</font></td>
+				<td class="DataTD">
+					<select name="project_status_id" {project_status_id_disabled}>
+						<!-- BEGIN project_status_id --><option value="{project_status_id_value}" {project_status_id_selected}>{project_status_id_description}</option><!-- END project_status_id -->
+					</select>
+					&nbsp;&nbsp;&nbsp;&nbsp;
+					<a href="projects_statuses.php?parent_project_id={status_project_id}">default statuses</a>					
+				</td>
+			</tr>
+
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">CVS Module to use</font></td>
+				<td class="DataTD">
+					<input type="text" name="cvs_module" id="cvs_module" value="{cvs_module}">
+					<a id="select_cvs_module" href="/cvs_logger/modules_list.php" onClick="modulesList(); return false;">Get List</a>
+				</td>
+			</tr>
+						
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Closed</font></td>
+				<td class="DataTD">
+					<input type="checkbox" value="1" name="is_closed" {is_closed_checked}>
+				</td>
+			</tr>			
+
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Responsible person</font></td>
+				<td class="DataTD">
+					<select name="responsible_user_id">
+						<!-- BEGIN LBresponsible_user_id --><option value="{ID}" {Selected}>{Value}</option><!-- END LBresponsible_user_id -->
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD"><font class="FieldCaptionFONT">Total spent time</font></td>
+				<td class="DataTD">{total_time}</td>
+			</tr>
+			<tr>
+				<td colspan="2"><b>Users assigned:</b><br>
+					<table border="0" cellpadding="0" cellspacing="0" width="100%">
+					<tr><td width="50%" valign="top" align="center">
+						<table border="0" cellpadding="0" cellspacing="0">
+						<!-- BEGIN user_team --><tr><td class="DataTD"><i>{team_name}</i></td></tr>
+						<!-- BEGIN user_control --><tr><td>
+							<input type="checkbox" name="assigned_{user_id}" value="1" {checked}>
+							 / <input type="checkbox" name="steps_{user_id}" value="1" {steps_checked}>{user_name}
+						</td></tr><!-- END user_control -->
+						<!-- END user_team -->
+						</table>
+					</td><td width="50%" valign="top" align="center">
+						<table border="0" cellpadding="0" cellspacing="0">
+						<!-- BEGIN sayu_user_control --><tr><td><input type="checkbox" name="assigned_{user_id}" value="1" {checked}>{user_name}</td></tr><!-- END sayu_user_control -->
+						</table>
+					</td>
+					</table>
+				</td>
+			</tr>
+
+			<tr>
+				<td colspan="2" align="right">
+
+					<!-- ***   Buttons   ***  -->
+
+					<!-- BEGIN FormInsert -->
+					<input type="hidden" value="insert" name="FormAction"/>
+					<input type="submit" value="Insert" onclick="document.Form.elements['FormAction'].value = 'insert';"/>
+					<!-- END FormInsert -->
+
+					<!-- BEGIN FormEdit -->
+					<input type="hidden" value="update" name="FormAction"/>
+
+					<!-- BEGIN FormUpdate -->
+					<input type="submit" value="Update" onclick="document.Form.elements['FormAction'].value = 'update';"/>
+					<!-- END FormUpdate -->
+
+					<!-- BEGIN FormDelete -->
+					<input type="submit" value="Delete" onclick="document.Form.elements['FormAction'].value = 'delete';"/>
+					<!-- END FormDelete -->
+
+					<!-- END FormEdit -->
+
+					<!-- BEGIN FormCancel -->
+					<input type="submit" value="Cancel" onclick="document.Form.elements['FormAction'].value = 'cancel';"/>
+					<!-- END FormCancel -->
+
+					<input type="hidden" name="FormName" value="Form"/>
+
+				</td>
+
+
+				<input type="hidden" name="PK_project_id" value="{PK_project_id}"/>
+				<input type="hidden" name="project_id" value="{project_id}"/>				
+			</tr>
+			</form>
+		</table>
+
+		<!-- END FormForm -->
+	</td></tr>
+</table>
+
+</body>
+</html>

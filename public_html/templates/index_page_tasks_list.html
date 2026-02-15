@@ -1,0 +1,106 @@
+<form name="tasks" style="display:inline">
+<input type="hidden" name="tasks_number" value="{tasks_number}">
+<input type="hidden" name="tasks_selected" value="">
+<table class="FormTABLE" width="100%" border="0" cellpadding="1" cellspacing="2" style="font-size:8pt;">
+<!-- BEGIN tasks_list -->    
+    <tr><td class="FormHeaderTD" colspan="16"><a name="Tasks"><font class="FormHeaderFONT">{my_tasks_title}</font></a><span style='display:inline; padding-left:200px; color:white;'>{active_bugs_message}</span></td>
+    <tr>
+    	<td class="ColumnTD" nowrap width="2%"><input type="checkbox" name="all_tasks_{mtt}" value="1" {is_close_disabled} onClick="changeStatus(this.checked);"></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=project"><font class="ColumnFONT">Project</font></a></td>
+      <td class="ColumnTD" align="center"><a href="index.php?sort=title"><font class="ColumnFONT">Title</font></a></td>
+      <td class="ColumnTD" align="center" nowrap><a href="index.php?sort=priority"><font class="ColumnFONT">Pr.</font></a></td>
+      <td class="ColumnTD" align="center" width="5%" nowrap><a href="index.php?sort=status"><font class="ColumnFONT">Status</font></a></td>
+      <td class="ColumnTD" align="center" width="8%" nowrap><font class="ColumnFONT">Actual</font></td>
+      <td class="ColumnTD" align="center" width="8%" nowrap><font class="ColumnFONT">Estimate</font></td>
+      <td class="ColumnTD" align="center" nowrap><font class="ColumnFONT">Comp</font></td>
+      <td class="ColumnTD" align="center" width="8%"><font class="ColumnFONT">Time Left Actual</font></td>
+      <td class="ColumnTD" align="center" width="8%"><font class="ColumnFONT">Time Left Estimate</font></td>
+      <td class="ColumnTD" align="center" width="4%" nowrap><a href="index.php?sort=create"><font class="ColumnFONT">Created</font></a></td>
+      <td class="ColumnTD" align="center" width="4%" nowrap><a href="index.php?sort=modified"><font class="ColumnFONT">Reassigned</font></a></td>
+      <td class="ColumnTD" align="center" width="4%" nowrap><a href="index.php?sort=complete"><font class="ColumnFONT">Deadline</font></a></td>
+      <td class="ColumnTD" colspan="3"></td>      
+    </tr>
+    <!-- BEGIN mytasks -->
+      <tr class="Task{STATUS}" onMouseOut="this.style.backgroundColor=lastBG;
+      							document.getElementById('title{task_id}').style.backgroundColor=lastBGtitle;"
+      							onMouseOver="lastBG=this.style.backgroundColor;
+      							lastBGtitle=document.getElementById('title{task_id}').style.backgroundColor;
+      							this.style.backgroundColor='#FCFFD5';
+      							document.getElementById('title{task_id}').style.backgroundColor='#FCFFD5';">
+		<td class="GridRecordHeader"><!-- BEGIN show_close_checkbox --><input type="checkbox" name="id_{task_index}" value="{task_id}" onClick="checkTasks();"><!-- END show_close_checkbox --></td>
+      <td class="GridRecordHeader" nowrap><b>{project_title}</b>&nbsp;</td>
+      
+        <td ><a id='title{task_id}' class="Task{STATUS}" href="edit_task.php?task_id={task_id}">{task_title}</a>&nbsp;</td>
+        <td nowrap align="center">{priority_id}</td>
+     	<td nowrap align="center">{status_desc}</td>
+        <td align="center"><span id="actual_{task_id}">{actual_hours}</span></td>
+        <td align="center">{estimated_hours}</td>
+        <td align="center">{completion_percent}</td>
+        <td align="center">{time_left_actual}</td>
+        <td align="center">{time_left_estimate}</td>
+        <td nowrap align="center">{creation_date}</td>
+        <td nowrap align="center">{reassigned_date}</td>
+        <td nowrap align="center">{planed_date}</td>
+        <td nowrap align="center"><!-- BEGIN total_notes_block --><a href="notes.php?task_id={task_id}">Notes({total_notes})</a><!-- END total_notes_block --></td>
+        <td nowrap align="center" width="3%"><a href="javascript:startTask({task_id},'{operation_status}','{task_title_slashed}',false,{completion_javascript},'{active_task_title}',{is_periodic},'{url_page}')">{operation_status}</a></td>
+        <td nowrap align="center"><a href="javascript:closeTask({task_id},'{task_title_slashed}')">{close_title}</a></td>
+      </tr>
+    <!-- END mytasks -->
+    <!-- BEGIN unread_tasks -->
+      <tr class="Task{STATUS}" onMouseOut="this.style.backgroundColor=lastBG;
+      							document.getElementById('title{task_id}').style.backgroundColor=lastBGtitle;"
+      							onMouseOver="lastBG=this.style.backgroundColor;
+      							lastBGtitle=document.getElementById('title{task_id}').style.backgroundColor;
+      							this.style.backgroundColor='#FCFFD5';
+      							document.getElementById('title{task_id}').style.backgroundColor='#FCFFD5';">
+      <td class="GridRecordHeader"><!-- BEGIN show_close_checkbox --><input type="checkbox" name="id_{task_index}" value="{task_id}" onClick="checkTasks();"><!-- END show_close_checkbox --></td>
+      <td class="GridRecordHeader" nowrap><b>{project_title}</b>&nbsp;</td>
+        <td><a id='title{task_id}' class="Task{STATUS}" href="edit_task.php?task_id={task_id}">{task_title}</a>&nbsp;</td>
+        <td nowrap align="center">{priority_id}</td>
+     	<td nowrap align="center">{status_desc}</td>
+        <td align="center">{actual_hours}</td>
+        <td align="center">{estimated_hours}</td>
+        <td align="center">{completion_percent}</td>
+        <td align="center">{time_left_actual}</td>
+        <td align="center">{time_left_estimate}</td>
+        <td nowrap align="center">{creation_date}</td>
+        <td nowrap align="center">{reassigned_date}</td>
+        <td nowrap align="center">{planed_date}</td>
+        <td nowrap align="center"><!-- BEGIN total_notes_block --><a href="notes.php?task_id={task_id}">Notes({total_notes})</a><!-- END total_notes_block --></td>
+        <td nowrap align="center" width="3%"><a href="index.php?action=assign&task_id={task_id}"">Assign Me</a></td>        
+        <td nowrap align="center"><a href="javascript:closeTask({task_id},'{task_title_slashed}')">{close_title}</a></td>
+      </tr>
+    <!-- END unread_tasks -->    
+
+    <!-- BEGIN no_mytasks -->
+    <tr><td colspan="15" class="DataTD"><font class="DataFONT">There are no tasks assigned to me</font></td></tr>
+    <!-- END no_mytasks -->
+
+<!-- END tasks_list -->    
+ 
+    <tr><td colspan="16" class="ColumnTD"><font class="ColumnFONT">
+    <a href="create_task.php"><font class="ColumnFONT">Add New Task</font></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a
+       href="create_multiple_tasks.php?project_id=38"><font class="ColumnFONT">Add Health Checks</font></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a
+       href="create_multiple_tasks.php?project_id=39"><font class="ColumnFONT">Add Trial</font></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a
+       href="reassign_multiple_tasks.php"><font class="ColumnFONT">Reassign Tasks</font></a><!-- BEGIN show_close_checkboxes -->&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a
+       href="index.php" id="close_tasks_link" onClick="return confirm_close();"><font class="ColumnFONT">Close Selected (0)</font></a><!-- END show_close_checkboxes --></td></tr>
+    </table>
+
+    <br>
+    <!-- BEGIN periodic_tasks -->
+    <input type="button" style="<!-- BEGIN periodic_tasks_active -->color:green;font-weight:bold;<!-- END periodic_tasks_active -->"
+    value="{operation_status} :   {task_title}" onclick="javascript:startTask({task_id},'{operation_status}','{task_title_slashed}',false,{completion_javascript},'{active_task_title}',{is_periodic},'{url_page}')">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <!-- END periodic_tasks -->
+</form>    
+   
+<script language="javascript">
+<!--
+var activeTaskId = {active_task_id};
+var actualTimeStamp = {actual_timestamp};
+var tDateStart = new Date();
+var tStart = new Date();
+tStart.setTime(tDateStart.getTime() - actualTimeStamp);
+StartClock();
+//-->
+</script>

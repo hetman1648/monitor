@@ -1,0 +1,176 @@
+<script language="javascript">
+document.onkeyup = detectKeyUp;
+</script>
+<!-- BEGIN viart_clients_block -->
+<div style="display:{active_clients_display};left:0px; top:0px">
+<table width="95%" align="center" id='active_clients_table' class="FormTABLE" border="0">
+    <tr>
+    	<td colspan="12"><font class="ColumnFONT">{pages_navigator} </font></td>
+    </tr>
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">ViArt Clients</font></td>
+    </tr>
+    <!-- BEGIN active_clients_header -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap>&nbsp;</td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a  href='#'onclick="get_clients_table('sort=sayu_user_id{reverse}&show_table={show_table}');">ID</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='#' onclick="get_clients_table('sort=client_name{reverse}&show_table={show_table}');">Name</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='#' onclick="get_clients_table('sort=client_email{reverse}&show_table={show_table}');">E-mail</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href='#' onclick="get_clients_table('sort=sites{reverse}&show_table={show_table}');">Sites</a>&nbsp;</font></td>
+	</tr>
+	<!-- END active_clients_header -->
+    <!-- BEGIN active_clients -->
+    <tr id='tr_{client_id}' onclick='change_selected_client("{client_id}");'>
+		<td style='background-color: #{color}' class="DataTD" align='left' nowrap><a href="#" onclick='select_selected_client("{client_id}");'>Select</a></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{sayu_user_id}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href="create_client.php?client_id={client_id}">{client_name}</a>&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" align='left' nowrap><font class="DataFONT">&nbsp;{client_email}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" align='left' nowrap><font class="DataFONT">&nbsp;<a href='http://{sites}'>{sites}</a>&nbsp;</font></td>
+	</tr>
+	<!-- END active_clients -->
+	<!-- BEGIN no_active_clients -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No clients
+		</td>
+	</tr>
+	<!-- END no_active_clients -->
+	<tr>
+    	<td colspan="12" class="FormHeaderTD">&nbsp;</td>
+    </tr>
+</table>
+</div>
+<!-- END viart_clients_block -->
+<!-- BEGIN sayu_clients_block -->
+<div style="display:{all_clients_display};left:0px; top:0px">
+<table width="95%" id="all_clients_table" class="FormTABLE" align="center">
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">Sayu Clients</font></td>
+    </tr>
+    <tr>
+    	<td colspan="12"><font class="ColumnFONT">{pages_navigator} </font></td>
+    </tr>
+	<!-- BEGIN all_clients_header -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap>&nbsp;</td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=sayu_user_id{reverse}&show_table={show_table}');">ID</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=client_name{reverse}&show_table={show_table}');">Name</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=client_email{reverse}&show_table={show_table}');">E-mail</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=sites{reverse}&show_table={show_table}');">Sites</a>&nbsp;</font></td>
+	</tr>
+	<!-- END all_clients_header -->
+    <!-- BEGIN all_clients -->
+    <tr id='tr_{client_id}' onclick='change_selected_client("{client_id}");'>	    
+		<td style='background-color: #{color}' class="DataTD" align='left' nowrap><a href="#" onclick='select_selected_client("{client_id}");'>Select</a></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{sayu_user_id}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{client_name}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{client_email}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href='http://{sites}'>{sites}</a>&nbsp
+		</font></td>		
+	</tr>
+	<!-- END all_clients -->
+	<!-- BEGIN no_all_clients -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No clients
+		</td>
+	</tr>
+	<!-- END no_all_clients -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="12">&nbsp;</td>
+    </tr>
+</table>
+</div>
+<!-- END sayu_clients_block -->
+<!-- BEGIN search_clients_block -->
+<table style="display:table; font:6pt sans-serif;" border=0 align="center">
+	<tr>
+		<td class="small">Monitor Client Id:</td>
+		<td><input type='text' name='m_client_id' value='{m_client_id}' maxlength="20" id='m_client_id'></td>
+	</tr>
+	<tr>
+		<td class="small">Outer Client Id:</td>
+		<td><input type='text' name='o_client_id' value='{o_client_id}' maxlength="20" id='o_client_id'></td>
+	</tr>
+	<tr>
+		<td class="small">Client Type:</td>
+		<td class="small"><select name='sclient_type' id='sclient_type' style="width:146px;">
+				<option value='0' {selected_0}>All
+				<option value='2' {selected_2}>Sayu
+				<option value='1' id='sclient_type' {selected_1}>Viart
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td class="small">Keyword:</td>
+		<td><input type='text' name='keyword' value='{keyword}' id='keyword'></td>
+	</tr>
+	<tr>
+		<td class="small">Search By:</td>
+		<td><select name='search_by' id='search_by' style="width:146px">
+				<option value="all" {selected_all}>All</option>
+				<option value="client_name" {selected_client_name}>Client name</option>
+				<option value="client_email" {selected_client_email}>Client e-mail</option>
+				<option value="client_company" {selected_client_company}>Client company</option>
+				<option value="client_google_id" {selected_google_id}>Google ID</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="right" colspan="3">
+			<input style="display:" type='button' name='search' value='&nbsp;Search&nbsp;'
+			onclick="
+			var viart_id = document.getElementById('m_client_id').value;
+			var sayu_id = document.getElementById('o_client_id').value;
+			var client_type = document.getElementById('sclient_type').value;
+			var searchword = document.getElementById('keyword').value;
+			var searchtype = document.getElementById('search_by').value;
+
+			get_clients_table('viart_id=' + viart_id + '&sayu_id=' + sayu_id + '&show_table=3' + '&search_by=' + searchtype + '&client_type=' + client_type + '&searchword=' + searchword + '&searched=1');
+			">
+		</td>
+	</tr>
+</table>
+<div style="display:{search_clients_display}; z-index:100;">
+<table width="95%" id="search_clients_table" class="FormTABLE"  valign="top" align="center" border="0"> 
+    <tr>
+    	<td class="FormHeaderTD" colspan="12"><font class="FormHeaderFONT">Search Results</font></td>
+    </tr>
+    <tr>
+    	<td colspan="12"><font class="ColumnFONT">{pages_navigator} </font></td>
+    </tr>
+	<!-- BEGIN search_clients_header -->
+    <tr align="center">
+		<td class="ColumnTD" nowrap>&nbsp;</td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=sayu_user_id{reverse}{search_params}');">ID</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=client_name{reverse}{search_params}');">Name</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=client_email{reverse}{search_params}');">E-mail</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=is_active{reverse}{search_params}');">Is active</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=sites{reverse}{search_params}');">Sites</a>&nbsp;</font></td>
+	    <td class="ColumnTD" nowrap><font class="ColumnFONT">&nbsp;<a href="#" onclick="get_clients_table('sort=client_type{reverse}'){search_params};">Type</a>&nbsp;</font></td>
+	</tr>
+	<!-- END search_clients_header -->
+    <!-- BEGIN search_clients -->
+    <tr id='tr_{client_id}' onclick='change_selected_client("{client_id}");'>
+		<td style='background-color: #{color}' class="DataTD" align='left' nowrap><a href="#" onclick='select_selected_client("{client_id}");'>Select</a></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{sayu_user_id}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{client_name}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{client_email}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{is_active}&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;<a href='http://{sites}'>{sites}</a>&nbsp;</font></td>
+	    <td style='background-color: #{color}' class="DataTD" nowrap><font class="DataFONT">&nbsp;{client_type}&nbsp;</font></td>
+	</tr>
+	<!-- END search_clients -->
+	<!-- BEGIN no_search_clients -->
+	<tr>
+		<td colspan="10" class=Headline>
+			&nbsp;No clients
+		</td>
+	</tr>
+	<!-- END no_search_clients -->
+	<tr>
+    	<td class="FormHeaderTD" colspan="12">&nbsp;</td>
+    </tr>
+</table>
+</div>
+<!-- END search_clients_block -->

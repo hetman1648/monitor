@@ -1,0 +1,98 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   
+<Script Language=JavaScript>
+<!--
+	var nDay = new Array();
+	var i = 0;
+
+	function verify(isField){
+
+		splitDate = isField.value.split("-");
+		refDate = new Date(splitDate[0]+"/"+splitDate[1]+"/"+splitDate[2]);
+		nDay[i++] = refDate.getDay();
+		return refDate; 
+	}	
+
+	function countDays(isForm){
+
+		isValid = true;
+		startDate = verify(isForm.start_date);
+		if (isValid){endDate = verify(isForm.end_date)} else {endDate = false}
+		if (startDate && endDate)
+			{
+			 daysApart = Math.round(((endDate-startDate)/86400000));
+			 if (nDay[0] == 0 || nDay[0] == 6)
+				{isValid = false; startDate=false}
+			 if (daysApart <= 0){isValid = false;endDate=false}
+			 if (isValid)
+				{
+			 	 workDays = daysApart-(parseInt(daysApart/7)*2);
+				 if (daysApart < 7 && nDay[1] != 0 && nDay[0]-nDay[1] >= 1){workDays = workDays-2}
+				 if (daysApart < 7 && nDay[1] == 0){workDays--}
+				 isForm.total_days.value = workDays + 1;
+				 i = 0;
+				}
+			}
+	}
+//-->
+</Script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+<!-- BEGIN holiday -->
+<form name="frmFilter" action="edit_holiday.php" method="POST">
+<input type="hidden" name="type" value="{type}">
+<br>
+<table align=center>
+<tr>
+   <td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">{header_holiday}</font></td>
+</tr>
+<!--<tr>
+   <td class="FieldCaptionTD">Created by:</td>
+   <td class="DataTD"><select name="person_creator">{person_option}</select></td>
+</tr>-->
+<tr>
+   <td class="FieldCaptionTD">Title</td>
+   <td class="DataTD"><input type="text" name="holiday_title" value="{holiday_title}"></td>
+</tr>
+
+<tr>
+   <td class="FieldCaptionTD">Date:</td>
+   <td class="DataTD"><input name="holiday_date" value="{holiday_date}">
+      <A HREF="#" onClick="setDateField(document.frmFilter.holiday_date);
+      top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+      <IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+   </td>
+</tr>
+<tr>
+   <td>
+   <input name="holiday_id" value="{holiday_id}" type="hidden">
+   
+      <!-- BEGIN edit_button -->
+   <input type="submit" name="action" value="{edit_add_button}">
+   <!-- END edit_button -->
+      <!-- BEGIN add_new_button -->
+   <!--input type="submit" name="action" value="Add"-->
+   <!-- END add_new_button -->
+    <!-- BEGIN delete_button -->
+   <input type="submit" name="action" value="Delete">
+   <!-- END delete_button -->
+
+	<input type="submit" name="action" value="Cancel">
+	</td>
+</tr>
+</table>
+</form>
+<!-- END holiday -->
+<!-- BEGIN holiday_error -->
+<center><font color=red>There is no holiday with such id. </font>
+<!-- END holiday_error -->
+</body>
+</html>

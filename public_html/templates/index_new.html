@@ -1,0 +1,475 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT LANGUAGE="JavaScript" SRC="templates/tasks.js"></SCRIPT>
+<script>
+<!--
+
+var my_projects = new Array();
+<!-- BEGIN my_projects_array -->
+my_projects['{project_elem}'] = {project_user_id};<!-- END my_projects_array -->
+
+function approveVacation()
+{
+  var approve = document.getElementById("approve");
+  //alert (flag_mail);
+  if (confirm("Are you sure you want to approve this vacation/overwork?"))
+  {
+  	approve.value = "1";
+  	//alert (approve.value);
+  	document.approve_vacation.submit();
+  }	else {
+  	approve.value = "0";
+  }
+}
+
+function declineVacation()
+{
+  var decline = document.getElementById("decline");
+  //alert (flag_mail);
+  if (confirm("Are you sure you want to decline this vacation/overwork?"))
+  {
+  	decline.value = "1";
+  	//alert (approve.value);
+  	document.approve_vacation.submit();
+  }	else {
+  	decline.value = "0";
+  }
+}
+
+var clockID = 0;
+var sort = '{sort}';
+/*
+var userId = {session_user_id};
+var xmlHttp = GetXmlHttpObject();
+var url = "index_tasks_list.php" + "?user_id=" + userId + "&sort=" + sort;
+xmlHttp.onreadystatechange = function() { stateChanged(userId, sort);};
+*/
+function UpdateClock()
+{
+   if(clockID)
+   {
+      clearTimeout(clockID);
+      clockID  = 0;
+   }
+   
+   var tDate = new Date();
+   var tDiff = tDate.getTime() - tStart.getTime();
+   tDate.setTime(tDiff);
+   
+   if (activeTaskId) { 
+   		var months = tDate.getUTCMonth();
+   		var days = tDate.getUTCDay();
+   		   	
+  		var hours = parseInt(tDate.getTime()/3600000);
+  		var minutes = tDate.getUTCMinutes();  		
+  		var seconds = tDate.getUTCSeconds();
+
+  		if (seconds>30) {
+  			if (minutes<59) {
+  				minutes = minutes + 1;
+  			} else {
+  				hours = hours+1;
+  				minutes = "0";
+  			}
+  		}
+  		
+  		if (minutes<10) {
+  			minutes = "0"+minutes;
+  		}
+  		if (seconds<10) {
+  			seconds = "0"+seconds;
+  		}
+  		
+  		var taskTime = ""+hours+":"+minutes;/* + ":" + seconds*/
+  		if (document.getElementById("actual_{active_task_id}") &&
+  			document.getElementById("actual_{active_task_id}").innerHTML)
+  		{
+   			taskPrev = document.getElementById("actual_{active_task_id}").innerHTML;
+   			if (taskTime>taskPrev) {
+  			
+  				document.getElementById("actual_{active_task_id}").innerHTML = taskTime;
+   				if (document.getElementById("actual")) {
+   					document.getElementById("actual").innerHTML = taskTime;
+   				}
+   			}
+  		}
+   		clockID = setTimeout("UpdateClock()", 1000);
+   }
+}
+
+function StartClock()
+{
+   /*clockID = setTimeout("UpdateClock()", 1000);*/
+   pageRefresh = setTimeout("IndexPageRefresh({session_user_id}, '"+sort+"')", 60000);
+}
+
+function KillClock()
+{
+   if(clockID)
+   {
+      clearTimeout(clockID);
+      clockID  = 0;
+   }
+}
+
+function GetXmlHttpObject()
+{
+	var xmlHttp = null;
+	try { xmlHttp=new XMLHttpRequest(); }
+	catch (e) {
+		try { 
+			xmlHttp=new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (e) {
+			xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+	}
+	return xmlHttp;
+}
+
+function stateChanged(userId, sort)
+{ 
+	if (xmlHttp.readyState == 4) {		
+		var responseText = xmlHttp.responseText;		
+		var tasksHTML = responseText.substring(responseText.indexOf("<tasksHTML><![CDATA[")+20,responseText.indexOf("]]></tasksHTML>"));
+		var lunchesHTML = responseText.substring(responseText.indexOf("<lunchesHTML><![CDATA[")+22,responseText.indexOf("]]></lunchesHTML>"));
+		var currentTaskHTML = responseText.substring(responseText.indexOf("<currentTaskHTML><![CDATA[")+26,responseText.indexOf("]]></currentTaskHTML>"));
+		var managerNoteHTML = responseText.substring(responseText.indexOf("<managerNoteHTML><![CDATA[")+26,responseText.indexOf("]]></managerNoteHTML>"));
+		var usersListHTML = responseText.substring(responseText.indexOf("<usersListHTML><![CDATA[")+24,responseText.indexOf("]]></usersListHTML>"));
+		
+		if (responseText && responseText.indexOf("<TITLE>404 Not Found</TITLE>")==-1 && responseText.indexOf("<tasksHTML><![CDATA[")) {
+			
+		tasksDiv = document.getElementById("tasks_div");
+		if (tasksDiv)
+		{
+			tasksDiv.innerHTML = tasksHTML;
+		}
+
+		lunchesDiv = document.getElementById("lunches_div");
+		if (lunchesDiv)
+		{
+			lunchesDiv.innerHTML = lunchesHTML;
+		}
+
+		currentTaskDiv = document.getElementById("current_task");
+		if (currentTaskDiv)
+		{
+			currentTaskDiv.innerHTML = currentTaskHTML;
+		}
+		
+		managerNoteDiv = document.getElementById("manager_note");
+		if (managerNoteDiv)
+		{
+			managerNoteDiv.innerHTML = managerNoteHTML;
+		}
+	
+		usersListDiv = document.getElementById("users_list");
+		if (usersListDiv)
+		{
+			usersListDiv.innerHTML = usersListHTML;
+		}
+		}
+	}
+}
+
+function IndexPageRefresh(userId, sort)
+{		
+	xmlHttp = GetXmlHttpObject()
+	if (xmlHttp == null) {
+		alert ("Your browser does not support AJAX!");		
+		return;
+	}
+	var url = "index_tasks_list.php" + "?user_id=" + userId + "&sort=" + sort;
+	if (url) {		
+		xmlHttp.onreadystatechange = function() { stateChanged(userId, sort);};  
+		xmlHttp.open("GET", url, true);
+		xmlHttp.send(null);
+		if (pageRefresh) {
+			clearTimeout(pageRefresh);
+		}
+		pageRefresh = setTimeout("IndexPageRefresh(" + userId + ", '" + sort + "')", 60000);
+	}
+}
+
+function show_user_info(user_id)
+{
+	if (document.getElementById("user_info_"+user_id)) {
+		document.getElementById("user_info_"+user_id).style.display = "block";
+	}
+}
+
+function hide_user_info(user_id)
+{
+	if (document.getElementById("user_info_"+user_id)){
+		document.getElementById("user_info_"+user_id).style.display = "none";
+	}
+}
+
+function roll(thisname)
+{
+	var task_status_select='{task_status_select}';
+
+	for(i=1;i<=2;i++)
+	{
+		if (document.getElementById('b'+i).className=="noborder")
+		{			
+			activeelem = document.getElementById('b'+i);
+			activeelem.className = "";
+			activeelem.parentNode.className = "menu";			
+		}
+	}
+
+	/* show */
+	thiselem=document.getElementById(thisname);
+	thiselem.className = "noborder";
+	thiselem.parentNode.className="menuact";
+
+	var txt = '';
+	switch (thisname)
+	{
+		case 'b1':
+			//hide 'not my' projects
+			for (var i in my_projects)
+			{
+  				if (document.getElementById(i)) {
+  					var project_str = i.substr(2);  					
+  					if (my_projects[i]==0) {  		
+  						txt+=" "+i;
+  						document.getElementById(i).style.display = 'none';
+  					}
+  				}
+			}			
+		break;
+		case 'b2':	
+			for (var i in my_projects)
+			{
+  				if (document.getElementById(i)) {  					
+  					var project_str = i.substr(2);
+  					if (project_str.indexOf("_")>0) {
+  						parent_project_id = project_str.substr(0,project_str.indexOf("_"));
+  						project_id = project_str.substr(project_str.indexOf("_")+1);
+
+  						parent_minus = document.getElementById('m'+parent_project_id);
+  						parent_plus = document.getElementById('p'+parent_project_id);
+
+  						if (parent_minus && parent_minus.style.display == 'none') {
+  							document.getElementById(i).style.display = 'none';
+  						} else {
+  							document.getElementById(i).style.display = '';
+  						}  						
+  					} else {   						
+  						project_id = project_str;
+  						parent_project_id = "";
+  						minus = document.getElementById('m'+project_id);
+  						plus = document.getElementById('p'+project_id);
+  						
+  						/*
+  						if (minus) {
+  							minus.style.display = 'none';
+  						}
+  						if (plus) {
+  							plus.style.display = '';  							
+  						}
+  						*/
+  						
+  						if (!!(window.attachEvent && !window.opera)) {
+  							document.getElementById(i).style.display = '';
+  						} else {
+  							document.getElementById(i).style.display = 'table-row';
+  						}
+  					}  					
+  				}
+			}
+			//show all projects			
+		break;		
+	}
+	//alert(txt);
+}
+
+
+-->
+</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+  	<td valign="bottom" width="25%" align="left">
+  		<table width="96%" cellpadding="0" cellspacing="1" border="0">
+  		<tr><td>
+			<font color="green">{birth_days}</font>
+        	<font style="font-weight:bold" color="green">{reminders}</font>				
+			<span id="lunches_div">{ITEMPLATE=index_page_lunches.html}</span><br></td>
+		</tr>
+		<tr><td id="manager_note">{ITEMPLATE=index_page_manager_notes.html}</td></tr>  		
+  		<tr><td id="current_task">{ITEMPLATE=current_task.html}</td></tr>
+    </tr></table>
+  	</td>
+  	<td valign="top" align="right" width="40%">  		
+		<div id="users_list">		
+		{ITEMPLATE=index_page_users_list.html}
+   		</div>
+   	</td>
+	<td valign="top" align="right" width="35%">
+
+	<!-- BEGIN FormProjects -->
+    <table cellspacing="0" cellpadding="0" border="0" width="96%">
+    <tr>
+    	<td class="FormHeaderTD" colspan="3">
+    		<a name="Projects"><font class="FormHeaderFONT">Projects</font></a>
+    	</td>
+    </tr>
+    <tr>
+    	<td colspan="3">
+    	<table>
+    		<tr>
+			<td onmousedown="roll('b1');" class="menuact"><div id="b1" class="noborder"><nobr>My Projects</nobr></div></td>
+			<td onmousedown="roll('b2');" class="menu"><div id="b2"><nobr>All Projects</nobr></div></td>
+			</tr>
+		</table>
+		</td>
+	</tr>
+    
+    <tr>
+		<td class="ColumnTD" width="60%">
+			<font class="ColumnFONT">Title</font>
+		</td>
+		<td class="ColumnTD" width="30%" align="center">
+			<font class="ColumnFONT">Status</font>
+		</td>
+		<td class="ColumnTD" width="10%"></td>
+<!--	<td class="ColumnTD"><font class="ColumnFONT">Wishlist</font></td>-->
+    </tr>
+
+    <!-- BEGIN projects -->
+
+    <tr id="pr{record_id}" style="display:{pr_display};">
+      <td nowrap>   {tab}
+	  <font style="display:{minus_display};cursor: hand; cursor:pointer;"  id="m{project_id}"
+		onclick='
+			style.display="none";
+			if (p{project_id}.style.display == "none") p{project_id}.style.display = "inline";
+			else p{project_id}.style.display = "none";
+
+            for (i=1; i<={count}; i++){
+            	if (document.getElementById("pr{record_id}_".concat(i))) {
+            		document.getElementById("pr{record_id}_".concat(i)).style.display="none";
+            	}
+            }
+
+			'
+			FACE="Courier New" color="{white_color}">-</font><font 
+			style="display:{plus_display};cursor: hand; cursor:pointer;" id='p{project_id}'
+		onclick='
+			style.display="none";
+			if (m{project_id}.style.display == "none") {
+				m{project_id}.style.display = "inline";
+			} else {
+				m{project_id}.style.display = "none";
+			}
+			for (i=1; i<={count}; i++){
+				if (document.getElementById("pr{record_id}_".concat(i))) {
+					if (document.getElementById("b1").className == "" || my_projects["pr{record_id}_".concat(i)]) {
+            			document.getElementById("pr{record_id}_".concat(i)).style.display="";
+            		}
+            	}
+            }
+		' FACE="Courier New"  color="{white_color}">+</font> <a
+		 href="view_project_tasks.php?project_id={project_id}"><font class="DataFONT" style="color:{color};">{project_title}</font></a>&nbsp({tasks_count})&nbsp;
+	</td><td align="center">
+        <a href="edit_project.php?project_id={project_id}" style="color:{color};">{status_desc}</a>&nbsp;
+      </td><td align="right">
+        <a href="edit_project.php?project_id={project_id}">edit</a>&nbsp;
+      </td><td>
+<!--      <td class="DataTD" nowrap>
+        <font class="DataFONT"><a href="view_releases.php?project_id={project_id}">Releases</a>&nbsp;</font>
+      </td>-->
+    </tr>
+
+    <!-- END projects -->
+
+    <!-- BEGIN no_projects -->
+
+    <tr><td colspan="3" class="DataTD"><font class="DataFONT">No projects<font color=white size=+1><b>-</b><font></font></td></tr>
+
+    <!-- END no_projects -->
+
+    <tr>
+      <td colspan="3" nowrap class="ColumnTD"><font class="ColumnFONT">
+      	<a href="projects_summary.php"><font class="ColumnFONT">Projects Summary</font></a> &nbsp;&nbsp;|&nbsp;&nbsp;
+        <a href="edit_project.php"><font class="ColumnFONT">Create New Project</font></a></font>
+      </td>
+    </tr>
+    </table>
+
+
+    <!-- END FormProjects -->
+    </td></tr>
+    <tr>
+    </tr>
+    </table>
+
+	<!-- BEGIN for_Artem -->
+	<br>
+	<table class="FormTABLE" width=100%>
+    <tr><td class="FormHeaderTD" colspan="9"><a name="Tasks"><font class="FormHeaderFONT">Approve Vacations/Overworks</font></a></td></tr>
+    <!-- BEGIN header_approve_vacation -->
+    <tr>
+	  <td class="ColumnTD" nowrap><a href="index.php?sort=project"><font class="ColumnFONT">Type</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=project"><font class="ColumnFONT">User</font></a></td>
+      <td class="ColumnTD"><a href="index.php?sort=title"><font class="ColumnFONT">Title</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=status"><font class="ColumnFONT">Reason</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=type"><font class="ColumnFONT">Start Date</font></a></td>
+      <td class="ColumnTD" nowrap><a href="index.php?sort=create"><font class="ColumnFONT">End Date</font></a></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Total days</font></td>
+      <td class="ColumnTD" nowrap></td>
+      <td class="ColumnTD" nowrap></td>
+    </tr>
+
+    <!-- END header_approve_vacation -->
+
+    <!-- BEGIN approve_vacation -->
+      <tr>
+      	<td nowrap width=10%><b><font color="blue">{type}</font></b>&nbsp;</td>
+        <td nowrap width=15%><b>{user_name}</b>&nbsp;</td>
+    	<td width=15%><a class="Task{STATUS}" href="edit_task.php?task_id={task_id}">{title}</a>&nbsp;</td>
+     	<td nowrap width=10%>{reason}&nbsp;</td>
+        <td nowrap width=10%> {vacation_start_date}&nbsp;</td>
+        <td nowrap width=10%>{vacation_end_date}&nbsp;</td>
+        <td nowrap align=center width=10%>{vacation_total_days}&nbsp;</td>        
+        <td class=nowrap width=10%>
+		<form name="approve_vacation" action="approve_vacation.php" method="POST">
+		<input type="hidden" name="approve" id="approve" value="{approve}">
+	<input type="hidden" name="period_id" id="period_id" value="{period_id}">
+<!--<a href="admin_quote_view.php" onClick="sendMail(); return false;">Send</a>-->
+
+		<a href="approve_vacation.php?approve=1&period_id={period_id}" onClick="approveVacation(); return false;">Approve</a>
+		</td>
+		<td class=nowrap width=10%>
+		<input type="hidden" name="decline" id="decline" value="{decline}">
+		<a href="approve_vacation.php?decline=1&period_id={period_id}" onClick="declineVacation(); return false;">Decline</a>
+		</form>
+		</td>
+      </tr>
+    <!-- END approve_vacation -->
+
+    <!-- BEGIN no_approve_vacation -->
+    <tr><td colspan="14" class="DataTD"><font class="DataFONT">There are no vacations which need approving</font></td></tr>
+    <!-- END no_approve_vacation -->
+	</table>
+
+	<!-- END for_Artem -->
+
+<!-- Search & Tasks -->
+
+{ITEMPLATE=index_page_documents.html}
+<div id="tasks_div">
+{ITEMPLATE=index_page_tasks_list.html}
+</div>
+
+</body>
+</html>

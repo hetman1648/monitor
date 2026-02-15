@@ -1,0 +1,1 @@
+php /var/www/monitor/cvs_logger/service_on_commits.php $1 $2 $3 >> /dev/null 2>> /dev/null

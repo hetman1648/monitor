@@ -1,0 +1,16 @@
+<!-- BEGIN lunch_message -->
+<table width="100%" cellspacing="0" cellpadding="0"><tr>
+	<td align="center" style="border: 1px solid #ffcc00; background-color: #ffeedd; font-weight:bold">
+	 	<!-- BEGIN order_lunch -->
+	    <a href="lunches_edit_order.php">Order Lunch</a>
+	 	<!-- END order_lunch -->
+	 	<!-- BEGIN order_exists -->
+	    Lunch Order Placed. <a href="lunches_edit_order.php">Edit</a>.
+	 	<!-- END order_exists -->
+	 	<!-- BEGIN order_today -->
+	    <a href="lunches_edit_order.php?menu_date={today_date}">Order for Today</a>
+	 	<!-- END order_today -->
+	    {error_message}
+ 	</td>		
+</tr></table>
+<!-- END lunch_message -->	

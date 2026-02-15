@@ -1,0 +1,38 @@
+<html>
+<head>
+<title>Lunch ordering</title>
+</head>
+<body>
+<b>{date_title}</b>
+<table class="FormTABLE" cellpadding=2 border="1">
+	<tr>	
+		<td class="FieldCaptionTD" align="center" rowspan=2>Person</td>
+		<td class="FieldCaptionTD" align="center" colspan={num_courses}>Courses Qty</td>
+	</tr>
+	<!-- BEGIN couses_header -->
+	<tr>
+		<!-- BEGIN col_first --><td>{first_course_title}</td><!-- END col_first -->
+		<!-- BEGIN col_second --><td>{second_course_title}</td><!-- END col_second -->
+		<!-- BEGIN col_garnish --><td>{garnish_title}</td><!-- END col_garnish -->
+		<!-- BEGIN col_salad --><td>{salad_title}</td><!-- END col_salad -->
+	</tr>
+	<!-- END couses_header -->
+	<!-- BEGIN users_orders -->
+	<tr>
+		<td>{order_user}</td>
+		<!-- BEGIN u_col_first --><td align="center">{order_qty_first}</td><!-- END u_col_first -->
+		<!-- BEGIN u_col_second --><td align="center">{order_qty_second}</td><!-- END u_col_second -->
+		<!-- BEGIN u_col_garnish --><td align="center">{order_qty_garnish}</td><!-- END u_col_garnish -->
+		<!-- BEGIN u_col_salad --><td align="center">{order_qty_salad}</td><!-- END u_col_salad -->
+	</tr>
+	<!-- END users_orders -->
+	<tr>
+		<td class="FieldCaptionTD" align="center"><b>{ttl_order_users_count}</b></td>
+		<!-- BEGIN t_col_first --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_first}</b></td><!-- END t_col_first -->
+		<!-- BEGIN t_col_second --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_second}</b></td><!-- END t_col_second -->
+		<!-- BEGIN t_col_garnish --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_garnish}</b></td><!-- END t_col_garnish -->
+		<!-- BEGIN t_col_salad --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_salad}</b></td><!-- END t_col_salad -->
+	</tr>
+	</table>	
+</body>
+</html>

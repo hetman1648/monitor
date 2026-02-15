@@ -1,0 +1,111 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   
+<Script Language=JavaScript>
+
+	var nDay = new Array();
+	var i = 0;
+
+	function verify(isField){
+
+		splitDate = isField.value.split("-");
+		refDate = new Date(splitDate[0]+"/"+splitDate[1]+"/"+splitDate[2]);
+		nDay[i++] = refDate.getDay();
+		return refDate; 
+	}	
+
+	function countDays(isForm){
+
+		isValid = true;
+		startDate = verify(isForm.start_date);
+		if (isValid){endDate = verify(isForm.end_date)} else {endDate = false}
+		if (startDate && endDate)
+			{
+			 daysApart = Math.round(((endDate-startDate)/86400000));
+			 if (nDay[0] == 0 || nDay[0] == 6)
+				{isValid = false; startDate=false}
+			 if (daysApart <= 0){isValid = false;endDate=false}
+			 if (isValid)
+				{
+			 	 workDays = daysApart-(parseInt(daysApart/7)*2);
+				 if (daysApart < 7 && nDay[1] != 0 && nDay[0]-nDay[1] >= 1){workDays = workDays-2}
+				 if (daysApart < 7 && nDay[1] == 0){workDays--}
+				 isForm.total_days.value = workDays + 1;
+				 i = 0;
+				}
+			}
+	}
+
+</Script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+<!-- BEGIN edit_warnings -->
+<form name="frmFilter" action="edit_warning.php" method="POST">
+<table>
+<tr>
+   <td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">Edit Warning</font></td>
+</tr>
+<!--<tr>
+   <td class="FieldCaptionTD">Created by:</td>
+   <td class="DataTD"><select name="person_creator">{person_option}</select></td>
+</tr>-->
+<tr>
+   <td class="FieldCaptionTD">Warning to:</td>
+   <td class="DataTD"><select name="person_warning">{person_option}</select></td>
+</tr>
+
+<!--<tr>
+   <td class="FieldCaptionTD">{period_t} Title</td>
+   <td class="DataTD"><input name="vacation_title" value="{vacation_title}" size="100"></td>
+</tr>-->
+<tr>
+   <td class="FieldCaptionTD">Description</td>
+   <td class="DataTD"><textarea type="text" name="notes" cols="80" rows="10">{notes}</textarea></td>
+</tr>
+<!--<tr>
+   <td class="FieldCaptionTD">Reason Type</td>
+   <td class="DataTD"><select name="reason_type_select">{reason_type_option}</select></td>
+</tr>-->
+<tr>
+   <td class="FieldCaptionTD">Date added:</td>
+   <td class="DataTD"><input name="start_date" value="{start_date}">
+      <A HREF="#" onClick="setDateField(document.frmFilter.start_date);
+      top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+      <IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+   </td>
+</tr>
+<!--<tr>
+   <td class="FieldCaptionTD">End Date</td>
+   <td class="DataTD"><input name="end_date" value="{end_date}">
+      <A HREF="#" onClick="setDateField(document.frmFilter.end_date);
+      top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+      <IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+   </td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Total Days</td>
+   <td class="DataTD"><input name="total_days" value="{total_days}"> <a href="#" onClick="countDays(frmFilter)"><font size="1">Calculate</font></a></td>
+</tr>-->
+<tr>
+   <td>
+   	<input name="warning_id" value="{warning_id}" type="hidden">
+	<input type="submit" name="action" value="Edit">
+	<input type="submit" name="action" value="Delete">
+	<input type="submit" name="action" value="Cancel">
+	</td>
+</tr>
+</table>
+</form>
+<!-- END edit_warnings -->
+<!-- BEGIN no_edit_warnings -->
+<center><font color=red>There is no warning with such id. </font>
+<!-- END no_edit_warnings -->
+</body>
+</html>

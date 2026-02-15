@@ -1,0 +1,45 @@
+Hi Tony
+
+to visualise our requirement for Amazon  project I've started building HTML mockups - 
+https://www.viart.com.ua/monitor/temametrics/
+Because we don't have a name I just call it "temametrics" for now:)
+
+I could imagine these use cases, please correct my logic:
+
+CASE 1
+User has already setup Amazon UK account 
+He has 2000 products - he can't manage prices himself - by "manage" I mean to track competitors prices and change his prices accordingly.
+The user opens up the account with Temametrics - provides his Amazon Merchant ID ,
+we import all his products from Amazon into our DB via Amazon API ("Inventory Report" : SKU, ASIN, Price, Quality)
+
+I'm not sure what we are doing next?:)
+In RepricerExpress videos the next thing they do is setting up Max/Min Prices
+but I guess we want to be more "clever"  - get competitors data via scraping?
+So for each user's product we'll know:
+1. Buy-box price and Lowest price (using Products API GetCompetetivePricing API call)
+2. Competitors prices? - via scraping Amazon offers page
+3. and then comes the Magic formula that will choose which products are worth trying to change prices and which aren't ?
+4. But we still need to show that to user that certain products we think have "Good chances"
+and certain product have "No chances"?
+
+CASE 2
+User might want to stop/pause our Repricing for all products
+Probably a button somewhere ? in the header to display the current status 
+
+CASE 3
+What if user adds new products to Amazon? we need to allow users Import product  again?
+or would we could run imports every day just in case new products would arrive
+What if user deletes products from Amazon - actually I think when we send prices to Amazon
+it doesn't matter too much - Amazon just ignores not found products and proceed the rest.
+
+
+CASE 4
+User doesn't have products listed with Amazon
+so we'll import products to Amazon for him?
+
+CASE 5
+User sells in different marketplaces - are we going to allow the same way RepricerExpress does?
+selecting marketplaces first - and then making user to enter all Merchant IDs?
+
+
+ 

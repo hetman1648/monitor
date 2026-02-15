@@ -1,0 +1,44 @@
+<html>
+<head>
+<title>Lunch permissions</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY" valign="center">
+
+	<form name="users" method="POST">
+	<table align="center"  width="99%" height="99%" valign="center"><tr><td align="center">
+	
+	<a href="./index.php">Monitor</a>&nbsp; &nbsp; 	
+	<a href="./lunches_edit_menu.php">Edit Menu</a>&nbsp; &nbsp; 	
+	<a href="./lunches_edit_order.php">Edit Order</a>&nbsp; &nbsp; 	
+	<a href="./lunches_users.php"><b>Permissions</b></a>&nbsp; &nbsp; 	
+	<a href="./lunches_statistics.php">Statistics</a><br><br>
+
+	<table class="FormTABLE" cellpadding="1" align="center">
+		<tr>
+			<td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Permissions</font>
+			</td>
+		</tr>
+		<tr>	
+			<td class="FieldCaptionTD" align="center"><b>Person</b></td>
+			<td class="FieldCaptionTD" align="center"><b>Order<BR>Lunches</b></td>
+			<td class="FieldCaptionTD" align="center"><b>Edit Menu<BR>and Orders</b></td>
+		</tr>
+		<!-- BEGIN people_records -->
+		<tr>
+			<td class="DataTD">{user_name}</td>
+			<td class="DataTD" align="center"><input type="checkbox" name="view_{id}" {v_checked}></td>
+			<td class="DataTD" align="center"><input type="checkbox" name="edit_{id}" {e_checked}></td>
+		</tr>
+		<!-- END people_records -->
+		<!-- BEGIN submit_row -->
+		<tr>	
+			<td class="FieldCaptionTD" colspan="3" align="right"><input type="submit" value="Update"></td>
+		</tr>	
+		<!-- END submit_row -->	
+	</table>
+
+	</td></tr></table>	
+	</form>
+</body>
+</html>

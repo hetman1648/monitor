@@ -1,0 +1,2 @@
+RewriteEngine On
+RewriteRule !(.gif)|(.GIF)|(.Gif)|(.png)|(.PNG)|(.Png)|(.jpeg)|(.JPEG)|(.Jpeg)|(.jpg)|(.JPG)|(.Jpg)|(.bmp)|(.BMP)|(.Bmp)|(.tiff)|(.tif)|(.TIFF)|(.Tiff)|(.swf)|(.SWF)|(.Swf)|(.pdf)|(.Pdf)|(.PDF)|(.woff)|(.ttf)|(.svg)|(.eot)|(.ico)|(.ICO)|(.docx)|(.DOCX)|(.doc)|(.DOC)|(.gz)|(.mp4)|(.mov)|(.webp)$ - [F=403]

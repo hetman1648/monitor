@@ -1,0 +1,63 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   
+
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+<!-- BEGIN templates_error -->
+<center><font color=red>There is no templates so far. <br><br></font>
+<!-- END templates_error -->
+
+<!-- BEGIN templates_header -->
+<table align=center width=90% cellsapcing=4 cellpadding=4>
+<tr>
+   <td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Testing Templates</font></td>
+</tr>
+<tr>
+   <td colspan=3 class="FieldCaptionTD"><b>Content:</b></td>
+</tr>
+<!-- END templates_header -->
+
+<!-- BEGIN templates_content -->
+
+<tr>
+   <td class="FieldCaptionTD" width=40%><a href="#template_{template_id}"><font size=4>{template_title_content}</font></a></td>
+   <td class="FieldCaptionTD">(added {date_added} by {user_name})</td>
+   <td class="FieldCaptionTD">({date_updated})</td>
+</tr>
+<!-- END templates_content-->
+<tr>
+	<td align=left>
+	<a href="create_template.php?add=1">Add new testing template</a>
+	</td>
+</tr>
+</table>
+
+<br>
+<br>
+
+<!-- BEGIN templates-->
+<table align=center width=90% cellsapcing=2 cellpadding=2>
+<tr>
+   <td class="FieldCaptionTD">&nbsp;&nbsp;&nbsp;&nbsp;<a name="template_{template_id}"><font size=4>{template_title}</font></a>&nbsp;&nbsp;&nbsp;&nbsp;(added {date_added} by {user_name}, {date_updated})</font></a></td>   
+</tr>
+<tr>
+	<td class="DataTD">{template_description}</td>
+</tr>
+<tr>
+	<td class="DataTD">&nbsp;&nbsp;&nbsp;&nbsp;<a href="create_template.php?template_id={template_id}">Edit</a>&nbsp;&nbsp; |  &nbsp;&nbsp;<a href="testing_templates.php">To the content</a></td>
+</tr>
+</table>
+<br><br>
+<!-- END templates-->
+
+
+</body>
+</html>

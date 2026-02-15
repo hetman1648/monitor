@@ -1,0 +1,154 @@
+<html>
+
+<head>
+	<title>Control</title>
+	<link rel="stylesheet" href="site.css" type="text/css"/>
+	<script language="javascript" src="./scripts/calendar.js"></script>
+	<script language="javascript">
+	<!--
+		var nDay = new Array();
+		var i = 0;
+
+		function verify(isField) {
+			splitDate = isField.value.split("-");
+			refDate = new Date(splitDate[0] + "/" + splitDate[1] + "/" + splitDate[2]);
+			nDay[i++] = refDate.getDay();
+			return refDate;
+		}	
+
+		function countDays(isForm) {
+			isValid = true;
+			startDate = verify(isForm.start_date);
+			if (isValid) {endDate = verify(isForm.end_date)} else {endDate = false}
+			if (startDate && endDate) {
+				daysApart = Math.round(((endDate - startDate) / 86400000));
+				workDays = daysApart - (parseInt(daysApart / 7) * 2);
+				if (daysApart < 7 && nDay[1] != 0 && nDay[0]-nDay[1] >= 1) {workDays = workDays-2}
+				if (daysApart < 7 && nDay[1] == 0) {workDays--}
+				isForm.total_days.value = workDays + 1;
+				i = 0;
+			}
+		}
+	-->
+	</script>
+</head>
+
+<body class="PageBODY">
+
+	{ITEMPLATE=header.html}
+	
+	<!-- BEGIN formtable -->
+	
+	<table>
+
+	<!-- BEGIN set_action --><form method="POST" action="{action}" name="frmFilter"><!-- END set_action -->
+
+		<tr>
+			<td class="FormHeaderTD" colspan="2">
+				<font class="FormHeaderFONT">Edit Release Task</font>
+			</td>
+		</tr>
+		
+		<tr>
+			<td class="FieldCaptionTD">
+				<font class="FieldCaptionFONT">Task Title (required)</font>
+			</td>
+			<td class="DataTD">
+				<input type="text" name="task_title" maxlength="255" value="{task_title}" size="80">
+			</td>
+		</tr>
+
+		<tr>
+			<td class="FieldCaptionTD" nowrap>
+				<font class="FieldCaptionFONT">Date to start</font>
+			</td>
+			<td class="DataTD" nowrap>
+				<input name="start_date" size="10" value="{start_date}">
+				<A HREF="#" onClick="setDateField(document.frmFilter.start_date);
+				top.newWin = window.open('./scripts/calendar.html','cal',
+				'dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+			</td>
+		</tr>
+		
+		<tr>
+			<td class="FieldCaptionTD" nowrap>
+				<font class="FieldCaptionFONT">Date to complete</font>
+			</td>		
+			<td class="DataTD" nowrap>
+				<input name="end_date" size="10" value="{end_date}">
+				<A HREF="#" onClick="setDateField(document.frmFilter.end_date);
+		      	top.newWin = window.open('./scripts/calendar.html','cal',
+			'dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+			<IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+			</td>
+		</tr>
+		
+		<tr>
+			<td class="FieldCaptionTD" nowrap>
+				<font class="FieldCaptionFONT">Estimate days</font>
+			</td>
+			<td class="DataTD" nowrap>
+				<input type="text" name="total_days" size="4" value="{total_days}" maxlength="4">
+				<a href="#" onClick="countDays(frmFilter)"><font size="1">Calculate</font></a>
+			</td>
+		</tr>
+		
+		<tr>
+			<td class="FieldCaptionTD">
+				<font class="FieldCaptionFONT">Alocated user</font>
+			</td>
+			<td class="DataTD">
+				<select name="selected_user">{user_options}</select>
+			</td>
+		</tr>
+		
+		<tr>
+			<td class="FieldCaptionTD">
+				<font class="FieldCaptionFONT">Release</font>
+			</td>
+			<td class="DataTD">
+				<select name="selected_release">{release_options}</select>
+			</td>
+		</tr>
+		
+		<tr>
+			<td class="FieldCaptionTD">
+				<font class="FieldCaptionFONT">Priority</font>
+			</td>
+			<td class="DataTD">
+				<input type="text" size="2" name="priority" value="{priority}" maxlength="2">
+			</td>
+		</tr>
+		
+		<tr>
+			<td class="FieldCaptionTD">
+				<font class="FieldCaptionFONT">Description</font>
+			</td>
+			<td class="DataTD">
+				<textarea type="text" name="task_desc" cols="80" rows="20" maxlength="255" value="{task_desc}" size="100">{descr}</textarea>
+			</td>
+		</tr>
+		
+		<tr></tr>
+		
+		<tr>
+			<td colspan="2">
+				<!-- BEGIN formbut --><input type="submit" value="{butvalue}" name="action"><!-- END formbut -->
+				<input type="submit" value="Cancel" name="cancelb">
+			</td>
+		</tr>
+		
+		<tr>
+			<td colspan="2">
+				{checkfail}
+			</td>
+		</tr>
+		
+	</form>
+	</table>
+	<!-- END formtable -->
+	
+</body>
+
+</html>

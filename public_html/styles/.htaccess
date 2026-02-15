@@ -1,0 +1,2 @@
+RewriteEngine On
+RewriteRule !(.css)|(.gif)|(.GIF)|(.Gif)|(.png)|(.PNG)|(.Png)|(.jpeg)|(.JPEG)|(.Jpeg)|(.jpg)|(.JPG)|(.Jpg)|(.bmp)|(.BMP)|(.Bmp)|(.tiff)|(.TIFF)|(.Tiff)|(.swf)|(.SWF)|(.Swf)|(.pdf)|(.Pdf)|(.PDF)|(.txt)|(.html)$ - [F=403]

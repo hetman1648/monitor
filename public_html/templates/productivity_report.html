@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>Productivity Reports</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<link rel="stylesheet" href="./styles/flora.all.css" type="text/css" media="screen">
+<script type="text/javascript" src="./scripts/jquery-1.2.6.pack.js"></script>
+<script type="text/javascript" src="./scripts/ui.core.js"></script>
+<script type="text/javascript" src="./scripts/ui.tabs.js"></script>
+
+<script>
+	$(document).ready(function(){
+		$("#blocks > ul").tabs();
+	});
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<div align="center">
+<form name="frmFilter">		
+	<table border=0 cellpadding=2 cellspacing=0>
+		<tr>
+			<td align="right">
+				Select year:
+			</td>              
+			<td>
+				<select name="year_selected" style="width:150px">
+					<option value="">--------- Year ---------</option>
+					{years}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td align="right">
+				Select month:
+			</td>              
+			<td>
+				<select name="month_selected" style="width:150px">
+					<option value="">-------- Month --------</option>
+					{months}
+				</select>
+			</td>
+		</tr>		
+		<tr>
+			<td align="center" colspan="2">
+				<input type="button" value="Filter" onClick="document.frmFilter.submit();">&nbsp;				
+			</td>
+		</tr>
+	</table>
+</form>
+</div>
+
+<div id="blocks" class="flora">
+	<ul>
+		<li><a href="/monitor/blocks/productivity_support.php?year_selected={year_selected}&month_selected={month_selected}"><span>Viart Support Team</span></a></li>		
+		<li><a href="/monitor/blocks/productivity_html.php?year_selected={year_selected}&month_selected={month_selected}"><span>HTML Design Team</span></a></li>
+		<li><a href="/monitor/blocks/productivity_sayu_web.php?year_selected={year_selected}&month_selected={month_selected}"><span>Sayu Web Developers</span></a></li>
+		<li><a href="/monitor/blocks/productivity_sayu_dev.php?year_selected={year_selected}&month_selected={month_selected}"><span>Sayu Web Development</span></a></li>
+		<li><a href="/monitor/blocks/productivity_calendar.php?year_selected={year_selected}&month_selected={month_selected}"><span>Tickets Calendar</span></a></li>
+	</ul>
+</div>
+
+
+</body>
+</html>

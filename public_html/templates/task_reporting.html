@@ -1,0 +1,157 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<script>
+function set_form_focus()
+{
+ if (document.Form.report_day)
+ {
+  document.Form.report_day.focus();
+  document.Form.report_day.select();
+}
+}
+function placeFocusOnReport()
+{
+  if (document.Form.report)
+  {
+    document.Form.report.focus();
+    document.Form.report.select();
+  }
+}
+window.onload=set_form_focus;
+</script>
+
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+  <table class="FormTABLE">
+  <tr><td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Task reporting</font></td></tr>
+  <!-- BEGIN FormError -->
+  <tr><td class="DataTD" colspan="3">{sFormErr}</td></tr>
+  <!-- END FormError -->
+  <form method="POST" action="task_reporting.php" name="Form">
+  
+  <tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT"><b>Task:</b></font></td>
+      <td class="DataTD" colspan="2">{task_title}</td>
+  </tr>
+  
+  
+  <tr>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Project</font></td>
+      <td class="DataTD">{project_title}</td>
+      <td rowspan=6 class="DataTD" valign="top">
+        <textarea name="task_desc" cols="80" rows="7" style="color:#D0D0D0;">{task_desc}</textarea><br>
+      </td>                                         
+  </tr>
+
+  <tr>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Date to complete</font></td>
+      <td class="DataTD" nowrap>
+      {date_to_complete}
+      <!--
+        <input type="text" name="day" maxlength="10" value="{DAY}" size="1">
+        <select name="month">{MONTH}</select>
+        <input name="year" type="text" size="1" value="{YEAR}">
+      -->
+      </td>
+ </tr>
+  
+  <tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT">Status</font></td>
+  <td class="DataTD">{status_desc}</td></tr>
+  
+  <tr>
+    <td class="FieldCaptionTD"><font class="FieldCaptionFONT">person</font></td>
+    <td class="DataTD">{first_name} {last_name}</td>
+  </tr>
+  
+  <tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT">Priority</font></td>
+      <td class="DataTD">{priority_desc}</td>
+  </tr>
+
+  <tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT">Type</font></td>
+      <td class="DataTD">{type_desc}</td>
+  </tr>
+
+  <tr>
+   <td colspan="2" class="FieldCaptionTD">
+      <b>Report:</b>
+   </td>
+   <td class="DataTD" rowspan=5>
+        <textarea name="report" cols="80" rows="7">{report}</textarea>
+   </td>
+  </tr>
+
+  <tr>
+      <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Report date (*)</font></td>
+      <td class="DataTD" nowrap>
+        <input type="text" name="report_day" maxlength="10" value="{report_day}" size="1">
+        <select name="report_month">{report_month}</select>
+        <input name="report_year" type="text" size="1" value="{report_year}">
+      </td>
+  </tr>
+
+  <tr>
+     <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Completion</font></td>
+     <td class="DataTD"><input type="text" maxlength=3 size=1 name="completion" value="{completion}"> %</td>
+  </tr>
+
+
+  <tr>
+   <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Hours spent</font></td>
+   <td class="DataTD"><input type="text" maxlength=3 size=1 name="hours_spent" value="{hours_spent}" onBlur="placeFocusOnReport()"></td>
+  </tr>
+
+  <tr>
+    <td colspan="2" class="FieldCaptionTD"><br></td>
+  </tr>
+  <tr><td colspan="3" align="right">
+
+  <!-- ***   Buttons   ***  -->
+  
+  <!-- BEGIN FormInsert -->
+  <input type="hidden" value="insert" name="action"/>
+  <input type="submit" value="Insert">
+  <!-- END FormInsert -->
+  
+  <!-- BEGIN FormEdit -->
+  <input type="hidden" value="update" name="action"/>
+  
+  <!-- BEGIN FormUpdate -->
+  <input type="submit" value="Update" onclick="document.forms('Form').action.value = 'update';"/>
+  <!-- END FormUpdate -->
+  
+  <!-- END FormDelete -->
+  <input type="submit" value="Delete" onclick="document.forms('Form').action.value = 'delete';"/>
+  <!-- END FormDelete -->
+  
+  <!-- END FormEdit -->
+  
+  <!-- BEGIN FormCancel -->
+  <input type="submit" value="Cancel" onclick="document.forms('Form').action.value = 'cancel';"/>
+  <!-- END FormCancel -->
+  
+  <input type="hidden" name="FormName" value="Form"/>
+  
+  </td>
+
+  
+  <input type="hidden" name="recording_id" value="{recording_id}">
+  <!-- task parameters -->
+  <input type="hidden" name="task_id" value="{task_id}">
+
+  <!-- Transfer parameters -->
+  <input type="hidden" name="trn_task_status_id" value="{trn_task_status_id}">
+  <input type="hidden" name="trn_project_id" value="{trn_project_id}">
+  <input type="hidden" name="trn_priority_id" value="{trn_priority_id}">
+  <input type="hidden" name="trn_task_type_id" value="{trn_task_type_id}">
+  
+  </form>
+  </tr>
+  </table>
+
+</body>
+</html>

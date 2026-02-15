@@ -1,0 +1,91 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   
+<script Language=JavaScript>
+
+	var nDay = new Array();
+	var i = 0;
+
+	function verify(isField){
+
+		splitDate = isField.value.split("-");
+		refDate = new Date(splitDate[0]+"/"+splitDate[1]+"/"+splitDate[2]);
+		nDay[i++] = refDate.getDay();
+		return refDate; 
+	}	
+	
+	function CheckForm() 
+	{
+	if (document.frmFilter.notes.value=="") {
+		alert("Please enter description for warning!");
+		document.frmFilter.notes.focus();
+		return false;
+	}
+
+	document.frmFilter.submit();
+	return true;		
+	}
+	
+
+	function countDays(isForm){
+
+		isValid = true;
+		startDate = verify(isForm.start_date);
+		if (isValid){endDate = verify(isForm.end_date)} else {endDate = false}
+		if (startDate && endDate)
+			{
+			 daysApart = Math.round(((endDate-startDate)/86400000));
+			 if (nDay[0] == 0 || nDay[0] == 6)
+				{isValid = false; startDate=false}
+			 if (daysApart <= 0){isValid = false;endDate=false}
+			 if (isValid)
+				{
+			 	 workDays = daysApart-(parseInt(daysApart/7)*2);
+				 if (daysApart < 7 && nDay[1] != 0 && nDay[0]-nDay[1] >= 1){workDays = workDays-2}
+				 if (daysApart < 7 && nDay[1] == 0){workDays--}
+				 isForm.total_days.value = workDays + 1;
+				 i = 0;
+				}
+			}
+	}
+
+</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<form name="frmFilter" action="create_warning.php" method="POST">
+<table>
+<tr>
+   <td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">{title_o}</font></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Warning to:</td>
+   <td class="DataTD"><select name="person_warning">{person_option}</select></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Description</td>
+   <td class="DataTD"><textarea type="text" name="notes" cols="80" rows="10">{notes}</textarea></td>
+</tr>
+<tr>
+   <td class="FieldCaptionTD">Date added:</td>
+   <td class="DataTD"><input name="start_date" value="{start_date}">
+      <A HREF="#" onClick="setDateField(document.frmFilter.start_date);
+      top.newWin = window.open('./scripts/calendar.html','cal','dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+      <IMG SRC="./images/calendar.gif" BORDER=0><font size=1>Calendar</font></A>
+   </td>
+</tr>
+<tr>
+   <td><input type="submit" name="action" value="{action_value}">{delete_button}<input name="period_id" value="{period_id}" type="hidden"><input type="submit" name="action" value="Cancel"></td>
+</tr>
+</table>
+</form>
+
+</body>
+</html>

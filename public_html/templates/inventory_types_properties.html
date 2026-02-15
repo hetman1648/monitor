@@ -1,0 +1,182 @@
+<html>
+
+<head>
+<title>
+	Control
+</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script language="javascript">
+	function DeleteProperty(num)
+	{
+		if(confirm('Are you sure you want to delete this Inventory item?') && (num > -1))
+		{
+			document.location="inventory_types_property.php?operation=delete&property_id=" + num;
+		}
+	}
+
+	function clearFilter()
+	{
+		document.frmFilter.type_selected.value = "";
+		document.frmTypesProperty.filterclause.value = "-1";
+		//document.frmFilter.office_selected.value = "";
+		//document.frmFilter.user_selected.value = "";
+	}
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<table cellpadding="0" cellspacing="0" width=100% border="0">
+	<tr>
+		<td align="center">
+			<div id="menu_body">
+			<table>
+ 				<tr>
+  					<td nowrap>
+						<a href="inventory.php" class="DataTD">Inventories</a>
+  					</td>
+  					<td nowrap>
+						|&nbsp;<a href="inventory_types.php" class="DataTD">Types</a>
+					</td>
+					<td nowrap>
+						|&nbsp;<a href="inventory_types_properties.php" class="DataTD">Properties</a>
+  					</td>
+					<td nowrap>
+						|&nbsp;<a href="inventory_offices.php" class="DataTD">Offices</a>
+					</td>
+					<td nowrap>
+						|&nbsp;<a href="inventory_report.php" class="DataTD">Report</a>
+					</td>
+				</tr>
+			</table>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td align="center">
+			<table class="FormTABLE" border="0">
+			    <form name="frmTypesProperty" action="inventory_types_property.php" method="POST">
+			    <input type="hidden" name="operation" value="submit">
+				<input type="hidden" name="property_id" value="-1">
+				<input type="hidden" name="filterclause" value="{filterclause}">
+				<tr>
+			    	<td class="FormHeaderTD" colspan="6">
+					   	<font class="FormHeaderFONT">Type Properties List</font>
+					</td>
+				</tr>
+				<!--
+				<tr>
+			    	<td class="ColumnTD" colspan="6">
+					     <font class="ColumnFONT">Details</font>
+					</td>
+				</tr>
+				-->
+				<tr>
+			    	<td class="DataRow1">
+					   	<CENTER>Name</CENTER>
+					</td>
+			    	<td class="DataRow1">
+					   	<CENTER>Value</CENTER>
+					</td>
+			        <td class="DataRow1">
+					   	<CENTER>Description</CENTER>
+					</td>
+			        <td class="DataRow1">
+					    	<CENTER>Type</CENTER>
+					</td>
+					<!-- BEGIN title_operation -->
+					<td class="DataRow1" colspan="2">
+					 <CENTER>Operations</CENTER>
+					</td>
+					<!-- END title_operation -->
+				</tr>
+				<!-- BEGIN types_property_orders -->
+				<tr>
+			    	<td class="{colorrow}" align="left" nowrap>
+				        {inventory_types_property_name}
+					</td>
+			    	<td class="{colorrow}" align="left" nowrap>
+			      		{inventory_types_property_value}
+					</td>
+			    	<td class="{colorrow}" align="left" nowrap>
+			      		{inventory_types_property_desc}
+					</td>
+			    	<td class="{colorrow}" align="left" nowrap>
+				      	{inventory_type_title}
+					</td>
+					<!-- BEGIN control_operation -->
+			    	<td class="{colorrow}" width="40" align="center">
+			      		<a href="inventory_types_property.php?operation=view&property_id={property_id}">Edit</a>
+			      	</td>
+			    	<td class="{colorrow}" align="center">
+			      		<a href="javascript:DeleteProperty({property_id})">Delete</a>
+			        </td>
+			        <!-- END control_operation -->
+				</tr>
+				<!-- END types_property_orders -->
+				<tr height="50" valign="bottom">
+                	<td align="right" colspan="{colpan}">
+						<input type="submit" name="submit" value="Add">
+					</td>
+				</tr>
+				</form>
+			</table>
+		</td>
+		<td valign="top">
+			<br><br>
+			<div align="center">
+			<form name="frmFilter" action="inventory_types_properties.php" method="POST">
+			<input type="hidden" name="operation" value="filter">
+			<table border="0">
+				<tr>
+					<td align="right">
+						Select type:
+					</td>
+					<td>
+						<select name="type_selected" style="width:150px" align="center">
+							<option value="">------- Type -------</option>
+							{types}
+						</select>
+					</td>
+				</tr>
+				<!--
+				<tr>
+					<td align="right">
+						Select office:
+					</td>
+					<td>
+						<select name="office_selected" style="width:150px">
+							<option value="">------- Office -------</option>
+							{offices}
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td align="right">
+						Select user:
+					</td>
+					<td>
+						<select name="user_selected" style="width:150px">
+							<option value="">------- User -------</option>
+							{users}
+						</select>
+					</td>
+				</tr>
+				-->
+				<tr>
+					<td align="center" colspan="2">
+						<input type="submit" value=" Filter " name="submit">&nbsp;
+						<input type="button" value=" Clear " onclick="clearFilter()">
+					</td>
+				</tr>
+			</table>
+			</form>
+			</div>
+		</td>
+	</tr>
+</table>
+
+</body>
+
+</html>

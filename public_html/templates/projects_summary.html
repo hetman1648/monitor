@@ -1,0 +1,69 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+<table border="0" cellpadding="2" class="FormTABLE">
+<form name="Filter" action="projects_summary.php" method="GET">
+<tr>
+	<td class="FormHeaderTD" align="center" colspan="6">
+	<select name="filter_parent_project_id" onChange="document.Filter.submit();">
+	<!-- BEGIN parent_project_id -->
+	<option value="{parent_project_id_value}" {parent_project_id_selected}>{parent_project_id_description}</option>
+	<!-- END parent_project_id -->
+	</select>
+	</td>
+</tr>
+</form>
+<!--
+<tr>
+	<td class="FormHeaderTD" colspan="13"><font class="FormHeaderFONT">Summary</font></td>
+</tr>
+-->
+<form name="Form" action="projects_summary.php" method="POST">
+<input type="hidden" name="filter_parent_project_id" value="{filter_parent_project_id}">
+<tr>
+	<td class="FieldCaptionTD" align="right" colspan="6"><input type="submit" value="Save Statuses"></td>
+</tr>
+<tr align="center">
+	<td class="ColumnTD"><font class="ColumnFONT">Project</font></td>
+	<td class="ColumnTD"><font class="ColumnFONT">Status</font></td>
+	<td class="ColumnTD"><font class="ColumnFONT">Tasks</font></td>
+	<td class="ColumnTD"><font class="ColumnFONT">People</font></td>
+	<td class="ColumnTD"><font class="ColumnFONT">Hours</font></td>
+	<td class="ColumnTD"><font class="ColumnFONT"></font></td>
+</tr>
+<!-- BEGIN project -->
+<!-- BEGIN parent_project -->
+<tr align="center">
+	<td class="FieldCaptionTD" nowrap align="left" colspan="6"><b>{project_title}</b></td>
+</tr>
+<!-- END parent_project -->
+<tr align="center">
+	<td class="DataTDE" nowrap align="left"><a href="search.php?project_selected={c_id}&person_selected=&keyword=&closed=on&submit=+Filter+" style="color:{child_color};/*text-decoration:underline;*/">{c_title}</a></td>
+	<td class="DataTDE">
+	<!-- BEGIN project_status_select -->
+		<select name="project_status_id_{c_id}" {project_status_id_disabled}>
+			<!-- BEGIN project_status_id --><option style="color:{color};" value="{project_status_id_value}" {project_status_id_selected}>{project_status_id_description}</option><!-- END project_status_id -->
+		</select>
+	<!-- END project_status_select -->	
+	<span  style="color:{child_color};">{child_status_desc}</span>
+	</td>
+	<td class="DataTDE">{tasks}</td>
+	<td class="DataTDE">{people}</td>
+	<td class="DataTDE" align="right">{hours}</td>
+	<td class="DataTDE" align="left"><a href="edit_project.php?project_id={c_id}" style="color:{child_color};text-decoration:underline;">Edit</a></td>
+</tr>
+<!-- END project -->
+<tr>
+	<td class="FieldCaptionTD" align="right" colspan="6"><input type="submit" value="Save Statuses"></td>
+</tr>
+</form>
+</table>
+</body>
+</html>

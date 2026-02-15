@@ -1,0 +1,26 @@
+<table width="100%">
+<tr><td colspan="14" nowrap>    
+    <a href="index.php?download=1">Download CSV File</a>
+    <!-- BEGIN knowledge_base -->
+    &nbsp;&nbsp;| &nbsp;&nbsp;<a href='testing_templates.php'>ViArt Knowledge Base</a>
+    <!-- END knowledge_base -->
+    <!-- BEGIN documents_dropdown -->
+    &nbsp;&nbsp;| &nbsp;&nbsp;<div id='report' onmouseover='show_documents(this, "documents_dropdown")'
+	 onmouseout='document.getElementById("documents_dropdown").style.display="none"' id='documents_title' style='z-index:0;display:inline;'><a
+     href="#" onClick="return false;">Documents</a>
+	<div id='documents_dropdown' style='position: absolute;left:0;top:13;border-style:outset;border-width:1px;color:blue;background-color:white;padding:5px;display:none;'>
+	<table border="0" cellpadding="2" cellspacing="1">
+		<!-- BEGIN doc -->
+		<tr>
+			<td nowrap><a href="document_view.php?doc_id={doc_id}" target="_blank">{doc_name}</a></td>
+			<td nowrap>{date_modified}</td>
+			<td nowrap><!-- BEGIN doc_edit_link --><a href="document_edit.php?doc_id={doc_id}">Edit</a><!-- END doc_edit_link --></td>
+		</tr>
+		<!-- END doc -->
+		<tr><td nowrap cospan="3"><a href="document_edit.php">Add new...</a></td></tr>
+	</table>
+	</div>
+	</div>
+    <!-- END documents_dropdown -->
+</td></tr>
+</table>

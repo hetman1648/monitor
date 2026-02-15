@@ -1,0 +1,20 @@
+<table cellpadding="0" cellspacing="1" border="0">
+<tr><td class="viart_team_list" valign="top" width="20%">
+   	<table style="border:1px solid #919B9C; background-color:#FCFFD5;" cellpadding="0" cellspacing="0" width="100%">
+		<tr><th colspan="2"><a href="report_people.php?is_viart=1">Sayu Kyiv({viart_team_count})</a></th></tr>
+		<tr bgcolor="white"><td>Person</td><td>Opened</td></tr>
+      	<!-- BEGIN viart_reports --><tr>
+			<td nowrap onmouseover="show_user_info({user_id});" onmouseout="hide_user_info({user_id});" id="user_{user_id}"><a class='{v_styleperson}' href="report_people.php?report_user_id={user_id}">{user_name}</a><!-- BEGIN user_information_div --><div style="position:absolute;display:inline"><div id="user_info_{user_id}" style="display:none; position:relative; top:2px; right:40px;background-color:white; border: 1px solid #585858; padding:2px;">{user_information}</div></div><!-- END user_information_div --></td>
+			<td align="center" class="manager">{opened_tasks}</td>			
+      	</tr><!-- END viart_reports -->
+    </table>      	
+</td><td width="20%" valign="top" class="sayu_team_list">
+	<table style="border:1px solid #919B9C; background-color:#FCFFD5;" cellpadding="0" cellspacing="0" width="100%">
+		<tr><th colspan="2"><a href="report_people.php">Sayu Stockton({yoonoo_team_count})</a></th></tr>
+   		<tr bgcolor="white"><td>Person</td><td>Opened</td></tr>
+      	<!-- BEGIN spotlight_reports --><tr>
+			<td nowrap><a class='{s_styleperson}' href="report_people.php?report_user_id={user_id}" >{user_name}</a></td>
+			<td align="center" class="manager">{opened_tasks}</td>
+	    </tr><!-- END spotlight_reports -->			
+   	</table>
+</td></tr></table>

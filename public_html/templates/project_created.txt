@@ -1,0 +1,14 @@
+<style>
+BODY {font-family: Tahoma, Verdana,Helvetica;font-size:10pt}
+B {color:navy}
+</style>
+
+<body>
+Hi,<br><br>
+
+New project called <b>"{PROJECT_TITLE}"</b> was created.<br>
+Please, visit <a href="https://monitor.sayu.co.uk/edit_project.php?project_id={project_id}">https://monitor.sayu.co.uk/</a>
+for more information.<br>
+<br>
+
+</body>

@@ -1,0 +1,108 @@
+<center>
+
+<h1>Summary for Viart Support</h1>
+
+<table border="0" cellpadding="2" class="FormTABLE">
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Person</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Custom Work</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Tickets</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Tickets Delayed</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Manual</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Paid Days</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Bugs</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Total Points</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Bonus</font>
+		</td>
+	</tr>
+	<!--BEGIN row-->
+	<tr>
+		<td class="DataTDE" nowrap align="left">
+			{name}			
+		</td>
+		<td class="DataTDE" nowrap align="center">
+			{custome_work}
+		</td>
+		<td class="DataTDE" nowrap align="center">
+			{tickets_points} / {tickets}
+		</td>
+		<td class="DataTDE" nowrap align="center">
+			{tickets_delayed_points} / {tickets_delayed}
+		</td>
+		<td class="DataTDE"" nowrap align="center">
+			{manual}
+		</td>
+		<td class="DataTDE" nowrap align="center">
+			{paid_days}
+		</td>
+		<td class="DataTDE"" nowrap align="center">
+			{bugs}
+		</td>
+		<td class="DataTDE" nowrap align="center">
+			<b>{total_points}</b>
+		</td>
+		<td class="DataTDE" nowrap align="center">
+			<font color='red'><b>{bonus}</b></font>
+		</td>
+	</tr>
+	<!--BEGIN notes_block-->
+	<tr>
+		<td colspan="8">
+			{notes_text}		
+		</td>	
+	</tr>
+	<!--END notes_block-->
+	<!--END row-->
+	<tr align="center">
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">Totals</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_custome_work}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_tickets_points} / {sum_tickets}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_tickets_delayed_points} / {sum_tickets_delayed}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_manual}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_paid_days}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_bugs}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_total_points}</font>
+		</td>
+		<td class="ColumnTD" nowrap align="center">
+			<font class="ColumnFONT">{sum_bonus}</font>
+		</td>
+	</tr>	
+</table>
+
+<!--BEGIN manager_bonus_block-->
+Team Manager`s Bonus: <font color="red">{manager_bonus}</font>
+<!--END manager_bonus_block-->
+
+</center>

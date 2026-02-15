@@ -1,0 +1,15 @@
+<style>
+BODY {font-family: Tahoma, Verdana,Helvetica;font-size:10pt}
+B {color:navy}
+</style>
+
+<body>
+Hi,<br><br>
+
+Task <b>"{task_title}"</b> was completed by <b>{user_name}</b>.<br><br>
+Please, visit<br>
+<a href="https://monitor.sayu.co.uk/edit_task.php?task_id={task_id}">https://monitor.sayu.co.uk/</a><br>
+for more information.<br>
+<br>
+
+</body>

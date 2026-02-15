@@ -1,0 +1,99 @@
+    <table class="FormTABLE" width=100%>
+    <tr><td class="FormHeaderTD" colspan="15"><a name="Tasks"><font class="FormHeaderFONT">{page_title}</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD" nowrap></td>
+      <td class="ColumnTD"><font class="ColumnFONT">Title</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Project</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Prior.</font></td>
+      <td class="ColumnTD" nowrap></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Status</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Estimate</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Compl.%</font></td>
+      <td class="ColumnTD" width="6%"><font class="ColumnFONT">Time Left </font></td>
+<!--      <td class="ColumnTD" width="6%"><font class="ColumnFONT">Time left Actual</font></td>-->
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Time Spent</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Completion (Est)</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Type</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Created</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Complete by</font></td>
+      <td class="ColumnTD" nowrap></td>
+    </tr>
+
+    <!-- BEGIN tasks -->
+    <!-- BEGIN tasks_header -->
+    <tr height="10"><td colspan="15"></td></tr>
+   	<tr>
+   		<td colspan="15"><b>{user_name}{manager_name}</b> (Next Available Time Slot is {time_slot})</td>
+    </tr>
+   	<!-- END tasks_header -->
+		
+   	<tr class="Task{STATUS}" onMouseOut="this.style.backgroundColor=lastBG;" onMouseOver="lastBG=this.style.backgroundColor; this.style.backgroundColor='#FCFFD5';" id="divTR_{id}_{user_id}">
+
+      	<td width="20"></td>
+	    <td id="divTD2_{id}_{user_id}">
+	          	<a class="aTask{STATUS}" href="edit_task.php?task_id={task_id}&rp={rp}">{task_title}</a>&nbsp;
+	          	<input id="divPriority_{task_id}" type="hidden" size="3" name="priority_{task_id}" value="{id}">
+	    </td>
+        <td id="divTD1_{id}_{user_id}" nowrap>{project_title}&nbsp;</td>
+        <td align="center" nowrap>{id}&nbsp;</td>
+        <td nowrap>
+			<a href="javascript:changePriority({id},'down',{user_id})">
+			<img width="16" height="16" border="0" src="images/move_down.gif"></a>
+			<a href="javascript:changePriority({id},'up',{user_id});">
+			<img width="16" height="16" border="0"src="images/move_up.gif"></a>
+		</td>
+     	<!--<td id="divTD3_{id}_{user_id}" nowrap>&nbsp; {priority_set}&nbsp;</td>-->
+		<td id="divTD3_{id}_{user_id}" nowrap>&nbsp; {status_desc}&nbsp;</td>
+        <td id="divTD8_{id}_{user_id}" nowrap>
+			<input type="text" name="estimate_{task_id}" size="12" style="font-size:10px;border:1px solid #919B9C;" value="{estimated_hours_title}" style="background:#fff" maxlength="14"
+				onkeyup ="checkAdditionalTime(this,document.frmReport,document.frmReport.elements.estimateuhours_{task_id},null); checkAll(document.frmReport.elements,'estimate_',getElementById('save_estimates'))"
+				onchange="checkAdditionalTime(this,document.frmReport,document.frmReport.elements.estimateuhours_{task_id},null); checkAll(document.frmReport.elements,'estimate_',getElementById('save_estimates'))"
+				onblur  ="checkAdditionalTime(this,document.frmReport,document.frmReport.elements.estimateuhours_{task_id},null); checkAll(document.frmReport.elements,'estimate_',getElementById('save_estimates'))">
+			<input type="hidden" name="estimateuhours_{task_id}" value="0">
+		</td>
+        <td id="divTD10_{id}_{user_id}" align="center" nowrap>{completion_percent}&nbsp;</td>
+        <td id="divTD11_{id}_{user_id}">{time_left_estimate}&nbsp;</td>
+        <!--<td id="divTD12_{id}_{user_id}">{time_left_actual}&nbsp;</td>-->
+        <td id="divTD9_{id}_{user_id}" nowrap><span id="actual_{task_id}">{actual_hours}</span>&nbsp;</td>
+        <td id="divTD9_{id}_{user_id}" nowrap><span id="actual_{task_id}">{completion_date}</span>&nbsp;</td>
+        <td id="divTD4_{id}_{user_id}" nowrap>{type_desc}&nbsp;</td>
+        <td id="divTD5_{id}_{user_id}" align="right" nowrap>{creation_date}&nbsp;</td>
+        <td id="divTD6_{id}_{user_id}" align="right" nowrap>{planed_date}&nbsp;</td>
+        <td id="divTD7_{id}_{user_id}" nowrap><a href='javascript:closeTaskRep({task_id},"{task_title_slashed}")'>Close</a></td>
+	</tr>
+    <!-- END tasks -->
+	
+    <!-- BEGIN no_mytasks -->
+    <tr>
+		<td colspan="15" class="DataTD">
+			<font class="DataFONT">There are no tasks for provided search criteria</font>
+		</td>
+	</tr>
+    <!-- END no_mytasks -->
+	
+    <tr>
+		<td colspan="15" class="ColumnTD"><font class="ColumnFONT">
+			<input type="button" value="Save Priorities" onClick="confirmSubmit('save_priorities');">
+			<input type="submit" value="Save Estimates" id="save_estimates"/>
+		</td>
+	</tr>
+</table>
+<script language="javascript">
+<!--
+var dicUsers = new Array();
+{dicUsers}
+
+var tDateStart = new Date();
+var activeTaskId = new Array();
+var actualTimeStamp = new Array();
+var tStart = new Array();
+<!-- BEGIN activeTaskRow -->
+activeTaskId[{a_id}] = {active_task_id};
+actualTimeStamp[{active_task_id}] = {actual_timestamp};
+tStart[{active_task_id}] = new Date();
+tStart[{active_task_id}].setTime(tDateStart.getTime() - actualTimeStamp[{active_task_id}]);
+<!-- END activeTaskRow -->
+clockID = 0;
+StartClock();
+//-->
+</script>

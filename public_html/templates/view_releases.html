@@ -1,0 +1,172 @@
+<html>
+
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+
+<script language="javascript">
+var dicUsers = new Array();
+{dicUsers}
+
+function getPriorityObject(id, release_id)
+{
+	objPriority = document.getElementById("divTD2" + "_" + id + "_" + release_id);
+	txt = objPriority.innerHTML;
+	p = "divPriority_(\\d+)";
+	var exp = new RegExp(p,'g');
+	result = txt.match(exp);
+	if (result != null)
+	{
+		objPriority = document.getElementById(result[0]);
+		return objPriority;
+	}
+	else return null;
+}
+
+function changePriority(id, direction, release_id)
+{
+	numbColumns = 6;
+	totalRows   = dicUsers[release_id];
+	if (totalRows > 1 && ((direction == "up" && id > 1) || (direction == "down" && id < totalRows)))
+	{
+		step = 1;
+		if (direction == "up") step = -1;
+		objPriorityFrom = getPriorityObject(id,release_id);
+		objPriorityTo   = getPriorityObject(id+step,release_id);
+		if (objPriorityFrom != null && objPriorityTo != null)
+		{
+			objPriorityFrom.value = id + step;
+			objPriorityTo.value   = id;
+		}
+
+		for (i = 1; i <= numbColumns; i++)
+		{
+			objFrom = document.getElementById("divTD" + i + "_" + id + "_" + release_id);
+			objTo   = document.getElementById("divTD" + i + "_" + (id + step) + "_" + release_id);
+			tmpHTML           = objTo.innerHTML;
+			objTo.innerHTML   = objFrom.innerHTML;
+			objFrom.innerHTML = tmpHTML;
+		}
+	}
+}
+
+function doNothing()
+{
+	return false;
+}
+
+function confirmSubmit(operation)
+{
+	if (operation == "save_priorities")
+	{
+		if (confirm('Are you sure you want to submit priorities?'))
+		{
+			document.frmReport.operation.value = operation;
+			document.frmReport.submit();
+			return true;
+		}
+	}
+	return false;
+}
+
+lastBG = "white";
+
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+<form name="frmFilter" action="view_releases.php?project_id={proid}" method="POST">
+<table width="100%">
+<tr>
+	<td>
+	<select name="year_select">
+		<option>Select Year</option>
+		<option>2004</option>
+		<option>2005</option>
+		<option>2006</option>
+		<option>2007</option>
+	</select>
+	<select name="month_select">
+		<option>Select Month</option>
+		<option>January</option>
+		<option>February</option>
+		<option>March</option>
+		<option>April</option>
+		<option>May</option>
+		<option>June</option>
+		<option>July</option>
+		<option>August</option>
+		<option>September</option>
+		<option>October</option>
+		<option>November</option>
+		<option>December</option>
+	</select>
+	<select name="release"><option>All Releases</option><!-- BEGIN filter -->{rel_options}<!-- END filter --></select>
+	<select name="task_type"><option>All Tasks</option><option>Planned Only</option></select>
+	<input name="filter" type="submit" value="Filter">
+	<td align="right"><select name="view_mode"><option>Tasks View</option><option>Stat View</option></select></td>
+</tr>
+
+</table>
+</form>
+
+<p align="right">{error}</p>
+
+<form name="frmReport" action="view_releases.php?project_id={proid}" method="POST">
+<table class="FormTABLE" width=100%>
+
+<!-- BEGIN project_name -->
+<tr>
+<td class="FormHeaderTD"  colspan="10" ><a name="Tasks"><font class="FormHeaderFONT">Project {proj_name} Releases</font></a></td>
+</tr>
+
+<tr>
+<td  class="ColumnTD">&nbsp;</td>
+<td  class="ColumnTD">Task title</td>
+<td  class="ColumnTD">Prior.</td>
+<td  class="ColumnTD">Change prior.</td>
+<td  class="ColumnTD">From date</td>
+<td  class="ColumnTD">Due date</td>
+<td  class="ColumnTD">Estimate</td>
+<td  class="ColumnTD">User</td>
+<td  class="ColumnTD">Action</td>
+<td  class="ColumnTD">&nbsp;</td>
+</tr>
+<!-- END project_name -->
+
+<!-- BEGIN releases -->
+<tr>
+<td colspan="10" class="FieldCaptionTD"><font class="ColumnFONT"><a href="create_release.php?release_id={release_id}">{release_tit_dat}</a></font></td>
+</tr>
+
+<!-- BEGIN release_tasks -->
+<tr class="{tid}">
+<td >&nbsp;</td>
+<td id="divTD2_{id}_{release_id}" ><input id="divPriority_{task_id}" type="hidden" size="3" name="priority_{task_id}" value="{task_priority}">{task_id_tit}</td>
+<td >{task_priority}</td>
+<td >{pri_c}</td>
+<td id="divTD1_{id}_{release_id}" >{t_due_date}&nbsp;</td>
+<td id="divTD3_{id}_{release_id}" >{s_date}&nbsp;</td>
+<td id="divTD4_{id}_{release_id}" >{estim}&nbsp;</td>
+<td id="divTD5_{id}_{release_id}" >{user}&nbsp;</td>
+<td id="divTD6_{id}_{release_id}" >{mov_to_mon}</td>
+<td >&nbsp;</td>
+</tr>
+<!-- END release_tasks -->
+<tr><td  colspan="10">&nbsp;</td></tr>
+<!-- END releases -->
+
+</table>
+
+<input name="operation" type="submit" value="Save Priorities" onClick="confirmSubmit('save_priorities');">
+</form>
+
+<!-- BEGIN pro_id -->
+<a href="create_release.php?project_id={proid}"><font class="ColumnFONT">Add New Release</font></a>
+<!-- END pro_id -->
+
+</body>
+
+</html>

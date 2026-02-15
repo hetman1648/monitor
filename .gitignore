@@ -1,0 +1,47 @@
+# User uploads and attachments
+public_html/attachments/
+public_html/temp_attachments/
+public_html/documents/
+
+# Runtime cache and temp files
+public_html/cache/
+public_html/images/tmp/
+public_html/cvs_logger/tmp/
+tmp/
+
+# Backup and copy folders
+public_html/_copy/
+public_html/backup/
+public_html/templates/backup/
+
+# Old VCS metadata
+public_html/templates/CVS/
+public_html/svn/
+.cvs/
+.svn/
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# PHP
+vendor/
+composer.lock
+.phpunit.result.cache
+
+# Node (if used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

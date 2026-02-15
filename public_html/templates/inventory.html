@@ -1,0 +1,213 @@
+<html>
+
+<head>
+<title>
+	Control
+</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script language="javascript">
+    function ViewProperty(num)//dodelat`
+    {
+		if (num > -1)
+		{
+			document.frmInventoryProperty.operation.value ="view";
+			document.frmInventoryProperty.inventory_id.value = num;
+			document.frmInventoryProperty.submit();
+		}
+    }
+
+	function EditInventory(num)
+	{
+		if (num > -1)
+		{
+			document.frmInventoryEdit.operation.value ="edit";
+			document.frmInventoryEdit.inventory_id.value = num;
+			document.frmInventoryEdit.submit();
+		}
+	}
+
+	function AddInvertory()
+	{
+		document.frmInventoryEdit.operation.value ="new";
+		document.frmInventoryEdit.inventory_id.value = -1;
+		document.frmInventoryEdit.submit();
+	}
+
+	function DeleteInventory(num)
+	{
+		if(confirm('Are you sure you want to delete this Inventory item?') && (num > -1))
+		{
+			document.frmInventory.operation.value ="delete";
+			document.frmInventory.inventory_id.value = num;
+			document.frmInventory.submit();
+		}
+	}
+
+	function clearFilter()
+	{
+		document.frmFilter.year_selected.value = "";
+		document.frmFilter.office_selected.value = "";
+		document.frmFilter.user_selected.value = "";
+	}
+</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<form name="frmInventoryEdit" action="inventory_item.php" method="POST">
+  <input type="hidden" name="operation" value="submit">
+  <input type="hidden" name="inventory_id" value="-1">
+</form>
+
+<form name="frmInventoryProperty" action="inventory_properties.php" method="POST">
+  <input type="hidden" name="operation" value="submit">
+  <input type="hidden" name="inventory_id" value="-1">
+</form>
+
+<table cellpadding="0" cellspacing="0" width=100% border="0">
+<tr colspan="2">
+ <td valign="top">
+ <table><tr><td>
+ <!-- BEGIN error --><div style="padding: 10px; background-color: red;"><font color=white>{err}</font></div><!-- END error -->
+ </td></tr></table>
+ </td>
+</tr>
+<tr><td><center>
+<div id="menu_body">
+<table>
+ <tr><CENTER>
+  <td nowrap>
+	<a href="inventory.php" class="DataTD">Inventories</a>
+  </td>
+  <td nowrap>
+	|&nbsp;<a href="inventory_properties.php" class="DataTD">Properties</a>
+  </td>
+  <td nowrap>
+	|&nbsp;<a href="inventory_types.php" class="DataTD">Types</a>
+  </td>
+  <td nowrap>
+	|&nbsp;<a href="inventory_offices.php" class="DataTD">Offices</a>
+  </td>
+  <td nowrap>
+	|&nbsp;<a href="inventory_report.php" class="DataTD">Report</a>
+  </td>
+  </CENTER>
+ </tr>
+</table>
+</div>
+
+<table class="FormTABLE" border="0" width=70%>
+
+	<form name="frmInventory" action="inventory.php" method="POST">
+	<input type="hidden" name="operation" value="submit">
+	<input type="hidden" name="inventory_id" value="-1">
+
+	<tr>
+		<td colspan="{colpan}">
+			<font class="DataFONT">{pages_navigator}</font>
+		</td>
+	</tr>
+	<tr>
+		<td class="FormHeaderTD" colspan="{colpan}">
+			<font class="FormHeaderFONT">Inventory List</font></a>
+		</td>
+	</tr>
+	<tr align="center">
+    		<td class="DataRow1">&nbsp;</td>
+    		<td class="DataRow1"><a href="inventory.php?sort=user&order={u_order}&page_num={page_num}">User</a></td>
+			<td class="DataRow1"><a href="inventory.php?sort=title&order={t_order}&page_num={page_num}">Title</a></td>
+            <td class="DataRow1"><a href="inventory.php?sort=desc&order={d_order}&page_num={page_num}">Description</a></td>
+			<td class="DataRow1"><a href="inventory.php?sort=code&order={c_order}&page_num={page_num}">Code</a></td>
+		    <td class="DataRow1"><a href="inventory.php?sort=office&order={o_order}&page_num={page_num}">Office</a></td>
+		    <td class="DataRow1"><a href="inventory.php?sort=date&order={ad_order}&page_num={page_num}">Add Date</a></td>
+		    <td class="DataRow1"><a href="inventory.php?sort=guarant&order={g_order}&page_num={page_num}">Guarantee</a></td>
+		<!-- BEGIN title_operation -->
+		    <td class="DataRow1" colspan="3">Operations</td>
+		<!-- END title_operation -->
+	</tr>
+	<!-- BEGIN inventory_orders -->
+	<tr>
+		<td class="{colorrow}" nowrap>{numeric}</td>
+		<td class="{colorrow}" nowrap>{user_name_inv}</td>
+		<td class="{colorrow}" nowrap>{inventory_title}</td>
+		<td class="{colorrow}" nowrap>{inventory_desc}</td>
+		<td class="{colorrow}" align="left" nowrap>{inventory_code}</td>
+		<td class="{colorrow}" nowrap>{office_title}</td>
+		<td class="{colorrow}" nowrap>{date_added}</td>
+		<td class="{colorrow}" nowrap><center><input type="checkbox" {checked} {status}></center></td>
+
+      	<!-- BEGIN control_operation -->
+      	<td class="{colorrow}" align="center"><a href="javascript:ViewProperty({inventory_id})">Properties</a></td>
+      	<td width="40" class="{colorrow}" align="center"><a href="javascript:EditInventory({inventory_id})"><center>Edit</center></a></td>
+      	<td class="{colorrow}" align="center"><a href="javascript:DeleteInventory({inventory_id})">Delete</a></td>
+      	<!-- END control_operation -->
+
+	</tr>
+    <!-- END inventory_orders -->
+	<tr>
+    		<!--<td colspan="2">
+			<input type="submit" value="Submit">
+		</td>-->
+		<td colspan="8" align="right">
+      	 <!-- BEGIN control --><input type="button" value="Add" onclick="AddInvertory()"><!-- END control -->
+      	</td>
+	</tr>
+</form>
+</table>
+</center></td>
+<td valign="top">
+<br><br>
+<div align="center">
+	<form name="frmFilter" action="inventory.php?{query_string}" method="POST">
+	<input type="hidden" name="operation" value="filter">
+	<table border="0">
+	<tr>
+		<td align="left">
+			Select year
+		</td>
+		<td>
+			:&nbsp;<select name="year_selected" style="width:150px" align="center">
+				<option value="">------- Year -------</option>
+				{years}
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			Select office
+		</td>
+		<td>
+			:&nbsp;<select name="office_selected" style="width:150px">
+				<option value="">------- Office -------</option>
+				{offices}
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			Select user
+		</td>
+		<td>
+			:&nbsp;<select name="user_selected" style="width:150px">
+				<option value="">------- User -------</option>
+				<option value="-1">Unassigned</option>
+				{users}
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td align="center" colspan="2">
+			<input type="submit" value=" Filter " name="submit">&nbsp;
+			<input type="button" value=" Clear " onclick="clearFilter()">
+		</td>
+	</tr>
+	</table>
+	</form>
+</div>
+</td>
+</tr></table>
+
+</body>
+
+</html>

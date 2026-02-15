@@ -1,0 +1,44 @@
+<html>
+<head>
+<title>Allocate parent task</title>
+
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<body class="PageBODY" >
+
+<!-- BEGIN close_window_script -->
+<script language="JavaScript">                           
+<!-- 
+	window.opener.setParentTask({parent_task_id}, "{parent_task_title_slashed}", "{allocate_url_id}");
+	
+	window.close();
+// -->	
+</script>
+<!-- END close_window_script -->
+<table class="FormTABLE" align="center" width = "95%">
+    <tr>
+    	<td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">Quotations for {project_title}</font></td>
+    </tr>
+    <!-- BEGIN quotations -->
+      <tr onMouseOut="this.style.backgroundColor=lastBG; 
+      							document.getElementById('title{title_id}').style.backgroundColor=lastBGtitle;" 
+      							onMouseOver="lastBG=this.style.backgroundColor; 
+      							lastBGtitle=document.getElementById('title{title_id}').style.backgroundColor; 
+      							this.style.backgroundColor='#FCFFD5'; 
+      							document.getElementById('title{title_id}').style.backgroundColor='#FCFFD5';">    
+	    <td><a id="title{title_id}" target="_blank" href="edit_task.php?task_id={task_id}"><span style="color:{span_color};">{task_title}</span></a>&nbsp;</td>
+	    <td nowrap align="right"><a href="allocate_parent_task.php?parent_task_id={task_id}&project_id={project_id}&task_id={sub_task_id}&allocate_url_id={allocate_url_id}&action=allocate">Allocate</a></td>
+	</tr>
+	<!-- END quotations -->
+    <!-- BEGIN no_quotations -->
+      <tr>    
+      	<td>No Quotations found</td>
+      	<td align="right"><a href="javascript: window.close(); ">Close</a></td>
+	</tr>
+	<!-- END no_quotations -->	
+
+</table>
+
+</body>
+</html>

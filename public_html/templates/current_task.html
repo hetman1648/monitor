@@ -1,0 +1,51 @@
+<!-- BEGIN current_task_block -->
+<table width="100%" style="border:1px solid #919B9C; background-color:#CCFFCC;">
+	<tr>
+		<td valign="top"  colspan="2"> 
+			You are currently working on:
+		</td>
+	</tr>
+	<tr>
+		<td colspan="2" bgcolor="white">
+			<a href="edit_task.php?task_id={task_id}"><b>{task_title}</b></a>
+		</td>
+	</tr>
+	<tr>
+		<td width="30%">Priority:</td>
+		<td>{priority_id}</td>
+	</tr>
+	<tr>
+		<td>Type:</td>
+		<td>{type_desc}</td>
+	<!-- BEGIN nonperiodic -->	
+	<tr>
+		<td nowrap>Complete By:</td>
+		<td>{planed_date}</td>
+	</tr>
+	<tr>
+		<td nowrap>Estimated Time:</td>
+		<td>{estimated_hours}</td>
+	</tr>
+	<tr>
+		<td nowrap>Completion:</td>
+		<td>{completion_percent}</td>
+	</tr>
+	<tr>
+		<td nowrap>Estimated Time Left:</td>
+		<td>{time_left_estimate}</td>
+	</tr>
+	<tr>
+		<td nowrap>Actual Time Left:</td>
+		<td>{time_left_actual}</td>
+	</tr>
+	<!-- END nonperiodic -->
+	<tr>
+		<td nowrap>Actual Time Spent:</td>
+		<td><span id="actual">{actual_hours}</span></td>
+	</tr>
+	<tr>
+		<td colspan="2"><form name="frmCurrent" onSubmit="return startTask({task_id},'Stop','{task_title_slashed}',true,{completion_javascript},'{active_task_title}',{is_periodic},'{url_page}');">
+			<input type="submit" value="Stop Task"></form></td>
+	</tr>
+</table>
+<!-- END current_task_block -->

@@ -1,0 +1,52 @@
+	<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   
+   
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+			<!-- BEGIN holiday_error -->
+			<br><center><font color=red>There is no added holiday.</font>
+			<!-- END holiday_error -->
+<table width=50% align=center>
+
+			<!-- BEGIN holiday_header --> 
+			<tr>
+      			<td class="FormHeaderTD" colspan="5"><font class="FormHeaderFONT">National Holidays</font></td>
+   			</tr>
+   			<tr>
+      			<td class="ColumnTD" align=center><b>Date</b></td>
+      			<td class="ColumnTD"><b>Name</b></td>
+      			<td class="ColumnTD">&nbsp;</td>
+   			</tr>
+   			<!-- END holiday_header -->
+   			<!-- BEGIN holiday_rows -->
+   			<tr>
+   				<td  class="DataTD" nowrap>{holiday_title}</td>
+   				<td class="DataTD" nowrap>{holiday_date}</td>
+   				<td class="DataTD" nowrap><a href="edit_holiday_template.php?holiday_id={holiday_id}">Edit</a></td>
+   				</tr>
+   			<!-- END holiday_rows -->
+   			<tr>
+   				<td>
+   					<br><br><a href="edit_holiday_template.php?add=1">Add new holiday</a>
+   				</td>
+   			</tr>
+   			
+</table>
+<form>
+
+
+</form>
+
+
+
+</body>
+</html>

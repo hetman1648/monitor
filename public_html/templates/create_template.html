@@ -1,0 +1,87 @@
+<html>
+
+<head>
+   <title>Control</title>
+   <link rel="stylesheet" href="site.css" type="text/css"/>
+   <script language="JavaScript" src="./scripts/calendar.js"></script>
+   
+<script Language=JavaScript>
+<!--
+	var nDay = new Array();
+	var i = 0;
+
+	function verify(isField){
+
+		splitDate = isField.value.split("-");
+		refDate = new Date(splitDate[0]+"/"+splitDate[1]+"/"+splitDate[2]);
+		nDay[i++] = refDate.getDay();
+		return refDate; 
+	}	
+
+	function countDays(isForm){
+
+		isValid = true;
+		startDate = verify(isForm.start_date);
+		if (isValid){endDate = verify(isForm.end_date)} else {endDate = false}
+		if (startDate && endDate)
+			{
+			 daysApart = Math.round(((endDate-startDate)/86400000));
+			 if (nDay[0] == 0 || nDay[0] == 6)
+				{isValid = false; startDate=false}
+			 if (daysApart <= 0){isValid = false;endDate=false}
+			 if (isValid)
+				{
+			 	 workDays = daysApart-(parseInt(daysApart/7)*2);
+				 if (daysApart < 7 && nDay[1] != 0 && nDay[0]-nDay[1] >= 1){workDays = workDays-2}
+				 if (daysApart < 7 && nDay[1] == 0){workDays--}
+				 isForm.total_days.value = workDays + 1;
+				 i = 0;
+				}
+			}
+	}
+//-->
+</script>
+</head>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<form name="frmTemplate" action="create_template.php" method="POST">
+<br>
+<table align=center width=100%>
+<tr>
+   <td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">{header_template}</font></td>
+</tr>
+<!-- BEGIN template -->
+<tr>
+   <td class="FieldCaptionTD"><b>Template Title:</b></td>
+   <td class="DataTD"><input type="text" name="template_title" value="{template_title}" size=103></td>
+</tr>
+
+<tr>
+   <td class="FieldCaptionTD"><b>Template Description:</b></td>
+   <td class="DataTD"><textarea rows=30 cols=100 name="template_description">{template_description}</textarea></td>
+</tr>
+<tr>
+	<td align=center colspan=2>
+	<input name="template_id" value="{template_id}" type="hidden">
+	
+	<!-- BEGIN edit_button -->
+	<input type="submit" name="action" value="{edit_add_button}">
+	<!-- END edit_button -->
+	<!-- BEGIN delete_button -->
+	<input type="submit" name="action" value="Delete">
+	<!-- END delete_button -->
+	
+	<input type="submit" name="action" value="Cancel">
+	</td>
+</tr>
+</table>
+</form>
+<!-- END template -->
+<!-- BEGIN template_error -->
+<center><font color=red>There is no template with such id.</font></center>
+<!-- END template_error -->
+</body>
+</html>

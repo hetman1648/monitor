@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY"  >
+{ITEMPLATE=header.html}
+<table border="0" cellspacing="30" style="margin-top:-30px;">
+<tr>
+<td valign="top"><!-- first cell -->
+    <table class="FormTABLE" width="300">
+    <tr><td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Users</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD"><font class="ColumnFONT">User Name</font></td>
+      <td class="ColumnTD" nowrap><font class="ColumnFONT">Privilege Group</font></td>
+    </tr>
+
+    <!-- BEGIN users_list -->
+    <tr>
+      <td class="DataTD" nowrap>
+        <a href="user_profile.php?user_id={user_id}"><font class="DataFONT">{user_name}</font></a>&nbsp;
+      </td>
+      <td nowrap>{privilege_desc}</td>
+   <!-- END users_list -->
+   </table>
+   <a href="users.php?is_deleted=1">Show deleted users</a>
+   <br>
+   <a href="user_profile.php"><b>Add New User</b></a>
+</td>
+<!-- second cell -->
+<td valign="top">
+    <table class="FormTABLE" width="200">
+    <tr><td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Projects</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD"><font class="ColumnFONT">Project</font></td>
+      <td class="ColumnTD"><font class="ColumnFONT">People</font></td>
+      <td class="ColumnTD"><font class="ColumnFONT">Features</font></td>
+    </tr>
+
+    <!-- BEGIN projects -->
+    <tr>
+      <td class="DataTD" nowrap>
+        <a href="edit_project.php?project_id={project_id}&return_page=users.php"><font class="{font}" style="margin-left:{left_margin}px; color: {color};">{project_title}</font></a>&nbsp;
+      </td>
+      <td align="center">{number_assigned}</td>
+      <td align="center"><!--BEGIN features--><a href="edit_project_features.php?project_id={project_id}&return_page=users.php">{features_assigned}<!--END features--></a>
+     </td>
+   <!-- END projects -->
+   </table>
+   <!-- BEGIN updatetimeproject -->
+   <a href="users.php?action=recalculation">ReCalculation Spent Hours for Project</a><br>
+   <!-- END updatetimeproject -->
+   <a href="edit_project.php"><b>Add New Project</b></a>
+
+</td>
+<!-- third cell -->
+<td valign="top">
+    <table class="FormTABLE" width="300">
+    <tr><td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">Privilege Groups</font></a></td></tr>
+    <tr>
+      <td class="ColumnTD"><font class="ColumnFONT">Privilege</font></td>
+<!--      <td class="ColumnTD"><font class="ColumnFONT">User Profile</font></td>
+      <td class="ColumnTD"><font class="ColumnFONT">View Project Tasks</font></td>
+      <td class="ColumnTD"><font class="ColumnFONT">View All Tasks</font></td>
+-->    </tr>
+
+    <!-- BEGIN privileges -->
+    <tr>
+      <td class="DataTD" nowrap>
+        <a href="privilege.php?pid={privilege_id}"><font class="DataFONT">{privilege_desc}</font></a>&nbsp;
+      </td>
+   <!-- END privileges -->
+   </table>
+   <a href="privilege.php"><b>Add New Privilege Group</b></a>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

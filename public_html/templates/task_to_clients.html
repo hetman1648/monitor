@@ -1,0 +1,213 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<SCRIPT language="JavaScript" src="templates/tasks.js"></SCRIPT>
+<script type="text/javascript" src="scripts/prototype.js"></script>
+<!-- DOMAINS function -->
+<script>
+  			var task_domains_timeout;
+  			var task_domains_loading_domain = false;
+  			function taskDomainPressed(TaskId) {
+  				clearTimeout(task_domain_timeout);
+  				var task_domain_timeout = setTimeout("taskDomainLoad("+TaskId+")", 1000);
+  			}
+  			
+  			function taskDomainLoad(TaskId) {
+  				var domain = $("task_domain_"+TaskId).value;
+  				if (domain.length && domain !=task_domains_loading_domain) {
+  					task_domains_loading_domain = domain;
+  					$("task_domains_"+TaskId).show();
+  					$("task_domains_"+TaskId).update("(fetching domains list ...)");
+  					clearTimeout(task_domains_timeout);
+  					domainParameter = document.getElementById("task_domain_"+TaskId);
+					new Ajax.Request('ajax_responder_clients.php?action=get_domains_list',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'domain': domainParameter.value,
+				    		'task_id': TaskId
+				    	},
+						onSuccess: function(transport){
+							var response = transport.responseText || "no response text";
+							$("task_domains_"+TaskId).update(response);
+							var task_domains_timeout = setTimeout("taskDomainsHide("+TaskId+")", 25000);
+						},
+						onFailure: function(){
+							$("task_domains_"+TaskId).update("Something went wrong...");
+							var task_domains_timeout = setTimeout("taskDomainsHide("+TaskId+")", 5000);
+						}
+					});
+  				}
+  			}
+  			function taskDomainsHide(TaskId) {
+  				$("task_domains_"+TaskId).hide();
+  			}
+  			function selectDomain(domain_id, domain_url,TaskId) {
+  				$("task_domain_"+TaskId).value = domain_url;
+  				taskDomainsHide(TaskId);
+  				new Ajax.Request('ajax_responder_clients.php?action=domain_selected',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'domain_id': domain_id,
+				    		'domain_url': domain_url,
+				    		'task_id': TaskId
+				    	},
+						onSuccess: function(transport){
+							var response = transport.responseText;
+							if (response) {
+								responseArray = response.split('||');
+								$("task_client_"+TaskId).value = responseArray[1];
+								$("task_client_"+TaskId).disabled = true;
+								$("client_id_"+TaskId).value = responseArray[0];
+							}
+						},
+						onFailure: function(){
+						}
+					});
+  			}
+  		
+</script>
+<!-- CLIENTS function-->  		
+<script>
+  			var task_client_timeout;
+  			var task_client_loading = false;
+  			function taskClientPressed(TaskId) {
+  				clearTimeout(task_client_timeout);
+  				var task_client_timeout = setTimeout("taskClientLoad("+TaskId+")", 1000);
+  			}
+  			function taskClientLoad(TaskId) {
+  				var client = $("task_client_"+TaskId).value;
+  				if (client.length && client !=task_client_loading) {
+  					task_client_loading = client;
+  					$("task_clients_"+TaskId).show();
+  					$("task_clients_"+TaskId).update("(fetching clients list ...)");
+  					clearTimeout(task_client_timeout);
+  					clientParameter = document.getElementById("task_client_"+TaskId);
+					new Ajax.Request('ajax_responder_clients.php?action=get_clients_list',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'client': clientParameter.value,
+				    		'task_id': TaskId
+				    	},
+						onSuccess: function(transport){
+							var response = transport.responseText || "no response text";
+							$("task_clients_"+TaskId).update(response);
+							var task_client_timeout = setTimeout("taskClientHide("+TaskId+")", 25000);
+						},
+						onFailure: function(){
+							$("task_clients_"+TaskId).update("Something went wrong...");
+							var task_client_timeout = setTimeout("taskClientHide("+TaskId+")", 5000);
+						}
+					});
+  				}
+  			}
+  			function taskClientHide(TaskId) {
+  				$("task_clients_"+TaskId).hide();
+  			}
+  			function selectClient(client_id, client_name,TaskId) {
+  				$("task_client_"+TaskId).value = client_name;
+  				$("client_id_"+TaskId).value = client_id;
+  				taskClientHide(TaskId);
+  				new Ajax.Request('ajax_responder_clients.php?action=client_selected',
+					{
+						method:     'get',
+				    	parameters:
+				    	{
+				    		'client_id': client_id,
+				    		'task_id': TaskId
+				    	},
+						onSuccess: function(transport){
+							var response = transport.responseText;
+							responseArray = response.split('||');
+							$("task_domain_"+TaskId).value = responseArray[0];
+							$("task_domain_"+TaskId).disabled = true;
+							$("domain_id_"+TaskId).value = responseArray[1];
+						},
+						onFailure: function(){
+						}
+					});
+  			}
+  			
+  			function clearFields(TaskId)
+  			{
+  				$("client_id_"+TaskId).value = "";
+  				$("task_client_"+TaskId).value = "";
+  				$("task_client_"+TaskId).disabled = false;
+  				
+  				$("domain_id_"+TaskId).value = "";
+  				$("task_domain_"+TaskId).value = "";
+  				$("task_domain_"+TaskId).disabled = false;
+  			}
+  			
+  			function showProject()
+  			{
+  				showProjectId = $("show_projects").value;
+  				window.location = "task_to_clients.php?show_project=" + showProjectId;
+  			}
+  		</script>
+</head>
+
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+<div align="center">
+<div style="margin: 20px;">Show only:
+<select name="show_projects" id="show_projects" onchange="showProject();">
+	<option value="0">Select Project</option>
+	{projects}
+</select>
+</div>
+<table class="FormTABLE" align="center">    
+    <tr align="center">
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twith&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=project"><font class="ColumnFONT">Project</font></a></td>
+		<td class="ColumnTD" nowrap><a href="monthly_report.php?tab=twith&year_selected={year_selected_value}&month_selected={month_selected_value}&sort=task"><font class="ColumnFONT">Task Title</font></a></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Client</font></td>
+		<td class="ColumnTD" nowrap><font class="ColumnFONT">Domain</font></td>
+		<td width="7%"></td>
+	</tr>
+	<form method="POST" action="task_to_clients.php" name="Form">
+	<input type="hidden" name="show_tasks" value="{show_tasks}">
+	<input type="hidden" name="show_project" value="{show_project}">
+	<input type="hidden" name="operation" value="update">
+	<!-- BEGIN tasks_records -->
+    <tr align="center">
+		<td nowrap align="left">{project_title}</td>
+		<td nowrap align="left"><a href="edit_task.php?task_id={task_id}">{task_title}</a></td>
+		<!-- BEGIN task_client_block -->
+		<td class="DataTD">
+			<input type="hidden" name="client_id_{task_id}" id="client_id_{task_id}" value="{client_id}">
+			<input type="text" name="task_client_{task_id}" id="task_client_{task_id}" value="{task_client}" maxlength="255" style="width:150px"
+	     		onkeypress="taskClientPressed({task_id});">
+			<div id="task_clients_{task_id}"></div>
+	  	</td>
+  		<!-- END task_client_block -->
+  		<!-- BEGIN task_domain_block -->
+		<td class="DataTD">
+			<input type="hidden" name="domain_id_{task_id}" id="domain_id_{task_id}" value="{domain_id}">
+			<input type="text" name="task_domain_{task_id}" id="task_domain_{task_id}" value="{task_domain}" maxlength="255" style="width:150px"
+	     		onkeypress="taskDomainPressed({task_id});">
+			<div id="task_domains_{task_id}" align="left"></div>
+	  	</td>
+  		<!-- END task_domain_block -->
+  		<td align="center"><a href="#" onclick="clearFields({task_id});">clear</a></td>
+	</tr>
+	<!-- END tasks_records -->
+	<tr><td style="padding-top: 20px; font-weight:bold;" colspan="5" align="right">
+		<input type="submit" value="Update tasks">
+		<!--a href="task_to_clients.php?operation=update&show_project="{show_project}">Update tasks</a--></td></tr>
+	</form>
+	<!-- BEGIN tasks_no_records -->
+    <tr align="center" >
+		<td colspan="6" nowrap align="center">No Records</td>
+	</tr>
+	<!-- END tasks_no_records -->
+	
+</table>
+</div>
+</body>
+</html>

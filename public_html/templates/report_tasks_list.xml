@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<tasks>
+<reportTasksHTML><![CDATA[
+{ITEMPLATE=block_report_people_tasks.html}
+]]></reportTasksHTML>
+<managerNoteHTML><![CDATA[
+{ITEMPLATE=index_page_manager_notes.html}
+]]></managerNoteHTML>
+</tasks>

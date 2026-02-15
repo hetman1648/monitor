@@ -1,0 +1,72 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+{ITEMPLATE=header.html}
+
+  <table><tr><td valign="top">
+    <!-- BEGIN FormForm     -->
+    
+  <table class="FormTABLE">
+  
+  <form method="POST" action="{FileName}" name="Form">
+  
+  <tr>
+    <td class="FieldCaptionTD"><font class="FieldCaptionFONT"><b>Project title:</b></font>
+    <font class="DataFONT">{project_title}&nbsp;</font>
+    </td>
+  <tr>
+      <td class="DataTD">
+        <font class="FieldCaptionFONT"><b>Description</b></font><br>
+        <font class="DataFONT">{project_desc}</font>
+      </td>
+  </tr>
+  
+  <tr><td class="FieldCaptionTD">
+       <font class="FieldCaptionFONT"><b>Status:</b></font>
+       <font class="DataFONT">{project_status_id}&nbsp;</font>
+      </td>
+   </tr>
+  
+  <tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT"><b>Person:</b></font>
+        <font class="DataFONT">{responsible_user_id}&nbsp;</font>
+      </td></tr>
+  
+  <tr><td class="FieldCaptionTD"><font class="FieldCaptionFONT"><b>Creation date:</b></font>
+        <font class="DataFONT">{creation_date}&nbsp;</font>
+      </td></tr>
+  
+  <tr><td colspan="2" align="right">
+
+  <!-- BEGIN FormEdit     -->
+  <input type="hidden" value="" name="FormAction"/>
+  
+  <!-- END FormEdit     -->
+  
+  <!-- BEGIN FormCancel     -->
+  <input type="submit" value="Return" onclick="javascript:history.go(-1)"/>
+  <!-- END FormCancel     -->
+  
+  <input type="hidden" name="FormName" value="Form"/>
+  
+  <input type="hidden" value="cancel" name="FormAction"/>
+  
+  </td>
+
+  
+  <input type="hidden" name="PK_project_id" value="{PK_project_id}"/>
+  
+  <input type="hidden" name="project_id" value="{project_id}"/>
+  
+  </form>
+  </tr>
+  </table>
+
+    <!-- END FormForm     -->
+    </td>
+    </tr></table>
+    
+</body>
+</html>

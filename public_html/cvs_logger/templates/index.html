@@ -1,0 +1,178 @@
+<html>
+	<head><title>CVS Logger</title></head>
+	<body>
+	<form>
+		<table>
+			<tr>
+				<td>Author:</td>
+				<td>
+					<select name="s_author" class="search">
+						<!-- BEGIN s_author -->
+							<option {s_author_selected} value="{s_author_value}">{s_author_description}
+						<!-- END s_author -->
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Module:</td>
+				<td>
+					<select name="s_module" class="search">
+						<!-- BEGIN s_module -->
+							<option {s_module_selected} value="{s_module_value}">{s_module_description}
+						<!-- END s_module -->
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Period:</td>
+				<td>
+					<select name="s_period" class="search">
+						<!-- BEGIN s_period -->
+							<option {s_period_selected} value="{s_period_value}">{s_period_description}
+						<!-- END s_period -->
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="center">
+					<input type="submit" value="Search">
+				</td>
+			</tr>
+		</table>
+	</form>
+	
+	<!--begin commited_modules_by_authors-->
+		<table>
+			<tr>
+				<td>
+					Module name
+				</td>
+				<td>
+					Last Checkout
+				</td>
+				<td>
+					Last Update
+				</td>
+				<td>
+					Last Addition
+				</td>
+				<td>
+					Last Commit
+				</td>
+				<td>
+					Last Removal
+				</td>
+			</tr>
+			<!--begin author_module_block-->
+			<tr>
+				<th colspan="6">
+					{author}
+				</th>
+			</tr>
+			<!--begin author_module_line-->
+			<tr>
+				<td>
+					<a href="?s_author={author}&s_module={module}">
+						{module}
+					</a>
+				</td>
+				<td>
+					{last_checkout}
+				</td>
+				<td>
+					{last_update}
+				</td>
+				<td>
+					{last_addition}
+				</td>
+				<td>
+					{last_commit}
+				</td>
+				<td>
+					{last_removal}
+				</td>
+			</tr>
+			<!--end author_module_line-->
+			<!--end author_module_block-->
+		</table>
+	<!--end commited_modules_by_authors-->
+	
+	<!--begin details-->
+		<table>
+			<tr>
+				<td>
+					&nbsp;
+				</td>
+				<td>
+					Checkout
+				</td>
+				<td>
+					Update
+				</td>
+				<td>
+					Addition
+				</td>
+				<td>
+					Commit
+				</td>
+				<td>
+					Removal
+				</td>
+			</tr>
+			<!--begin details_summary_line-->
+			<tr>
+				<td>
+					{title}
+				</td>
+				<td>
+					{lines_checkout}
+				</td>
+				<td>
+					{lines_update}
+				</td>
+				<td>
+					{lines_addition}
+				</td>
+				<td>
+					{lines_commit}
+				</td>
+				<td>
+					{lines_removal}
+				</td>
+			</tr>
+			<!--end details_summary_line-->		
+		</table>
+		<table>
+			<!--begin details_block-->
+			<tr>
+				<th colspan="5">
+					{title}
+				</th>
+			</tr>
+			<!--begin details_line-->
+			<tr>
+				<td>
+					{date}
+				</td>
+				<td>
+					{status}
+				</td>
+				<td>
+					{filepath}
+				</td>
+				<td>
+					{revision}
+				</td>
+				<td>
+					{filename}
+				</td>
+			</tr>
+			<!--end details_line-->
+			<!--end details_block-->
+		
+		</table>	
+	<!--end details-->
+	
+	
+	</body>
+</html>

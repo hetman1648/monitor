@@ -1,0 +1,249 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<style>
+	.open { cursor: hand; width: 260px; cursor:pointer;border: solid 1px black; border-right: none; border-bottom: none; text-align: center; font-weight: bold;}
+	.close { cursor: hand; width: 260px; cursor:pointer; border: solid 1px black; border-right: none; text-align: center; background: #cfd6d4; }
+	.cl { cursor: hand; width: 1px; cursor:pointer; border: solid 1px black; text-align: center; border-right: none; text-align: center; background: #cfd6d4; }
+	.hyper {color:black; text-decoration: none;}
+	td.prev_month {padding: 5px; text-align: center; color: #C0C0C0;}
+	td.now_month {padding: 5px; text-align: center;}
+	td.next_month {padding: 5px; text-align: center; color: #C0C0C0;}
+	td.now {padding: 5px; text-align: center; color: #FF1100; font-weight: bold;}
+	td.days {padding: 5px; text-align: center; font-weight: bold;}
+</style>
+<script language="JavaScript" src="./scripts/calendar_php.js"></script>
+<script type="text/javascript" src="scripts/prototype.js"></script>
+<script type="text/javascript" src="scripts/create_task.js"></script>
+<script>
+function set_attached(files, current) {
+	$("divAttached").update(files);
+	$("task_desc").value = $("task_desc").value + "[" + current + "]";	
+}
+</script>
+</head>
+
+<body class="PageBODY">
+
+	{ITEMPLATE=header.html}
+
+	<a name="task"></a>
+	<table class="FormTABLE" >
+		<tr>
+			<td class="FormHeaderTD" colspan="3">
+				<table width="100%" cellspacing="0" cellpadding="0">
+					<tr>
+						<td align="center">
+							<font class="FormHeaderFONT">Task</font>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+
+		<tr>
+			<td class="DataTD" colspan="2">
+				<font class="DataFONT">{errors}<font>
+			</td>
+			<td class="DataTD" align="right">
+				<b><a href="create_task_old.php?task_id={task_id}&rp={rp}">Old Create Task Form</a></b>
+			</td>
+		</tr>
+		
+		<form method="POST" name="task_form" id="task_form">
+			<input type="hidden" name="action"/>
+			<input type="hidden" name="rp"        id="rp"        value="{rp}"/>
+			<input type="hidden" name="task_id"   id="task_id"   value="{task_id}"/>
+			<input type="hidden" name="client_id" id="client_id" value="{client_id}"/>
+			<input type="hidden" name="hash"      id="hash"      value="{hash}"/>
+			
+			<input type="hidden" name="hidden_project_id" id="hidden_project_id"/>
+			<input type="hidden" name="hidden_sub_project_id" id="hidden_sub_project_id"/>
+			<input type="hidden" name="hidden_responsible_user_id" id="hidden_responsible_user_id"/>
+			<tr>
+				<td class="FieldCaptionTD">
+					<font class="FieldCaptionFONT">Title *</font>
+				</td>
+				<td class="DataTD" colspan="2">
+					<div id="block_calendar_create" style="padding: 10px; position: absolute; display: none; background-color: #FFFFFF;"></div>
+					<input type="text" name="task_title" id="task_title" maxlength="255" value="{task_title}" size="100" style="width:100%;">
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD">
+					<font class="FieldCaptionFONT">Project *</font>
+				</td>
+				<td class="DataTD">
+					<div id="project_block">
+						<!--BEGIN project_block-->
+						<select name="project_id" id="project_id" style="width:150px" onchange="onChangeProject();">
+							<option value="0">-choose a project-</option>
+							<!--BEGIN project_id-->
+							<option value="{project_id_value}" {project_id_selected}>{project_id_desc}</option>
+							<!--END project_id-->
+						</select>
+						<!--END project_block-->
+					</div>
+				</td>
+				<td rowspan="13" class="DataTD" valign="top" align="right">
+					<textarea name="task_desc" id="task_desc" cols="95" rows="19">{task_desc}</textarea>
+					<br>				
+					<input type="submit" value="Add Task" onclick="document.task_form.action.value = 'insert';"/>
+					<input type="submit" value="Cancel" onclick="document.task_form.action.value = 'cancel';"/>
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD" height="30px">
+					Sub-Project *
+					<!-- BEGIN edit_project_link -->						
+					<a href="#" onClick="editProject(); return false;">[edit]</a>
+  					<!-- END edit_project_link -->
+				</td>
+				<td class="DataTD">
+					<div id="sub_project_block">
+						<!--BEGIN sub_project_block-->
+						<select name="sub_project_id" id="sub_project_id" style="width:150px" onchange="onChangeSubProject();">
+							<option value="0">-choose a sub-project-</option>							
+							<!--BEGIN sub_project_id-->
+							<option value="{sub_project_id_value}" {sub_project_id_selected}>{sub_project_id_desc}</option>
+							<!--END sub_project_id-->
+						</select>
+						<!--END sub_project_block-->
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD" colspan="2">
+					Filter: 
+					<input type="checkbox" value="1" name="project_filter_my" id="project_filter_my" {project_filter_my_checked} onchange="onChangeFilters()"> My Projects&nbsp;
+					<input type="checkbox" value="1" name="project_filter_in_progress" id="project_filter_in_progress" {project_filter_in_progress_checked} onchange="onChangeFilters()"> In Progress
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD" valign="top">
+					<font class="FieldCaptionFONT">Domain</font>
+				</td>
+				<td class="DataTD">
+		        	<input type="text" name="task_domain" id="task_domain" value="{task_domain}" maxlength="255" style="width:150px" onkeypress="taskDomainPressed()">
+		        	<div id="task_domains" style="width:150px"></div>
+		  		</td>
+	  		</tr>
+	  		<tr>
+				<td class="FieldCaptionTD" valign="top">
+					Client <a href="#" onClick="loadClients(); return false;">[select]</a> <a href="#" onClick="setClient(0, 'Nobody'); return false;">[reset]</a>
+				</td>
+				<td class="DataTD" valign="top">
+		        	<div id="client_desc">
+		        		{client_desc}
+		        	</div>
+		  		</td>
+	  		</tr>
+			<tr>
+				<td class="FieldCaptionTD" nowrap><!--onMouseMove="show_calendar_create_task(1);" -->
+					<div id="var_dump" style="display: none;"></div>
+					<font class="FieldCaptionFONT">Date to complete</font>
+					<a href="#" onClick="show_calendar_create_task();">
+						<img src="./images/calendar.gif" border="0">
+						<font size="1">Calendar</font>
+					</a>
+				</td>
+				<td class="DataTD" nowrap>
+					<input type="text" name="day" maxlength="2" value="{DAY}" size="1">
+					<select name="month" style="width:78px">{MONTH}</select>
+					<input name="year" type="text" size="1" maxlength="2" value="{YEAR}">
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD">
+					Status
+				</td>
+				<td class="DataTD">
+					<select name="task_status_id"  style="width:150px">
+						<!--BEGIN task_status_id-->
+						<option value="{task_status_id_value}" {task_status_id_selected}>{task_status_id_desc}</option>
+						<!--END task_status_id-->
+					</select>
+  				</td>
+  			</tr>
+  			<tr>
+				<td class="FieldCaptionTD">
+					<font class="FieldCaptionFONT">Responsible person *</font>
+				</td>
+				<td class="DataTD">
+					<div id="responsible_user_block">
+						<!--BEGIN responsible_user_block-->
+						<select name="responsible_user_id" id="responsible_user_id" style="width:150px" onchange="onChangeUser();">
+							<option value="0">-choose a user-</option>
+							<!--BEGIN responsible_user_id-->
+							<option value="{responsible_user_id_value}" {responsible_user_id_selected}>{responsible_user_id_desc}</option>
+							<!--END responsible_user_id-->
+						</select>
+						<!--END responsible_user_block-->
+					</div>
+  				</td>
+  			</tr>
+  			<tr>
+  				<td class="FieldCaptionTD">
+  					Priority <a href="#" onclick="loadPriorities(); return false;">[toggle tasks]</a>
+  				</td>
+  				<td class="DataTD">
+  					<input type="text" name="priority_id" maxlength="2" value="{priority_id}" size="2">
+  				</td>
+  			</tr>
+  			<tr>
+				<td colspan="2">
+  					<div id="responsible_user_priorities" style="position:absolute;background-color:#ffffff; border:1px solid #efefef; display:none;">
+  					</div>
+  				</td>
+  			</tr>
+			<tr>
+				<td class="FieldCaptionTD">
+					<font class="FieldCaptionFONT">Type</font>
+				</td><td class="DataTD">
+					<select name="task_type_id" id="task_type_id"  style="width:150px" onchange="changeType(this.value);">
+						<!--BEGIN task_type_id-->
+						<option value="{task_type_id_value}" {task_type_id_selected}>{task_type_id_desc}</option>
+						<!--END task_type_id-->
+					</select>
+				</td>
+			</tr>
+
+			<tr>
+				<td class="FieldCaptionTD">
+					<font class="FieldCaptionFONT">Estimated Time <acronym title="acceptable time formats : 19; 19h; 19 hours; 3d 3h; 3 days 3 hours; 3,375d" lang="en">(?)</acronym></font>
+				</td>
+				<td class="DataTD">
+					<input type="text" name="task_estimated_time" id="task_estimated_time"  value="{estimated_hours}" maxlength="14" style="width:150px" onkeypress="taskEstimatedTimePressed()">
+				</td>
+			</tr>  
+			<tr>
+				<td class="FieldCaptionTD">
+					<font class="FieldCaptionFONT">Task cost, $</font>
+				</td>
+				<td class="DataTD">
+					<input type="text" name="task_cost" value="{task_cost}" maxlength="14" style="width:150px">
+				</td>
+			</tr>
+			<tr>
+				<td class="FieldCaptionTD">
+					<font class="FieldCaptionFONT">Hourly charge, $</font>
+				</td>
+				<td class="DataTD">
+					<input type="checkbox" name="hourly_charge" value="15" {hourly_charge_checked}>
+				</td>
+			</tr>			
+  			<tr>
+  				<td align="left">
+					<input type="button" value="Attach files" onClick="openUpload()">
+				</td>
+				<td colspan="2" align="right">
+				</td>
+			</tr>
+		</table>
+	</form>
+	
+	<div id="divAttached"></div>
+
+</body>
+</html>

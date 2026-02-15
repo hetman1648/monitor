@@ -1,0 +1,167 @@
+<html>
+<head>
+<title>Lunch ordering</title>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<link rel="stylesheet" href="site.css" type="text/css"/>
+<script language="javascript" src="./scripts/calendar.js"></script>
+<script language="javascript">
+	var fcp = {first_course_price};
+	var scp = {second_course_price};
+	var gp = {garnish_price};
+	var sp = {salad_price};
+	var dp = {dessert_price};
+</script>
+</head>
+<body class="PageBODY">
+	<table align="center"  width="99%" height="99%" valign="center"><tr><td align="center">
+
+	<a href="./index.php">Monitor</a>&nbsp; &nbsp;
+	<a href="./lunches_edit_menu.php?menu_date={date_title}">Edit Menu</a>&nbsp; &nbsp;
+	<a href="./lunches_edit_order.php?menu_date={date_title}"><b>Edit Order</b></a>&nbsp; &nbsp;
+	<a href="./lunches_users.php">Permissions</a>&nbsp; &nbsp;
+	<a href="./lunches_statistics.php">Statistics</a>&nbsp; &nbsp;
+	<a href="./lunches_print.php?menu_date={date_title}" target="_blank">Print</a><br><br>
+	<br>
+	<center>
+	<font color=blue><b>
+	Остаточні ціни приблизно на 30-40% нижчі за наведені - остаточний підрахунок буде в кінці місяця <br>(Sayu Ltd сплачує 2000грн вартості продуктів на місяць)
+	{blocked_message}
+	</b></font>
+	</center>
+	<br>
+	<form name="menu_form" method="POST">
+	<!-- BEGIN table_day_orders -->
+	<table class="FormTABLE" cellpadding=1 align="center">
+		<tr>
+			<td class="FormHeaderTD" colspan="{num_courses_plus_one}"><font class="FormHeaderFONT">Orders</font>&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="text" size="10" name="menu_date" maxlength="10" value="{date_title}" readonly>
+			<a href="#" onClick="setDateField(document.menu_form.menu_date); top.newWin = window.open('./scripts/calendar.html','cal', 'dependent=yes,width=210,height=230,screenX=200,screenY=300,titlebar=yes')">
+				<img src="./images/calendar.gif" border=0></a>
+			</td>
+			<td class="FieldCaptionTD" align="right">
+			<input type="button" name="butt" value="View" style="width:60px" onclick="if (document.menu_form.elements.menu_date.value.length==10) document.location='lunches_edit_order.php?menu_date='+document.menu_form.elements.menu_date.value;">
+			</td>
+
+		</tr>
+		<tr>
+			<td class="FieldCaptionTD" align="center" rowspan=2>Person</td>
+			<td class="FieldCaptionTD" align="center" colspan={num_courses}>Courses Qty</td>
+			<td class="FieldCaptionTD" align="center" rowspan=2>Total Cost</td>
+		</tr>
+		<!-- BEGIN couses_header -->
+		<tr>
+			<!-- BEGIN col_first --><td class="FieldCaptionTD">{first_course_title}</td><!-- END col_first -->
+			<!-- BEGIN col_second --><td class="FieldCaptionTD">{second_course_title}</td><!-- END col_second -->
+			<!-- BEGIN col_garnish --><td class="FieldCaptionTD">{garnish_title}</td><!-- END col_garnish -->
+			<!-- BEGIN col_salad --><td class="FieldCaptionTD">{salad_title}</td><!-- END col_salad -->
+			<!-- BEGIN col_dessert --><td class="FieldCaptionTD">{dessert_title}</td><!-- END col_dessert -->
+		</tr>
+		<!-- END couses_header -->
+		<!-- BEGIN users_orders -->
+		<tr>
+			<td class="{classtd}">{order_user}</td>
+			<!-- BEGIN u_col_first --><td class="{classtd}" align="center">{order_qty_first}</td><!-- END u_col_first -->
+			<!-- BEGIN u_col_second --><td class="{classtd}" align="center">{order_qty_second}</td><!-- END u_col_second -->
+			<!-- BEGIN u_col_garnish --><td class="{classtd}" align="center">{order_qty_garnish}</td><!-- END u_col_garnish -->
+			<!-- BEGIN u_col_salad --><td class="{classtd}" align="center">{order_qty_salad}</td><!-- END u_col_salad -->
+			<!-- BEGIN u_col_dessert --><td class="{classtd}" align="center">{order_qty_dessert}</td><!-- END u_col_dessert -->
+			<td class="{classtd}" align="right">{order_total_cost}</td>
+		</tr>
+		<!-- END users_orders -->
+		<tr>
+			<td class="FieldCaptionTD" align="center"><b>{ttl_order_users_count}</b></td>
+			<!-- BEGIN t_col_first --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_first}</b></td><!-- END t_col_first -->
+			<!-- BEGIN t_col_second --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_second}</b></td><!-- END t_col_second -->
+			<!-- BEGIN t_col_garnish --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_garnish}</b></td><!-- END t_col_garnish -->
+			<!-- BEGIN t_col_salad --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_salad}</b></td><!-- END t_col_salad -->
+			<!-- BEGIN t_col_dessert --><td class="FieldCaptionTD" align="center"><b>{ttl_order_qty_dessert}</b></td><!-- END t_col_dessert -->
+			<td class="FieldCaptionTD" align="right"><b>{ttl_order_cost}</b></td>
+		</tr>
+	</table>
+
+	<br><br>
+	<!-- END table_day_orders -->
+
+	<!-- BEGIN table_user_order -->
+	<table class="FormTABLE" cellpadding=1 align="center">
+		<tr>
+			<td class="FormHeaderTD" colspan="3"><font class="FormHeaderFONT">{user_name}</font></td>
+		</tr>
+		<tr>
+
+			<td class="FieldCaptionTD">Title</td>
+			<td class="FieldCaptionTD">Qty</td>
+			<td class="FieldCaptionTD">Price</td>
+		</tr>
+		<!-- BEGIN tr_first -->
+		<tr>
+
+			<td class="DataTD">{first_course_title}</td>
+			<td class="DataTD"><select name="first_course_qty" {disabled} onchange="document.menu_form.elements.first_course_price.value=(fcp*this.value).toFixed(2); updTotal();"><option value="0"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+			<td class="DataTD"><input type="text" size="5" maxlength="5" name="first_course_price" value="{user_first_course_price}" readonly style="text-align:right"></td>
+		</tr>
+		<!-- END tr_first -->
+		<!-- BEGIN tr_second -->
+		<tr>
+
+			<td class="DataTD">{second_course_title}</td>
+			<td class="DataTD"><select name="second_course_qty" {disabled} onchange="document.menu_form.elements.second_course_price.value=(scp*this.value).toFixed(2); updTotal();"><option value="0"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+			<td class="DataTD"><input type="text" size="5" maxlength="5" name="second_course_price" value="{user_second_course_price}" readonly style="text-align:right"></td>
+		</tr>
+		<!-- END tr_second -->
+		<!-- BEGIN tr_garnish -->
+		<tr>
+
+			<td class="DataTD">{garnish_title}</td>
+			<td class="DataTD"><select name="garnish_qty" {disabled} onchange="document.menu_form.elements.garnish_price.value=(gp*this.value).toFixed(2); updTotal();"><option value="0"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+			<td class="DataTD"><input type="text" size="5" maxlength="5" name="garnish_price" value="{user_garnish_price}" readonly style="text-align:right"></td>
+		</tr>
+		<!-- END tr_garnish -->
+		<!-- BEGIN tr_salad -->
+		<tr>
+
+			<td class="DataTD">{salad_title}</td>
+			<td class="DataTD"><select name="salad_qty" {disabled} onchange="document.menu_form.elements.salad_price.value=(sp*this.value).toFixed(2); updTotal();"><option value="0"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+			<td class="DataTD"><input type="text" size="5" maxlength="5" name="salad_price" value="{user_salad_price}" readonly style="text-align:right"></td>
+		</tr>
+		<!-- END tr_salad -->
+		<!-- BEGIN tr_dessert -->
+		<tr>
+
+			<td class="DataTD">{dessert_title}</td>
+			<td class="DataTD"><select name="dessert_qty" {disabled} onchange="document.menu_form.elements.dessert_price.value=(dp*this.value).toFixed(2); updTotal();"><option value="0"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+			<td class="DataTD"><input type="text" size="5" maxlength="5" name="dessert_price" value="{user_dessert_price}" readonly style="text-align:right"></td>
+		</tr>
+		<!-- END tr_dessert -->
+		<tr>
+			<td class="FieldCaptionTD" align="left"><!-- BEGIN submit_order --><input type="submit" value="{submit_title}"><!-- END submit_order --></td>
+			<td class="FieldCaptionTD" align="right">&nbsp;</td>
+			<td class="DataTD"><input type="text" size="5" maxlength="6" name="total_price" value="" readonly style="text-align:right"></td>
+		</tr>
+		<script language="JavaScript">
+			function updTotal() {
+			e=document.menu_form.elements;
+			ev=0;
+			if (e.first_course_price)  {v = parseFloat(e.first_course_price.value);  if (v>0) ev+=v; };
+			if (e.second_course_price) {v = parseFloat(e.second_course_price.value); if (v>0) ev+=v; };
+			if (e.garnish_price) {v = parseFloat(e.garnish_price.value); if (v>0) ev+=v; };
+			if (e.salad_price) {v = parseFloat(e.salad_price.value); if (v>0) ev+=v; };
+			if (e.dessert_price) {v = parseFloat(e.dessert_price.value); if (v>0) ev+=v; };
+			e.total_price.value = ev.toFixed(2);
+			}
+
+			g=document.menu_form.elements;
+			if (g.first_course_qty) g.first_course_qty.value = {user_first_course_qty};
+			if (g.second_course_qty) g.second_course_qty.value = {user_second_course_qty};
+			if (g.garnish_qty) g.garnish_qty.value = {user_garnish_qty};
+			if (g.salad_qty) g.salad_qty.value = {user_salad_qty};
+			if (g.dessert_qty) g.dessert_qty.value = {user_dessert_qty};
+			updTotal();
+		</script>
+	</table>
+	<!-- END table_user_order -->
+	</form>
+
+	</td></tr></table>
+</body>
+</html>

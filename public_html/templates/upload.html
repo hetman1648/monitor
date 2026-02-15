@@ -1,0 +1,80 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+<body class="PageBODY">
+
+
+
+<script>
+function closeWindow()
+{
+	window.opener.set_attached("{attached_files}","{files_name}");
+	window.opener.focus();
+	window.close();
+}
+
+function del_conf(file_name)
+{
+  if (confirm("Are you sure you want to delete this attachment?"))
+  {
+ 		document.location = "upload.php?delete_file=1&action=delete&file_name="+file_name;
+ 	}
+ 	else
+ 	{
+ 		document.location = "upload.php?action=delete&file_name="+file_name;
+  }
+}
+</script>
+
+<form name="upload_file" action="upload.php" enctype="multipart/form-data" method="post">
+<table cellpadding="0" cellspacing="0" bgcolor="white">
+<tr>
+  <td width=10></td>
+  <td align="left" class="title"><h4>Upload a file:</h4></td>
+</tr>
+<tr>
+  <td width=10></td>
+<td valign="top">
+  {message}
+  <input type="hidden" name="file_id" value="{file_id}">
+  <input type="hidden" name="action" value="upload_file">
+  <input type="hidden" name="hash" value="{hash}">
+  <b>File name:</b>
+  <input type="file" name="user_file">
+	<input type="submit" value="Upload">
+  <br>
+</td>
+</tr>
+
+<tr>
+<td width=10></td>
+<td><b>Attachments:</b></td></tr>
+<tr><td></td></tr>
+<tr>
+  <td width=10></td>
+  <td>
+  <table width=100% border=0>
+    <tr>
+    <td class="FieldCaptionTD" align="center" width=60%><b>File name</b></td>
+    <td class="FieldCaptionTD" align="center" width=30%><b>Size</b></td>
+    <td class="FieldCaptionTD" align="center" width=20%>&nbsp;</td>
+    </tr>
+<!-- BEGIN attachments -->
+    <tr>
+    	<td class="FieldCaptionTD">{file_name} </td>
+    	<td class="FieldCaptionTD" align=center>{file_size} </td>
+			<td class="FieldCaptionTD"><a href="upload.php?action=delete&file_name={file_name}">Delete</a></td>
+    </tr>
+<!-- END attachments -->
+<tr><td><b>Total files: {total_files}</b>&nbsp;</td><td><b>Total: {total_size}</b></td><td>&nbsp;</td>
+</tr>
+</table></td>
+<tr><td width=10></td>
+<td align="right"><input type="button" onClick="closeWindow()" value="Confirm">
+</td></tr>
+</table>
+</form>
+</body>
+</html>

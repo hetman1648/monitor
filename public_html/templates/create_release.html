@@ -1,0 +1,60 @@
+<html>
+
+<head>
+
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+
+<body class="PageBODY">
+
+{ITEMPLATE=header.html}
+
+<!-- BEGIN formtable -->
+
+<table>
+
+<!-- BEGIN set_action -->
+<form method="POST" action="{action}" name="Form">
+<!-- END set_action -->
+
+<tr>
+<td class="FormHeaderTD" colspan="2"><font class="FormHeaderFONT">Edit Release</font></td>
+</tr>
+
+ <tr>
+ <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Release Title *</font></td>
+ <td class="DataTD"><input type="text" name="release_title" maxlength="255" value="{release_title}" size="100"></td>
+ </tr>
+
+ <tr>
+ <td class="FieldCaptionTD" nowrap><font class="FieldCaptionFONT">Date to complete</font></td>
+ <td class="DataTD" nowrap>
+ <input type="text" name="day" maxlength="10" value="{DAY}" size="1">
+ <select name="month">{MONTH}</select>
+ <input name="year" type="text" size="1" value="{YEAR}"></td>
+ </tr>
+ 
+  <tr>
+ <td class="FieldCaptionTD"><font class="FieldCaptionFONT">Release Type</font></td>
+ <td class="DataTD"><select name="type_sel">{type_opt}</select></td>
+ </tr>
+ 
+ <tr></tr>
+      
+ <tr>
+<!-- BEGIN formbut -->
+ <td><input type="submit" value="{butvalue}" name="action">
+<!-- END formbut -->
+ <input type="submit" value="Cancel" name="cancelb"></td>
+ </tr>
+ 
+ <tr><td>{checkfail}</td></tr>
+  
+</form>
+</table>
+
+<!-- END formtable -->
+
+</body>
+
+</html>

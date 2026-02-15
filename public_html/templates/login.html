@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>Control</title>
+<link rel="stylesheet" href="site.css" type="text/css"/>
+</head>
+
+<script>
+function set_login_focus()
+{
+  if (document.loginForm.Login)
+  {
+    document.loginForm.Login.focus();
+    document.loginForm.Login.select();
+  }
+}
+window.onload=set_login_focus;
+</script>
+
+<body class="PageBODY" >
+  <table width=100% height=100%><tr><td valign=center align=center>
+    <!-- BEGIN FormForm -->
+    
+    <table class="FormTABLE" >
+    <tr><td class="FormHeaderTD"  colspan="2"><font class="FormHeaderFONT" >Login</font></td></tr>
+    <!-- BEGIN FormError -->
+    <tr><td colspan="2" class="DataTD" ><font class="DataFONT" >{sFormErr}</font></td></tr>
+    <!-- END FormError -->
+    <form action="{FileName}" name="loginForm" method="POST">
+    <input type="hidden" name="ret_page" value="{ret_page}"><input type="hidden" name="querystring" value="{querystring}">
+    <input type="hidden" name="FormName" value="Form"/>
+    <!-- BEGIN UserInd -->
+    <tr><td class="DataTD" ><font class="DataFONT" >{UserID}</font>
+    <input type="hidden" name="FormAction" value="logout"/>
+    <input type="submit" value="Logout"/>
+    </td></form></tr>
+    <!-- END UserInd -->
+    <!-- BEGIN LoginAct -->
+    <tr><td class="FieldCaptionTD" ><font class="FieldCaptionFONT" >Login</font></td><td class="DataTD" ><input type="text" name="Login" maxlenght="20"/></td></tr>
+    <tr><td class="FieldCaptionTD" ><font class="FieldCaptionFONT" >Password</font></td><td class="DataTD" ><input type="password" name="Password" maxlenght="20"/></td></tr>
+    <tr>
+    	<td colspan="2"  >
+    		<input type="checkbox" name="remember_me" {remember_me}>Remember my login & password
+    	</td>
+    </tr>
+    <tr><td colspan="2">
+    <input type="hidden" name="FormAction" value="login"/>
+    <input type="submit" value="Login"/>
+    </td></form></tr>
+    <!-- END LoginAct -->
+    </table>
+
+    <!-- END FormForm -->
+    </td>
+    </tr></table>
+    
+</body>
+</html>
