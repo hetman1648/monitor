@@ -230,9 +230,9 @@ $user_name = GetSessionParam("UserName");
         #divTasks col.col-assigned { width: 136px; }
         #divTasks col.col-status   { width: 66px; }
         #divTasks col.col-pct      { width: 38px; }
-        #divTasks col.col-hrs      { width: 48px; }
+        #divTasks col.col-hrs      { width: 82px; }
         #divTasks col.col-created  { width: 78px; }
-        #divTasks col.col-closed   { width: 42px; }
+        #divTasks col.col-closed   { width: 64px; }
 
         #divTasks th {
             background: #f8f9fa;
@@ -259,6 +259,20 @@ $user_name = GetSessionParam("UserName");
         #divTasks td.td-task {
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* HRS column: prevent overflow into adjacent columns */
+        #divTasks td:nth-child(7) {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 82px;
+        }
+
+        /* CLOSED column: add left padding and center align */
+        #divTasks th:nth-child(9),
+        #divTasks td:nth-child(9) {
+            padding-left: 16px;
+            text-align: center;
         }
 
         #divTasks tbody tr {
@@ -294,6 +308,61 @@ $user_name = GetSessionParam("UserName");
             #divTasks th:nth-child(4), #divTasks td:nth-child(4),
             #divTasks th:nth-child(8), #divTasks td:nth-child(8) { display: none; }
         }
+
+        /* Dark mode */
+        html.dark-mode body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+        }
+        html.dark-mode .page-header h1 { color: #e2e8f0; }
+        html.dark-mode .page-header p { color: #94a3b8; }
+        html.dark-mode .search-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        html.dark-mode .form-group label { color: #94a3b8; }
+        html.dark-mode .form-group input[type="text"] {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+        html.dark-mode .form-group input[type="text"]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+        }
+        html.dark-mode .form-group input[type="text"]::placeholder { color: #64748b; }
+        html.dark-mode .progress-track { background: #334155; }
+        html.dark-mode .progress-text { color: #94a3b8; }
+        html.dark-mode .tt-dropdown-menu {
+            background: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+        html.dark-mode .tt-suggestion { color: #e2e8f0; }
+        html.dark-mode .tt-suggestion:hover,
+        html.dark-mode .tt-suggestion.tt-is-under-cursor {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        html.dark-mode .tt-hint { color: #64748b !important; }
+        html.dark-mode #divTasks table {
+            background: #1e293b;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        html.dark-mode #divTasks th {
+            background: #0f172a;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        html.dark-mode #divTasks td {
+            border-color: #334155;
+            color: #cbd5e1;
+        }
+        html.dark-mode #divTasks tbody tr:hover td { background: #334155; }
+        html.dark-mode #divTasks a { color: #818cf8; }
+        html.dark-mode #divTasks a:hover { color: #a5b4fc; }
     </style>
 </head>
 <body>

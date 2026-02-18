@@ -12,25 +12,12 @@ RewriteRule ^(/)?(.*) https://monitor.sayu.co.uk/$2 [R=301,L,QSA]
 # Gerda
     Allow from 217.123.103.44
 
-#chloe home
-    Allow from 95.149.45.163
-    Allow from 2.26.21.71
-    Allow from 91.110.211.133
-    Allow from 109.180.104.1
-    Allow from 95.150.190.188
-    Allow from 91.110.211.166
 
 #catherine
     Allow from 86.159.27.67
     Allow from 86.180.34.13
 
-# Olexiy
-Allow from 195.211.141.201
-    Allow from 92.249.78.0
-Allow from 176.100.17.25
 
-# Anton home
-#    Allow from 178.94.171.210
 
 # Jul home
     Allow from 109.86.36.87
@@ -47,43 +34,6 @@ Allow from 176.100.17.25
 # UMC CDMA pool
     Allow from 77.52.0.0/16
 
-# Victor Loctionov
-    Allow from 95.134.0.0/18
-    Allow from 212.90.63.61
-    Allow from 212.90.60.11
-
-# Vital's Neapol connection
-    Allow from 91.215.62.66
-    Allow from 91.215.60.21
-
-# Vital's CRELCOM connection
-    Allow from 80.245.112.0/20
-
-# Vital's IP-NET network
-    Allow from 82.193.96.0/19
-
-# Vital's PRIVAT-ONLINE connection
-    Allow from 217.117.72.154
-
-# Vital's CRIMEACOM connection
-    Allow from 195.3.244.0/23
-
-# Vital's PRIVAT-ONLINE connection
-    Allow from 87.238.159.
-
-# Vital's PEOPLE-NET connection
-    Allow from 77.109.24.0/21
-    Allow from 92.49.224.0/21
-    Allow from 109.167.53.0/24
-    Allow from 92.49.192.0/18
-    Allow from 94.248.0.0/18
-    Allow from 91.215.60.2
-    Allow from 109.167.70.206
-    Allow from 91.215.61.1
-    Allow from 109.251.200.123
-
-# Vital's SWIFT-TRACE connection
-    Allow from 195.49.200.0/21
 
 
 # For internal proxy connections
@@ -105,10 +55,6 @@ Allow from 176.100.17.25
     Allow from 193.194.107.69
     Allow from 185.242.21.213
 	Allow from  193.194.107.
-#Artem Krakiv
-Allow from 37.47.111.66
-#artem shynomontaj
-Allow from 94.45.138.18
 
 #Artem Kyivstar
 Allow from 46.211.137.221
@@ -123,11 +69,6 @@ Allow from 46.211.74.102
 Allow from 46.211.150.140
 Allow from  46.211.67.178
 
-#ARTEM bookstore
-Allow from 95.164.54.89
-
-#Artem airport
-Allow from 89.248.140.16
 
 #Artem
 Allow from 217.76.202.68
@@ -168,23 +109,6 @@ Allow from 96.22.185.22
     Allow from 109.251.118.117
     Allow from 82.193.110.209
 
-# Tony Tailand
-Allow from 183.89.161.3 
-Allow from 95.154.201.199 
-  Allow from 14.207.20.106
-    Allow from 185.43.110.49
-    Allow from 180.183.208.23
-    Allow from 14.207.20.99
-    Allow from 183.89.2.159
-    Allow from 14.207.20.54
-Allow from 183.89.164.52
-Allow from 183.89.160.125
-    Allow from 183.89.118.84
-    Allow from 183.89.114.132
-    Allow from 125.25.63.35
-    Allow from 180.180.82.9
-    Allow from 183.89.114.132
-    Allow from 125.26.124.232
 
 #TOny
     Allow from 125.27.178.142
@@ -258,32 +182,7 @@ Allow from 183.89.160.125
     Allow from 194.44.20.124
     Allow from 188.230.211.111
 
-# Roman
-    Allow from 89.252.16.109
 
-# Max
-#    Allow from 188.163.3.72
-#    Allow from 134.249.120.156
-#    Allow from 46.118.51.68
-
-# Maryna
-    Allow from 89.252.5.19
-
-# Andrew
-#    Allow from 5.248.165.142
-
-# Volodimir
-#    Allow from 93.73.202.178
-
-# Ludmila
-#    Allow from 193.201.83.9
-
-# Vera
-#    Allow from 93.73.226.100
-#    Allow from 93.73.88.184
-#    Allow from 93.75.229.243
-#    Allow from 93.73.200.116
-#    Allow from 93.72.38.255
 
 # Kate
     Allow from 89.252.18.53
@@ -295,9 +194,6 @@ Allow from 183.89.160.125
     Allow from 188.163.72.93
     Allow from 85.209.46.202
 
-# Victor
-    Allow from 89.252.10.29
-    Allow from 178.159.231.67
 
 # Egor
     Allow from 89.252.32.104
@@ -307,26 +203,6 @@ Allow from 183.89.160.125
     Allow from 46.219.215.17
     Allow from 109.251.102.130
 
-# Yura
-#    Allow from 195.128.182.0/23
-#    Allow from 78.111.176.0/20
-#    Allow from 95.158.0.0/19
-#    Allow from 78.155.56.47
-#    Allow from 37.122.168.238
-
-# Chris O'Rourke
-    Allow from 92.40.249.130
-    Allow from 82.69.9.88
-    Allow from 86.191.130.53
-
-# Chris Sutherland
-#    Allow from 80.47.223.9
-
-# Natasha Recovec
-#    Allow from 93.73.246.212
-#    Allow from 176.36.164.127
-#    Allow from 109.40.0.0/13
-#    Allow from 212.90.58.142
 
 # Iuliia
     Allow from 46.219.215.178
@@ -339,8 +215,6 @@ Allow from 183.89.160.125
 # Roman
     Allow from 82.144.204.93
 
-# Volodymyr Shalata
-#    Allow from 77.47.170.36
 
 #Sergiy Svincickiy
 #    Allow from  188.163.10.29
@@ -358,7 +232,7 @@ Allow from 183.89.160.125
     Allow from 86.8.136.149
     Allow from 146.90.181.215
 
-#Rayan
+#Ryan
     Allow from 81.97.201.11
     Allow from 31.94.15.28
     Allow from 31.94.62.45
@@ -367,8 +241,8 @@ Allow from 183.89.160.125
     Allow from 31.94.31.22
     Allow from 81.100.251.31
 
-#Yaroslav
-#    Allow from 91.195.249.87
+#simon nadin
+    Allow from 80.1.31.
 
     Satisfy any
 </Files>

@@ -1478,10 +1478,16 @@ if ($db->next_record()) {
         fetch('ajax_responder.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
             body:'action=save_task_priorities&user_id='+reportUserId+'&priorities='+encodeURIComponent(JSON.stringify(tp))
         }).then(function(r){return r.json();}).then(function(d) {
-            if (d.success) { document.getElementById('savePrioritiesNotice').style.display='none'; prioritiesChanged=false;
+            if (d.success) {
+                document.getElementById('savePrioritiesNotice').style.display='none'; prioritiesChanged=false;
                 var s=document.getElementById('prioritySetBy'); if(s&&d.set_by) s.textContent='Priorities set by: '+d.set_by;
-            } else alert('Failed: '+(d.error||'Unknown'));
-        }).catch(function(){ alert('Failed to save'); });
+                if (typeof showKanbanToast === 'function') showKanbanToast('Priorities saved successfully'); else alert('Priorities saved.');
+            } else {
+                if (typeof showKanbanToast === 'function') showKanbanToast('Failed: '+(d.error||'Unknown'), true); else alert('Failed: '+(d.error||'Unknown'));
+            }
+        }).catch(function(){
+            if (typeof showKanbanToast === 'function') showKanbanToast('Failed to save', true); else alert('Failed to save');
+        });
     }
 
     window.addEventListener('beforeunload', function(e) { if(prioritiesChanged){e.preventDefault();e.returnValue='';return '';} });

@@ -22,9 +22,43 @@ function linkify_urls($text) {
     return preg_replace($pattern, $replacement, $text);
 }
 
-// Expand [filename] refs in task description to img/link using task attachments
+// Linkify URLs in already-escaped HTML (no extra escaping)
+function linkify_urls_safe($html) {
+    $pattern = '/(https?:\/\/|ftp:\/\/)[^\s<>\[\]"\']+/i';
+    return preg_replace($pattern, '<a href="$0" target="_blank" rel="noopener noreferrer">$0</a>', $html);
+}
+
+// Simple markdown to HTML (call on already htmlspecialchars'd text): ## ### ** *
+function simple_markdown_to_html($escaped_text) {
+    $lines = explode("\n", $escaped_text);
+    $out = array();
+    foreach ($lines as $line) {
+        $t = $line;
+        // Headings at line start
+        if (preg_match('/^###\s+(.*)$/', $t, $m)) {
+            $t = '<h3 class="msg-heading msg-h3">' . $m[1] . '</h3>';
+        } elseif (preg_match('/^##\s+(.*)$/', $t, $m)) {
+            $t = '<h2 class="msg-heading msg-h2">' . $m[1] . '</h2>';
+        } elseif (preg_match('/^#\s+(.*)$/', $t, $m)) {
+            $t = '<h1 class="msg-heading msg-h1">' . $m[1] . '</h1>';
+        } else {
+            // Bold **text** and italic *text*
+            $t = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $t);
+            $t = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $t);
+            $t = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $t);
+            $t = preg_replace('/_(.+?)_/s', '<em>$1</em>', $t);
+            $t .= '<br>';
+        }
+        $out[] = $t;
+    }
+    return implode("\n", $out);
+}
+
+// Expand [filename] refs in task description to img/link using task attachments; render simple markdown
 function expand_task_desc_attachments($text, $task_id, $attachments) {
-    $text = linkify_urls($text);
+    $escaped = htmlspecialchars(ensure_utf8($text), ENT_QUOTES, 'UTF-8');
+    $text = simple_markdown_to_html($escaped);
+    $text = linkify_urls_safe($text);
     $base_url = 'attachments/task/' . (int)$task_id . '_';
     foreach ($attachments as $att) {
         $f = htmlspecialchars($att['file_name']);
@@ -38,7 +72,7 @@ function expand_task_desc_attachments($text, $task_id, $attachments) {
     return $text;
 }
 
-// Format message with quote styling
+// Format message with quote styling and simple markdown (## ### ** *)
 function format_message_with_quotes($text) {
     $lines = explode("\n", $text);
     $result = '';
@@ -52,12 +86,16 @@ function format_message_with_quotes($text) {
             $trimmed = ltrim(substr($trimmed, 1));
         }
         
+        $raw = ($quoteLevel > 0) ? $trimmed : $line;
+        $escaped = htmlspecialchars(ensure_utf8($raw), ENT_QUOTES, 'UTF-8');
+        $with_md = simple_markdown_to_html($escaped);
+        $with_links = linkify_urls_safe($with_md);
+        
         if ($quoteLevel > 0) {
-            // Cap at level 5; linkify the remaining content (after stripping >)
             $level = min($quoteLevel, 5);
-            $result .= '<span class="quote-line quote-level-' . $level . '">' . linkify_urls($trimmed) . '</span>';
+            $result .= '<span class="quote-line quote-level-' . $level . '">' . $with_links . '</span>';
         } else {
-            $result .= linkify_urls($line) . '<br>';
+            $result .= $with_links;
         }
     }
     
@@ -732,6 +770,14 @@ $user_name = GetSessionParam("UserName");
         .message-content a:hover {
             text-decoration: underline;
         }
+        .message-content .msg-heading { margin: 0.6em 0 0.25em; font-weight: 600; line-height: 1.3; }
+        .message-content .msg-h1 { font-size: 1.1em; }
+        .message-content .msg-h2 { font-size: 1.05em; }
+        .message-content .msg-h3 { font-size: 1em; }
+        .task-description-content .msg-heading { margin: 0.6em 0 0.25em; font-weight: 600; }
+        .task-description-content .msg-h1 { font-size: 1.1em; }
+        .task-description-content .msg-h2 { font-size: 1.05em; }
+        .task-description-content .msg-h3 { font-size: 1em; }
 
         .task-description h3 {
             display: flex;
@@ -3844,26 +3890,47 @@ $user_name = GetSessionParam("UserName");
         }
     }
 
-    // Format message content with quotes (matches PHP format_message_with_quotes)
+    // Format message content with quotes and simple markdown (## ### ** *)
     function formatMessageContent(text) {
         if (!text) return '';
         
         var lines = text.split('\n');
         var html = '';
         
+        function applySimpleMarkdown(escapedLine) {
+            var t = escapedLine;
+            if (/^###\s+/.test(t)) {
+                return '<h3 class="msg-heading msg-h3">' + t.replace(/^###\s+/, '') + '</h3>';
+            }
+            if (/^##\s+/.test(t)) {
+                return '<h2 class="msg-heading msg-h2">' + t.replace(/^##\s+/, '') + '</h2>';
+            }
+            if (/^#\s+/.test(t)) {
+                return '<h1 class="msg-heading msg-h1">' + t.replace(/^#\s+/, '') + '</h1>';
+            }
+            t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            t = t.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            t = t.replace(/_(.+?)_/g, '<em>$1</em>');
+            return t + '<br>';
+        }
+        
         lines.forEach(function(line) {
-            var trimmed = line.replace(/^\s+/, ''); // ltrim
+            var trimmed = line.replace(/^\s+/, '');
             var level = 0;
             while (trimmed.length > 0 && trimmed.charAt(0) === '>') {
                 level++;
-                trimmed = trimmed.substring(1).replace(/^\s+/, ''); // ltrim after each >
+                trimmed = trimmed.substring(1).replace(/^\s+/, '');
             }
-            
+            var raw = level > 0 ? trimmed : line;
+            var escaped = escapeHtml(raw);
+            var withMd = applySimpleMarkdown(escaped);
+            var withLinks = linkifyUrls(withMd);
             if (level > 0) {
                 var cappedLevel = Math.min(level, 5);
-                html += '<span class="quote-line quote-level-' + cappedLevel + '">' + linkifyUrls(escapeHtml(trimmed)) + '</span>';
+                html += '<span class="quote-line quote-level-' + cappedLevel + '">' + withLinks + '</span>';
             } else {
-                html += linkifyUrls(escapeHtml(line)) + '<br>';
+                html += withLinks;
             }
         });
         

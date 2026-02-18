@@ -62,6 +62,9 @@
 		case "get_team_hours":
 			ajax_get_team_hours();
 		break;
+		case "save_task_priorities":
+			ajax_save_task_priorities();
+		break;
 	}
 		
 	function ajax_search_domains() {
@@ -224,6 +227,36 @@
 			'national_holidays' => $national_holidays,
 			'users' => $users
 		));
+		exit;
+	}
+
+	function ajax_save_task_priorities() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+
+		CheckSecurity(1);
+
+		$user_id = (int) GetParam("user_id");
+		$priorities_raw = isset($_POST['priorities']) ? $_POST['priorities'] : GetParam("priorities");
+		if (!$user_id || $priorities_raw === '' || $priorities_raw === null) {
+			echo json_encode(array('success' => false, 'error' => 'Missing user_id or priorities'));
+			exit;
+		}
+		$priorities = json_decode($priorities_raw, true);
+		if (!is_array($priorities)) {
+			echo json_encode(array('success' => false, 'error' => 'Invalid priorities JSON'));
+			exit;
+		}
+		foreach ($priorities as $item) {
+			$task_id = isset($item['task_id']) ? (int) $item['task_id'] : 0;
+			$priority = isset($item['priority']) ? (int) $item['priority'] : 0;
+			if ($task_id > 0 && $priority > 0) {
+				set_task_priority($task_id, $priority, true);
+			}
+		}
+		$set_by = GetSessionParam("UserName");
+		echo json_encode(array('success' => true, 'set_by' => $set_by ? $set_by : ''));
 		exit;
 	}
 
