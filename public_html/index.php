@@ -319,7 +319,16 @@ $sql = "SELECT t.*, p.project_title, lt.type_desc, ls.status_desc,
         AND t.is_closed = 0
         AND t.is_wish = 0
         AND t.task_type_id != 3
-        ORDER BY IF(t.task_status_id=2, 1, 0), t.priority_id, t.project_id";
+        ORDER BY
+        CASE
+            WHEN t.task_status_id IN (7, 5, 6, 0) THEN 0
+            WHEN t.task_status_id IN (1, 11) THEN 1
+            WHEN t.task_status_id IN (2, 8, 9, 10) THEN 2
+            WHEN t.task_status_id IN (4, 3) THEN 3
+            ELSE 4
+        END,
+        t.priority_id,
+        t.project_id";
 $db->query($sql);
 while ($db->next_record()) {
     $my_tasks[] = array(
@@ -2062,7 +2071,19 @@ while ($db->next_record()) {
         .kb-card.dragging { opacity: 0.4; transform: rotate(2deg); }
         .kb-column.drag-over .kb-cards { background: rgba(102,126,234,0.08); border-radius: 0 0 12px 12px; }
         .kb-column.drag-over .kb-column-header { box-shadow: 0 0 0 2px #667eea inset; }
-        .kb-drop-indicator { height: 3px; background: #667eea; border-radius: 3px; margin: 4px 0; }
+        .kb-drop-indicator { height: 4px; min-height: 4px; background: #667eea; border-radius: 4px; margin: 6px 0; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(102,126,234,0.4); pointer-events: none; }
+        .kb-card-just-moved { animation: kb-card-highlight 2s ease-out; }
+        @keyframes kb-card-highlight {
+            0% { box-shadow: 0 0 0 3px #48bb78, 0 4px 12px rgba(0,0,0,0.12); }
+            50% { box-shadow: 0 0 0 4px rgba(72,187,120,0.6), 0 6px 20px rgba(72,187,120,0.25); }
+            100% { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        }
+        html.dark-mode .kb-card-just-moved { animation: kb-card-highlight-dark 2s ease-out; }
+        @keyframes kb-card-highlight-dark {
+            0% { box-shadow: 0 0 0 3px #48bb78, 0 4px 12px rgba(0,0,0,0.5); }
+            50% { box-shadow: 0 0 0 4px rgba(72,187,120,0.5), 0 6px 20px rgba(72,187,120,0.2); }
+            100% { box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+        }
         .kb-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #48bb78; color: #fff; padding: 10px 24px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; z-index: 99999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .kb-toast.error { background: #e53e3e; }
 
@@ -2195,6 +2216,7 @@ while ($db->next_record()) {
         html.dark-mode .kb-col-done .kb-column-header { background: #172a45; }
         html.dark-mode .kb-col-done .kb-column-title { color: #bee3f8; }
         html.dark-mode .kb-column.drag-over .kb-cards { background: rgba(102,126,234,0.12); }
+        html.dark-mode .kb-drop-indicator { background: #818cf8; box-shadow: 0 0 0 1px rgba(129,140,248,0.5); }
         html.dark-mode .kb-add-btn { color: #8b949e; }
         html.dark-mode .kb-add-btn:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
         html.dark-mode .kb-add-input { background: #161b22; color: #e2e8f0; border-color: #2d333b; }
@@ -2715,7 +2737,7 @@ while ($db->next_record()) {
                                         elseif ($t['status_id'] == 9) $sc = 'status-reassigned';
                                         elseif ($t['status_id'] == 10) $sc = 'status-bug';
                                     ?>
-                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" onclick="window.location='edit_task.php?task_id=<?php echo $t['task_id']; ?>'" data-task-id="<?php echo $t['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $pid; ?>">
+                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" onclick="window.location='edit_task.php?task_id=<?php echo $t['task_id']; ?>'" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $pid; ?>">
                                         <div class="kb-card-title">
                                             <a href="edit_task.php?task_id=<?php echo $t['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($t['task_title']); ?></a>
                                         </div>
@@ -2770,7 +2792,7 @@ while ($db->next_record()) {
                                         elseif ($t['status_id'] == 9) $sc = 'status-reassigned';
                                         elseif ($t['status_id'] == 10) $sc = 'status-bug';
                                     ?>
-                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" data-task-id="<?php echo $t['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $t['project_id']; ?>" data-task-assign="<?php echo $session_user_id; ?>" data-last-modified="<?php echo $t['last_modified_raw'] ?: ''; ?>">
+                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $t['project_id']; ?>" data-task-assign="<?php echo $session_user_id; ?>" data-last-modified="<?php echo $t['last_modified_raw'] ?: ''; ?>">
                                         <div class="kb-card-title">
                                             <a href="edit_task.php?task_id=<?php echo $t['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($t['task_title']); ?></a>
                                         </div>
@@ -2960,8 +2982,10 @@ while ($db->next_record()) {
     var kbDragTaskId = null;
     var kbDragNewStatus = null;
     var kbDragTargetCol = null;
+    var kbDropInsertBefore = null; // node before which to insert card (preserves drop order)
     var kbDragCard = null;
     var kbSessionUserId = <?php echo (int)$session_user_id; ?>;
+    window._kbPriorityDebug = true; // set false to disable console logs for priority save
     var kbColNames = { 'new': 'New', 'progress': 'In Progress', 'hold': 'On Hold / Waiting', 'done': 'Done' };
     var kbHash = Math.random().toString(16).substr(2, 8);
     var kbAttachments = [];
@@ -2995,6 +3019,30 @@ while ($db->next_record()) {
                 var col = e.target.closest('.kb-column');
                 if (!col) return;
                 board.querySelectorAll('.kb-column').forEach(function(c) { c.classList.toggle('drag-over', c === col); });
+
+                // Show drop indicator at position where the card will be placed
+                var cardsContainer = col.querySelector('.kb-cards');
+                if (!cardsContainer || !kbDragCard) return;
+                var cards = Array.from(cardsContainer.children).filter(function(el) { return el.classList.contains('kb-card') && el !== kbDragCard; });
+                var rect = cardsContainer.getBoundingClientRect();
+                var y = e.clientY;
+                var insertBefore = null;
+                for (var i = 0; i < cards.length; i++) {
+                    var cr = cards[i].getBoundingClientRect();
+                    var mid = cr.top + cr.height / 2;
+                    if (y < mid) {
+                        insertBefore = cards[i];
+                        break;
+                    }
+                }
+                board.querySelectorAll('.kb-drop-indicator').forEach(function(d) { d.remove(); });
+                var indicator = document.createElement('div');
+                indicator.className = 'kb-drop-indicator';
+                if (insertBefore) {
+                    cardsContainer.insertBefore(indicator, insertBefore);
+                } else {
+                    cardsContainer.appendChild(indicator);
+                }
             });
 
             board.addEventListener('dragleave', function(e) {
@@ -3006,11 +3054,14 @@ while ($db->next_record()) {
 
             board.addEventListener('drop', function(e) {
                 e.preventDefault();
-                board.querySelectorAll('.kb-column').forEach(function(c) { c.classList.remove('drag-over'); });
-                board.querySelectorAll('.kb-drop-indicator').forEach(function(d) { d.remove(); });
-
                 var col = e.target.closest('.kb-column');
                 if (!col || !kbDragCard) return;
+                var cardsContainer = col.querySelector('.kb-cards');
+                var indicator = cardsContainer ? cardsContainer.querySelector('.kb-drop-indicator') : null;
+                kbDropInsertBefore = indicator ? indicator.nextElementSibling : null;
+
+                board.querySelectorAll('.kb-column').forEach(function(c) { c.classList.remove('drag-over'); });
+                board.querySelectorAll('.kb-drop-indicator').forEach(function(d) { d.remove(); });
 
                 // By Project: move task to another project
                 if (col.dataset.projectId !== undefined) {
@@ -3018,29 +3069,34 @@ while ($db->next_record()) {
                     var card = kbDragCard;
                     var oldProjectId = card.dataset.projectId;
                     if (newProjectId === oldProjectId) {
-                        col.querySelector('.kb-cards').appendChild(card);
+                        kbInsertCardAndAnimate(cardsContainer, card, kbDropInsertBefore);
+                        kbDropInsertBefore = null;
+                        kbSaveColumnPriorities(cardsContainer);
                         return;
                     }
                     var taskId = card.dataset.taskId;
                     var targetCol = col;
                     var targetBoard = board;
+                    var insertBefore = kbDropInsertBefore;
                     fetch('ajax_responder.php?action=move_task_project&task_id=' + taskId + '&project_id=' + newProjectId, { credentials: 'include' })
                         .then(function(r) { return r.json(); })
                         .then(function(data) {
                             if (data.success && data.changed) {
                                 var cardsContainer = targetCol.querySelector('.kb-cards');
                                 card.dataset.projectId = newProjectId;
-                                cardsContainer.appendChild(card);
+                                kbInsertCardAndAnimate(cardsContainer, card, insertBefore);
                                 targetBoard.querySelectorAll('.kb-column').forEach(function(c) {
                                     var countEl = c.querySelector('.kb-column-count');
                                     if (countEl) countEl.textContent = c.querySelectorAll('.kb-card').length;
                                 });
+                                kbSaveColumnPriorities(targetCol.querySelector('.kb-cards'));
                                 showKbToast('Task moved to ' + (data.project_title || 'project'));
                             } else {
                                 showKbToast(data.error || 'Failed to move task', true);
                             }
+                            kbDropInsertBefore = null;
                         })
-                        .catch(function() { showKbToast('Network error', true); });
+                        .catch(function() { showKbToast('Network error', true); kbDropInsertBefore = null; });
                     return;
                 }
 
@@ -3052,8 +3108,9 @@ while ($db->next_record()) {
                 var colKey = col.dataset.colKey;
 
                 if (newStatusId === oldStatusId) {
-                    var cardsContainer = col.querySelector('.kb-cards');
-                    cardsContainer.appendChild(kbDragCard);
+                    kbInsertCardAndAnimate(cardsContainer, kbDragCard, kbDropInsertBefore);
+                    kbDropInsertBefore = null;
+                    kbSaveColumnPriorities(cardsContainer);
                     return;
                 }
 
@@ -3095,6 +3152,80 @@ while ($db->next_record()) {
         kbDragTaskId = null;
         kbDragNewStatus = null;
         kbDragTargetCol = null;
+        kbDropInsertBefore = null;
+    }
+
+    function kbInsertCardAndAnimate(container, card, insertBeforeNode) {
+        if (!container || !card) return;
+        if (insertBeforeNode && insertBeforeNode.parentNode === container) {
+            container.insertBefore(card, insertBeforeNode);
+        } else {
+            container.appendChild(card);
+        }
+        card.classList.add('kb-card-just-moved');
+        setTimeout(function() { card.classList.remove('kb-card-just-moved'); }, 2000);
+    }
+
+    function kbSaveColumnPriorities(cardsContainer) {
+        var debug = window._kbPriorityDebug;
+        if (debug) console.log('[kbPriority] kbSaveColumnPriorities called', cardsContainer);
+        if (!cardsContainer || typeof kbSessionUserId === 'undefined') {
+            if (debug) console.log('[kbPriority] skip: no container or kbSessionUserId');
+            return;
+        }
+        var board = cardsContainer.closest('.kb-board');
+        if (!board) {
+            if (debug) console.log('[kbPriority] skip: no .kb-board');
+            return;
+        }
+        var columns = board.querySelectorAll('.kb-column');
+        var orderedTaskIds = [];
+        var perColumn = [];
+        for (var c = 0; c < columns.length; c++) {
+            var cc = columns[c].querySelector('.kb-cards');
+            if (!cc) continue;
+            var cards = cc.querySelectorAll('.kb-card');
+            var colIds = [];
+            for (var i = 0; i < cards.length; i++) {
+                var tid = cards[i].getAttribute('data-task-id');
+                if (tid) {
+                    var idNum = parseInt(tid, 10);
+                    orderedTaskIds.push(idNum);
+                    colIds.push(idNum);
+                }
+            }
+            perColumn.push({ colIndex: c, colKey: columns[c].getAttribute('data-col-key') || columns[c].getAttribute('data-project-id') || c, taskIds: colIds });
+        }
+        if (debug) {
+            console.log('[kbPriority] orderedTaskIds (full order sent to server)', orderedTaskIds);
+            console.log('[kbPriority] per column', perColumn);
+        }
+        if (orderedTaskIds.length === 0) {
+            if (debug) console.log('[kbPriority] skip: no cards');
+            return;
+        }
+        var priorities = orderedTaskIds.map(function(tid, i) { return { task_id: tid, priority: i + 1 }; });
+        var body = 'action=save_task_priorities&user_id=' + kbSessionUserId + '&priorities=' + encodeURIComponent(JSON.stringify(priorities));
+        if (debug) console.log('[kbPriority] POST priorities', { user_id: kbSessionUserId, priorities: priorities, bodyLength: body.length });
+        fetch('ajax_responder.php', { method: 'POST', body: body, headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, credentials: 'include' })
+            .then(function(r) {
+                if (debug) console.log('[kbPriority] response status', r.status, r.url);
+                return r.json();
+            })
+            .then(function(data) {
+                if (debug) console.log('[kbPriority] response data', data);
+                if (data.success && priorities.length) {
+                    var map = {};
+                    priorities.forEach(function(p) { map[p.task_id] = p.priority; });
+                    board.querySelectorAll('.kb-card').forEach(function(card) {
+                        var tid = parseInt(card.getAttribute('data-task-id'), 10);
+                        if (map[tid] !== undefined) card.setAttribute('data-priority-id', String(map[tid]));
+                    });
+                }
+            })
+            .catch(function(err) {
+                console.error('[kbPriority] fetch error', err);
+            });
     }
 
     // Close drop modal on overlay click
@@ -3429,14 +3560,19 @@ while ($db->next_record()) {
             submitBtn.textContent = 'Move & Send';
 
             if (data.success) {
+                var insertBefore = kbDropInsertBefore;
                 closeKbDropModal();
 
-                // Move card to target column
+                // Move card to target column — use the card in the SAME board as targetCol so we don't move the wrong card (e.g. from the other view) and leave a duplicate
+                var board = targetCol.closest('.kb-board');
+                var card = board ? board.querySelector('.kb-card[data-task-id="' + taskId + '"]') : document.querySelector('.kb-card[data-task-id="' + taskId + '"]');
                 if (card && targetCol) {
                     var cardsContainer = targetCol.querySelector('.kb-cards');
                     var emptyEl = cardsContainer.querySelector('.kb-empty');
                     if (emptyEl) emptyEl.remove();
-                    cardsContainer.appendChild(card);
+                    kbInsertCardAndAnimate(cardsContainer, card, insertBefore);
+                    kbDropInsertBefore = null;
+                    kbSaveColumnPriorities(cardsContainer);
                     card.dataset.taskStatus = statusId;
 
                     // Update status badge
@@ -3452,10 +3588,6 @@ while ($db->next_record()) {
                     }
 
                     updateKbColumnCounts();
-
-                    card.style.transition = 'border-left-color 0.3s';
-                    card.style.borderLeftColor = '#48bb78';
-                    setTimeout(function() { card.style.borderLeftColor = ''; }, 1500);
                 }
 
                 // Update "Currently Working On" block
@@ -3655,6 +3787,7 @@ while ($db->next_record()) {
                 var countEl = col.querySelector('.kb-column-count');
                 if (countEl) countEl.textContent = cardsContainer.querySelectorAll('.kb-card').length;
 
+                kbSaveColumnPriorities(cardsContainer);
                 input.value = '';
                 input.focus();
                 card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -4744,6 +4877,13 @@ while ($db->next_record()) {
     @keyframes slideUp {
         from { opacity: 1; transform: translateX(-50%) translateY(0); }
         to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    }
+    </style>
+</body>
+</html>
+<?php
+?>
+eY(-20px); }
     }
     </style>
 </body>

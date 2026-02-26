@@ -1634,6 +1634,11 @@ $user_name = GetSessionParam("UserName");
             min-height: 350px;
         }
 
+        /* Keep editor expanded when focus is in Status/Assign dropdowns (avoids layout shift closing dropdown) */
+        .message-composer.expanded .message-textarea {
+            min-height: 350px;
+        }
+
         .message-options {
             display: flex;
             flex-wrap: wrap;
@@ -3166,6 +3171,7 @@ $user_name = GetSessionParam("UserName");
                             <button type="button" class="btn btn-secondary" onclick="quoteLastMessage();">Quote Last</button>
                             <?php endif; ?>
                             <button type="button" class="btn btn-secondary" onclick="quoteOriginalTask();">Quote Original</button>
+                            <button type="button" class="btn btn-secondary" id="copyMessageBtn" onclick="copyMessageToClipboard();">Copy</button>
                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('messageTextarea').value = ''; autoQuoteApplied = true;">Clear</button>
                         </div>
                     </div>
@@ -3199,16 +3205,19 @@ $user_name = GetSessionParam("UserName");
                             </div>
                             <div class="message-content"><?php
                                 $msg_html = format_message_with_quotes($msg['message']);
-                                // Replace [filename.ext] references with inline images when attachment exists
+                                // Replace [filename.ext] references with inline images or links when attachment exists
                                 if (isset($message_attachments[$msg['message_id']])) {
                                     foreach ($message_attachments[$msg['message_id']] as $att) {
+                                        $att_url = 'attachments/message/' . $msg['message_id'] . '_' . htmlspecialchars($att['file_name']);
+                                        $escaped_name = htmlspecialchars($att['file_name']);
+                                        $bracket_ref = '[' . $escaped_name . ']';
                                         $att_ext = strtolower(pathinfo($att['file_name'], PATHINFO_EXTENSION));
                                         if (in_array($att_ext, array('jpg', 'jpeg', 'png', 'gif', 'webp'))) {
-                                            $att_url = 'attachments/message/' . $msg['message_id'] . '_' . htmlspecialchars($att['file_name']);
-                                            $escaped_name = htmlspecialchars($att['file_name']);
-                                            $bracket_ref = '[' . $escaped_name . ']';
                                             $inline_img = '<a href="' . $att_url . '" class="message-inline-image gallery-image" data-gallery="msg-' . $msg['message_id'] . '" onclick="openLightbox(this); return false;"><img src="' . $att_url . '" alt="' . $escaped_name . '"></a>';
                                             $msg_html = str_replace($bracket_ref, $inline_img, $msg_html);
+                                        } else {
+                                            $link = '<a href="' . $att_url . '" class="message-attachment-link" target="_blank" rel="noopener">' . $bracket_ref . '</a>';
+                                            $msg_html = str_replace($bracket_ref, $link, $msg_html);
                                         }
                                     }
                                 }
@@ -3395,6 +3404,47 @@ $user_name = GetSessionParam("UserName");
         }
     });
 
+    // Submit message with Enter or Cmd+Enter/Ctrl+Enter when focus is in other message form fields (Assign to, Status, Completion)
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var active = document.activeElement;
+        if (!active || !active.closest) return;
+        var inComposer = active.closest('#messageComposerArea');
+        if (!inComposer) return;
+        if (active.id === 'messageTextarea') return; // textarea: plain Enter = new line; Ctrl+Enter handled above
+        if (active.closest('.custom-select.open')) return; // dropdown open: let Enter select option
+        e.preventDefault();
+        submitMessageAjax();
+    });
+
+    // Keep message editor expanded when focus moves into composer; only collapse after message is submitted
+    (function() {
+        var area = document.getElementById('messageComposerArea');
+        var composer = area ? area.closest('.message-composer') : null;
+        if (!area || !composer) return;
+        var DEBUG = false; // set _msgComposerDebug = true in console to enable
+        function log() {
+            if ((DEBUG || window._msgComposerDebug) && window.console && console.log) {
+                console.log.apply(console, ['[MsgComposer]'].concat(Array.prototype.slice.call(arguments)));
+            }
+        }
+        area.addEventListener('focusin', function(e) {
+            composer.classList.add('expanded');
+            log('focusin → add expanded', 'target:', e.target && e.target.id || e.target && e.target.className);
+        });
+        area.addEventListener('focusout', function(e) {
+            var next = e.relatedTarget;
+            var inside = next && area.contains(next);
+            log('focusout →', inside ? 'stay expanded (focus inside)' : 'not removing expanded (only collapse on submit)', 'relatedTarget:', next && (next.id || next.className));
+            // Do not remove .expanded here; only remove when message is submitted (see submitMessageAjax success)
+        });
+        window._msgComposerCollapse = function() {
+            if (composer) composer.classList.remove('expanded');
+            log('collapse (after submit)');
+        };
+        window._msgComposerDebug = false;
+    })();
+
     // Auto-quote on focus: last message if messages exist, otherwise task description
     var messageCount = <?php echo count($messages); ?>;
     var autoQuoteApplied = false;
@@ -3446,9 +3496,40 @@ $user_name = GetSessionParam("UserName");
             }
         }
 
+        // When focus is in the message textarea, first click on a trigger often only blurs the textarea (shrinks editor); open dropdown on mousedown so it opens in one click
+        var messageTextareaEl = document.getElementById('messageTextarea');
+        trigger.addEventListener('mousedown', function(e) {
+            if (messageTextareaEl && document.activeElement === messageTextareaEl) {
+                if (!select.classList.contains('open')) {
+                    if (window._msgComposerDebug) console.log('[MsgComposer] trigger mousedown (from textarea) → open', select.id);
+                    select._openOnMousedown = true;
+                    document.querySelectorAll('.custom-select.open').forEach(function(other) {
+                        if (other !== select) other.classList.remove('open');
+                    });
+                    select.classList.add('open');
+                    highlightedIndex = -1;
+                    var composer = select.closest('.message-composer');
+                    if (composer) composer.classList.add('expanded');
+                    if (searchInput) {
+                        searchInput.focus();
+                        searchInput.value = '';
+                        filterOptions('');
+                    } else {
+                        trigger.focus();
+                    }
+                }
+            }
+        });
+
         // Toggle dropdown
         trigger.addEventListener('click', function(e) {
             e.stopPropagation();
+            if (select._openOnMousedown) {
+                if (window._msgComposerDebug) console.log('[MsgComposer] trigger click → skip (opened on mousedown)', select.id);
+                select._openOnMousedown = false;
+                return;
+            }
+            if (window._msgComposerDebug) console.log('[MsgComposer] trigger click → toggle', select.id, 'currently open:', select.classList.contains('open'));
             // Close other dropdowns
             document.querySelectorAll('.custom-select.open').forEach(function(other) {
                 if (other !== select) other.classList.remove('open');
@@ -3456,6 +3537,8 @@ $user_name = GetSessionParam("UserName");
             select.classList.toggle('open');
             if (select.classList.contains('open')) {
                 highlightedIndex = -1;
+                var composer = select.closest('.message-composer');
+                if (composer) composer.classList.add('expanded');
                 if (searchInput) {
                     searchInput.focus();
                     searchInput.value = '';
@@ -3502,11 +3585,13 @@ $user_name = GetSessionParam("UserName");
         options.forEach(function(option) {
             option.addEventListener('click', function(e) {
                 e.stopPropagation();
+                if (window._msgComposerDebug) console.log('[MsgComposer] option click', select.id, 'value:', option.dataset.value, 'text:', (option.textContent || '').trim().substring(0, 30));
                 selectOption(option);
             });
         });
 
         function selectOption(option) {
+            if (window._msgComposerDebug) console.log('[MsgComposer] selectOption', select.id, 'value:', option.dataset.value);
             options.forEach(function(o) { o.classList.remove('selected', 'highlighted'); });
             option.classList.add('selected');
             trigger.querySelector('span').textContent = option.textContent.trim();
@@ -3572,7 +3657,10 @@ $user_name = GetSessionParam("UserName");
     });
 
     // Close dropdowns when clicking outside
-    document.addEventListener('click', function() {
+    document.addEventListener('click', function(e) {
+        var inside = e.target.closest('.custom-select');
+        if (window._msgComposerDebug) console.log('[MsgComposer] document click →', inside ? 'inside custom-select, skip close' : 'close all dropdowns', 'target:', e.target.id || e.target.className);
+        if (inside) return;
         document.querySelectorAll('.custom-select.open').forEach(function(select) {
             select.classList.remove('open');
         });
@@ -3848,7 +3936,9 @@ $user_name = GetSessionParam("UserName");
             
             if (data.success) {
                 showFlashMessage('Message sent successfully!', 'success');
-                
+
+                if (window._msgComposerCollapse) window._msgComposerCollapse();
+
                 // Clear textarea and reset quote flag
                 document.getElementById('messageTextarea').value = '';
                 autoQuoteApplied = false;
@@ -4051,15 +4141,18 @@ $user_name = GetSessionParam("UserName");
         html += statusBadge;
         html += '</div>';
         var contentHtml = formatMessageContent(msg.message || '');
-        // Replace [filename.ext] references with inline images
+        // Replace [filename.ext] references with inline images or links to attachments
         if (attachments && attachments[msg.message_id]) {
             attachments[msg.message_id].forEach(function(att) {
+                var filePath = 'attachments/message/' + msg.message_id + '_' + att.file_name;
+                var bracketRef = '[' + escapeHtml(att.file_name) + ']';
                 var ext = att.file_name.split('.').pop().toLowerCase();
                 if (['jpg', 'jpeg', 'png', 'gif', 'webp'].indexOf(ext) !== -1) {
-                    var filePath = 'attachments/message/' + msg.message_id + '_' + att.file_name;
-                    var bracketRef = '[' + escapeHtml(att.file_name) + ']';
                     var inlineImg = '<a href="' + filePath + '" class="message-inline-image gallery-image" data-gallery="msg-' + msg.message_id + '" onclick="openLightbox(this); return false;"><img src="' + filePath + '" alt="' + escapeHtml(att.file_name) + '"></a>';
                     contentHtml = contentHtml.split(bracketRef).join(inlineImg);
+                } else {
+                    var link = '<a href="' + filePath + '" class="message-attachment-link" target="_blank" rel="noopener">' + bracketRef + '</a>';
+                    contentHtml = contentHtml.split(bracketRef).join(link);
                 }
             });
         }
@@ -4416,6 +4509,13 @@ $user_name = GetSessionParam("UserName");
                 descHandleFiles(files);
             }
         });
+
+        editTaskDesc.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                descFileInput.click();
+            }
+        });
     })();
 
     // Copy task link to clipboard
@@ -4496,6 +4596,45 @@ $user_name = GetSessionParam("UserName");
         }
     }
 
+    // Copy entire message to clipboard
+    function copyMessageToClipboard() {
+        var textarea = document.getElementById('messageTextarea');
+        if (!textarea) return;
+        var text = textarea.value || '';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById('copyMessageBtn');
+                if (btn) {
+                    var orig = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(function() { btn.textContent = orig; }, 1500);
+                }
+            }).catch(function() {
+                fallbackCopyToClipboard(text);
+            });
+        } else {
+            fallbackCopyToClipboard(text);
+        }
+    }
+    function fallbackCopyToClipboard(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            var btn = document.getElementById('copyMessageBtn');
+            if (btn) {
+                var orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = orig; }, 1500);
+            }
+        } catch (e) {}
+        document.body.removeChild(ta);
+    }
+
     // ==================== Message Attachments ====================
     var messageAttachments = [];
     var messageAttachmentId = 0;
@@ -4552,6 +4691,13 @@ $user_name = GetSessionParam("UserName");
             e.preventDefault();
             messageDropzone.classList.remove('drag-over');
             handleMessageFiles(e.dataTransfer.files);
+        }
+    });
+
+    messageTextarea?.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+            e.preventDefault();
+            if (messageFileInput) messageFileInput.click();
         }
     });
 

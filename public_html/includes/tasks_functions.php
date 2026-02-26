@@ -1270,6 +1270,17 @@ function close_task($task_id, $return_page="index.php")
 		$spent_hours	= $db->Record["spent_hours"];
 		$priority_id = $db->Record["priority_id"];
 
+		// Add a message to the task that the user has closed it
+		$closed_by_name = GetSessionParam("UserName");
+		if ($closed_by_name === null || $closed_by_name === '') {
+			$closed_by_name = 'Someone';
+		}
+		$close_message = "User " . $closed_by_name . " has closed the task.";
+		$sql = "INSERT INTO messages (message_date, user_id, identity_id, identity_type, status_id, responsible_user_id, message) ";
+		$sql .= "VALUES (NOW(), " . ToSQL(GetSessionParam("UserID"), "integer") . ", " . ToSQL($task_id, "integer") . ", 'task', ";
+		$sql .= ToSQL($task_status_id, "integer", false) . ", " . ToSQL($responsible_user_id, "integer", false) . ", " . ToSQL($close_message, "text") . ")";
+		$db->query($sql);
+
 		@mail("artem@viart.com.ua","Monitor: Task '$task_title' closed -#id=$task_id","Task '$task_title' closed -#id=$task_id\nTask closed by ".GetSessionParam("UserName"),"From:monitor@viart.com.ua");
 		// -- task was in progress, so we need to stop it first and set status waiting
 		if ($task_status_id == 1) {
