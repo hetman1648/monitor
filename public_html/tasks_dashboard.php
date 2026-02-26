@@ -431,10 +431,21 @@ if ($time_proj_json === false || $time_proj_json === '' || $time_proj_json === n
         /* Dark mode - project/status group headers */
         html.dark-mode .card-header { background: #1c2333; }
         html.dark-mode .card-header:hover { background: #252d3d; }
-        html.dark-mode .card-header-title { color: #e2e8f0 !important; }
-        html.dark-mode .card-header-title a { color: #90cdf4 !important; }
-        html.dark-mode .card-header-title a:hover { color: #63b3ed !important; }
+        html.dark-mode .card-header-title { color: #f0f4f8 !important; }
+        html.dark-mode .card-header-title a { color: #93c5fd !important; }
+        html.dark-mode .card-header-title a:hover { color: #60a5fa !important; }
         html.dark-mode .card-header-parent { color: #a0aec0 !important; }
+        /* Dark mode - Project Board kanban column titles (project names) */
+        html.dark-mode #tabProjectBoard .kanban-col-header { background: #1c2333 !important; }
+        html.dark-mode #tabProjectBoard .kanban-col-title { color: #f0f4f8 !important; }
+        html.dark-mode #tabProjectBoard .kanban-col-title a { color: #93c5fd !important; }
+        html.dark-mode #tabProjectBoard .kanban-col-title a:hover { color: #60a5fa !important; }
+        html.dark-mode #tabProjectBoard .kanban-col-count { background: rgba(255,255,255,0.15); color: #e2e8f0; }
+        /* Dark mode - User Board kanban column titles */
+        html.dark-mode #tabUserBoard .kanban-col-header { background: #1c2333 !important; }
+        html.dark-mode #tabUserBoard .kanban-col-title { color: #f0f4f8 !important; }
+        html.dark-mode #tabUserBoard .kanban-col-title a { color: #93c5fd !important; }
+        html.dark-mode #tabUserBoard .kanban-col-count { background: rgba(255,255,255,0.15); color: #e2e8f0; }
         html.dark-mode .card-header-title .arrow { color: #8b949e; }
         html.dark-mode .card-header-count { background: rgba(255,255,255,0.12); color: #cbd5e0; }
         html.dark-mode .toolbar-btn { background: #1c2333; color: #cbd5e0; border-color: #2d333b; }

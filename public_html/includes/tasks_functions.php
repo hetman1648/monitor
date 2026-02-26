@@ -1619,6 +1619,83 @@ function task_add_hours($task_id, $spent_hours, $user_id=false,
 	}
 }
 
+/**
+ * Format message body for email: same as edit_task (quotes, markdown, linkify) with inline styles for email clients.
+ */
+function format_message_for_email($text) {
+	if (trim($text) === '') {
+		return '(no text)';
+	}
+	$url_pattern = '/(https?:\/\/|ftp:\/\/)[^\s<>\[\]"\']+/i';
+	// Simple markdown on one line (already escaped); URLs protected so _ in URLs are not italic
+	$markdown_line = function($line) use ($url_pattern) {
+		$urls = array();
+		$t = preg_replace_callback($url_pattern, function ($m) use (&$urls) {
+			$urls[] = $m[0];
+			return "\x01U" . (count($urls) - 1) . "\x01";
+		}, $line);
+		if (preg_match('/^###\s+(.*)$/', $t, $m)) {
+			$t = '<h3 style="font-size:1em;margin:6px 0 4px;font-weight:bold;">' . $m[1] . '</h3>';
+		} elseif (preg_match('/^##\s+(.*)$/', $t, $m)) {
+			$t = '<h2 style="font-size:1.1em;margin:6px 0 4px;font-weight:bold;">' . $m[1] . '</h2>';
+		} elseif (preg_match('/^#\s+(.*)$/', $t, $m)) {
+			$t = '<h1 style="font-size:1.2em;margin:8px 0 4px;font-weight:bold;">' . $m[1] . '</h1>';
+		} else {
+			$t = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $t);
+			$t = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $t);
+			$t = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $t);
+			$t = preg_replace('/_(.+?)_/s', '<em>$1</em>', $t);
+			if (trim($t) === '') {
+				$t = '<br>';
+			} else {
+				$t .= '<br>';
+			}
+		}
+		foreach ($urls as $i => $url) {
+			$url = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			$url = preg_replace('/edit\s*_?\s*task\.php/i', 'edit_task.php', $url);
+			$url = preg_replace('/\btaskid=/i', 'task_id=', $url);
+			$link = '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '</a>';
+			$t = str_replace("\x01U" . $i . "\x01", $link, $t);
+		}
+		return $t;
+	};
+
+	$text = str_replace(["\r\n", "\r"], "\n", $text);
+	$lines = explode("\n", $text);
+	$result = '';
+	$in_quote_block = false;
+	// Inline quote block style: indentation + vertical bar like the app (image 2)
+	$quote_block_style = 'margin:8px 0 4px 12px;padding:6px 0 6px 12px;border-left:3px solid #667eea;background-color:#eef2ff;';
+	foreach ($lines as $line) {
+		$trimmed = ltrim($line);
+		$quoteLevel = 0;
+		while (strlen($trimmed) > 0 && $trimmed[0] === '>') {
+			$quoteLevel++;
+			$trimmed = ltrim(substr($trimmed, 1));
+		}
+		$raw = ($quoteLevel > 0) ? $trimmed : $line;
+		$escaped = htmlspecialchars($raw, ENT_QUOTES, 'UTF-8');
+		$with_links = $markdown_line($escaped);
+		if ($quoteLevel > 0) {
+			if (!$in_quote_block) {
+				$result .= '<div style="' . $quote_block_style . '">';
+				$in_quote_block = true;
+			}
+			$result .= $with_links;
+		} else {
+			if ($in_quote_block) {
+				$result .= '</div>';
+				$in_quote_block = false;
+			}
+			$result .= $with_links;
+		}
+	}
+	if ($in_quote_block) {
+		$result .= '</div>';
+	}
+	return $result;
+}
 
 function add_task_message($task_id, $message, $user_assign_by, $user_assign_to, $task_status_id, $additional_hours, $completion,
 			$return_page, $attachment_hash=false, $bug_importance_value=1, $bug_status=1, $estimated_hours=false, $deadline=false, $price=false)
@@ -1769,7 +1846,8 @@ function add_task_message($task_id, $message, $user_assign_by, $user_assign_to, 
 		
 		if($db->next_record())
 		{
-			//-- prepare parameters for the message
+			//-- prepare parameters for the message (format like edit_task: quotes, markdown, linkify; inline styles for email)
+			$message_quoted = format_message_for_email($message);
 			$tags = array(
 				"privilege_id"			=> getSessionParam("privilege_id"),
 				"task_id"				=> $task_id,
@@ -1778,7 +1856,8 @@ function add_task_message($task_id, $message, $user_assign_by, $user_assign_to, 
 				"responsible_user_id"	=> $db->f("responsible_user_id"),
 				"responsible_user_name"	=> $db->f("responsible_user_name"),
 				"user_name"				=> GetSessionParam("UserName"),
-				"task_status"			=> $db->f("status_caption")
+				"task_status"			=> $db->f("status_caption"),
+				"message"				=> $message_quoted
 			);
 			if (function_exists('send_enotification')) {
 				send_enotification(MSG_MESSAGE_RECEIVED, $tags);

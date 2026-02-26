@@ -1606,6 +1606,13 @@ $months = array(
             loadSubProjects(value);
         } else if (select.id === 'subProjectSelect') {
             loadProjectUsers(value);
+        } else if (select.id === 'userSelect') {
+            // Populate task description when a person is selected (only if empty)
+            var taskDesc = document.getElementById('task_desc');
+            if (taskDesc && taskDesc.value.trim() === '') {
+                var firstName = (text.split(/\s+/)[0] || text).trim();
+                taskDesc.value = 'Hi ' + firstName + ',\n\n';
+            }
         }
     }
     
@@ -2031,6 +2038,116 @@ $months = array(
             });
         }
     }
+
+    // ==================== Description editor: VS Code–like line shortcuts ====================
+    (function() {
+        var el = document.getElementById('task_desc');
+        if (!el) return;
+
+        function getLines() {
+            return el.value.split('\n');
+        }
+        function setLines(lines) {
+            el.value = lines.join('\n');
+        }
+        function getLineIndex(pos) {
+            return (el.value.substring(0, pos).match(/\n/g) || []).length;
+        }
+        function getLineRange(lineIndex) {
+            var text = el.value;
+            var lines = text.split('\n');
+            if (lineIndex < 0 || lineIndex >= lines.length) return { start: 0, end: 0 };
+            var start = 0;
+            for (var i = 0; i < lineIndex; i++) start += lines[i].length + 1;
+            var end = start + lines[lineIndex].length;
+            return { start: start, end: end };
+        }
+        function selectLine() {
+            var lineIndex = getLineIndex(el.selectionStart);
+            var r = getLineRange(lineIndex);
+            el.setSelectionRange(r.start, r.end);
+            el.focus();
+        }
+        function deleteLine() {
+            var lineIndex = getLineIndex(el.selectionStart);
+            var lines = getLines();
+            if (lines.length <= 1) {
+                el.value = '';
+                el.setSelectionRange(0, 0);
+                return;
+            }
+            lines.splice(lineIndex, 1);
+            setLines(lines);
+            var r = getLineRange(Math.min(lineIndex, lines.length - 1));
+            el.setSelectionRange(r.start, r.start);
+            el.focus();
+        }
+        function moveLine(delta) {
+            var lineIndex = getLineIndex(el.selectionStart);
+            var lines = getLines();
+            var newIndex = lineIndex + delta;
+            if (newIndex < 0 || newIndex >= lines.length) return;
+            var line = lines.splice(lineIndex, 1)[0];
+            lines.splice(newIndex, 0, line);
+            setLines(lines);
+            var r = getLineRange(newIndex);
+            el.setSelectionRange(r.start, r.end);
+            el.focus();
+        }
+        function copyLine(delta) {
+            var lineIndex = getLineIndex(el.selectionStart);
+            var lines = getLines();
+            var line = lines[lineIndex];
+            var newIndex = lineIndex + delta;
+            if (newIndex < 0 || newIndex > lines.length) return;
+            lines.splice(newIndex, 0, line);
+            setLines(lines);
+            var r = getLineRange(newIndex);
+            el.setSelectionRange(r.start, r.end);
+            el.focus();
+        }
+
+        el.addEventListener('keydown', function(e) {
+            var mod = e.ctrlKey || e.metaKey; // Ctrl on Windows/Linux, Cmd on Mac
+
+            // Ctrl+L / Cmd+L: Select line
+            if (mod && e.key === 'l') {
+                e.preventDefault();
+                selectLine();
+                return;
+            }
+            // Ctrl+Shift+K / Cmd+Shift+K: Delete line
+            if (mod && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+                e.preventDefault();
+                deleteLine();
+                return;
+            }
+            // Alt+Up: Move line up
+            if (e.altKey && e.key === 'ArrowUp') {
+                e.preventDefault();
+                moveLine(-1);
+                return;
+            }
+            // Alt+Down: Move line down
+            if (e.altKey && e.key === 'ArrowDown') {
+                e.preventDefault();
+                moveLine(1);
+                return;
+            }
+            // Shift+Alt+Up: Copy line up
+            if (e.shiftKey && e.altKey && e.key === 'ArrowUp') {
+                e.preventDefault();
+                copyLine(-1);
+                return;
+            }
+            // Shift+Alt+Down: Copy line down
+            if (e.shiftKey && e.altKey && e.key === 'ArrowDown') {
+                e.preventDefault();
+                copyLine(1);
+                return;
+            }
+        });
+    })();
 
     // ==================== Keyboard Shortcut: Submit form with Ctrl+Enter or Cmd+End ====================
     var taskDescTextarea = document.getElementById('task_desc');

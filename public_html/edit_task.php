@@ -28,12 +28,87 @@ function linkify_urls_safe($html) {
     return preg_replace($pattern, '<a href="$0" target="_blank" rel="noopener noreferrer">$0</a>', $html);
 }
 
-// Simple markdown to HTML (call on already htmlspecialchars'd text): ## ### ** *
+// Fix broken monitor task URLs (edittask.php?taskid= -> edit_task.php?task_id=) in message/desc HTML
+function normalize_monitor_task_urls($html) {
+    // Match edittask.php, edit_task.php, or edit task.php and normalize to edit_task.php
+    $html = preg_replace('/edit\s*_?\s*task\.php/i', 'edit_task.php', $html);
+    $html = preg_replace('/\btaskid=/i', 'task_id=', $html);
+    return $html;
+}
+
+// Simple markdown to HTML (call on already htmlspecialchars'd text): ## ### ** * ``` code fences, pipe tables |
+// URLs are protected with placeholders so underscores in URLs are not treated as italic.
+// Code blocks are extracted FIRST so URLs inside them are not linkified or replaced.
 function simple_markdown_to_html($escaped_text) {
+    $escaped_text = str_replace(["\r\n", "\r"], "\n", $escaped_text);
+
+    // Extract code fences ``` ... ``` BEFORE URL replacement so code block content stays literal
+    $code_blocks = array();
+    $escaped_text = preg_replace_callback('/```(\w*)\n(.*?)```\n?/s', function ($m) use (&$code_blocks) {
+        $lang = trim($m[1]);
+        $content = $m[2];
+        $cls = $lang !== '' ? ' class="msg-code lang-' . htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') . '"' : ' class="msg-code"';
+        $code_blocks[] = '<div class="msg-code-wrap"><pre' . $cls . '><code>' . $content . '</code></pre><button type="button" class="copy-code-btn" title="Copy to clipboard" aria-label="Copy code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div>';
+        return "\x01C" . (count($code_blocks) - 1) . "\x01\n";
+    }, $escaped_text);
+
+    $url_pattern = '/(https?:\/\/|ftp:\/\/)[^\s<>\[\]"\']+/i';
+    $urls = array();
+    $escaped_text = preg_replace_callback($url_pattern, function ($m) use (&$urls) {
+        $urls[] = $m[0];
+        return "\x01U" . (count($urls) - 1) . "\x01";
+    }, $escaped_text);
+
+    // Extract pipe tables (consecutive lines like | a | b |)
+    $table_blocks = array();
+    $escaped_text = preg_replace_callback('/(?:^\|.+\|\n)+/m', function ($m) use (&$table_blocks) {
+        $raw = trim($m[0]);
+        $rows = array();
+        foreach (explode("\n", $raw) as $row) {
+            $row = trim($row);
+            if ($row === '') continue;
+            $cells = array_map('trim', explode('|', $row));
+            array_shift($cells);
+            if (count($cells) && end($cells) === '') array_pop($cells);
+            $rows[] = $cells;
+        }
+        $thead = null;
+        $body = array();
+        foreach ($rows as $cells) {
+            $is_sep = (count($cells) > 0 && preg_match('/^[\s\-:]+$/', implode('', $cells)));
+            if ($is_sep) continue;
+            if ($thead === null) {
+                $thead = $cells;
+            } else {
+                $body[] = $cells;
+            }
+        }
+        if ($thead === null && count($body) > 0) {
+            $thead = $body[0];
+            $body = array_slice($body, 1);
+        }
+        $html = '<thead><tr>';
+        foreach ($thead ?: array() as $c) { $html .= '<th>' . $c . '</th>'; }
+        $html .= '</tr></thead><tbody>';
+        foreach ($body as $cells) {
+            $html .= '<tr>';
+            foreach ($cells as $c) { $html .= '<td>' . $c . '</td>'; }
+            $html .= '</tr>';
+        }
+        $html .= '</tbody>';
+        $table_blocks[] = '<table class="msg-table">' . $html . '</table>';
+        return "\x01T" . (count($table_blocks) - 1) . "\x01\n";
+    }, $escaped_text);
+
     $lines = explode("\n", $escaped_text);
     $out = array();
     foreach ($lines as $line) {
         $t = $line;
+        // Placeholder lines (code/table) — output as-is, no <br>
+        if (preg_match('/^\x01[CT]\d+\x01$/', $t)) {
+            $out[] = $t;
+            continue;
+        }
         // Headings at line start
         if (preg_match('/^###\s+(.*)$/', $t, $m)) {
             $t = '<h3 class="msg-heading msg-h3">' . $m[1] . '</h3>';
@@ -42,23 +117,40 @@ function simple_markdown_to_html($escaped_text) {
         } elseif (preg_match('/^#\s+(.*)$/', $t, $m)) {
             $t = '<h1 class="msg-heading msg-h1">' . $m[1] . '</h1>';
         } else {
-            // Bold **text** and italic *text*
+            // Bold **text** and italic *text* (URLs already replaced with placeholders)
             $t = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $t);
             $t = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $t);
             $t = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $t);
             $t = preg_replace('/_(.+?)_/s', '<em>$1</em>', $t);
-            $t .= '<br>';
+            if (trim($t) === '') {
+                $t = '<br>';
+            } else {
+                $t .= '<br>';
+            }
         }
         $out[] = $t;
     }
-    return implode("\n", $out);
+    $result = implode("", $out);
+    foreach ($urls as $i => $url) {
+        $url = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $url = preg_replace('/edit\s*_?\s*task\.php/i', 'edit_task.php', $url);
+        $url = preg_replace('/\btaskid=/i', 'task_id=', $url);
+        $link = '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '</a>';
+        $result = str_replace("\x01U" . $i . "\x01", $link, $result);
+    }
+    foreach ($code_blocks as $i => $html) {
+        $result = str_replace("\x01C" . $i . "\x01", $html, $result);
+    }
+    foreach ($table_blocks as $i => $html) {
+        $result = str_replace("\x01T" . $i . "\x01", $html, $result);
+    }
+    return $result;
 }
 
 // Expand [filename] refs in task description to img/link using task attachments; render simple markdown
 function expand_task_desc_attachments($text, $task_id, $attachments) {
     $escaped = htmlspecialchars(ensure_utf8($text), ENT_QUOTES, 'UTF-8');
-    $text = simple_markdown_to_html($escaped);
-    $text = linkify_urls_safe($text);
+    $text = normalize_monitor_task_urls(simple_markdown_to_html($escaped));
     $base_url = 'attachments/task/' . (int)$task_id . '_';
     foreach ($attachments as $att) {
         $f = htmlspecialchars($att['file_name']);
@@ -74,6 +166,10 @@ function expand_task_desc_attachments($text, $task_id, $attachments) {
 
 // Format message with quote styling and simple markdown (## ### ** *)
 function format_message_with_quotes($text) {
+    // Fix broken monitor task URLs in raw text so linkify produces correct hrefs
+    $text = preg_replace('/edit\s*_?\s*task\.php/i', 'edit_task.php', $text);
+    $text = preg_replace('/\btaskid=/i', 'task_id=', $text);
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
     $lines = explode("\n", $text);
     $result = '';
     
@@ -89,17 +185,17 @@ function format_message_with_quotes($text) {
         $raw = ($quoteLevel > 0) ? $trimmed : $line;
         $escaped = htmlspecialchars(ensure_utf8($raw), ENT_QUOTES, 'UTF-8');
         $with_md = simple_markdown_to_html($escaped);
-        $with_links = linkify_urls_safe($with_md);
+        $with_links = normalize_monitor_task_urls($with_md);
         
+        $level = min($quoteLevel, 5);
         if ($quoteLevel > 0) {
-            $level = min($quoteLevel, 5);
             $result .= '<span class="quote-line quote-level-' . $level . '">' . $with_links . '</span>';
         } else {
             $result .= $with_links;
         }
     }
     
-    return $result;
+    return str_replace(["\r\n", "\r", "\n"], "", $result);
 }
 
 // Get deadline status
@@ -324,7 +420,12 @@ $sql = "SELECT m.*,
         LIMIT " . $messages_per_page;
 $db->query($sql);
 while ($db->next_record()) {
-    $messages[] = $db->Record;
+    $record = $db->Record;
+    if (!empty($record['message']) && is_string($record['message'])) {
+        $record['message'] = preg_replace('/edit\s*_?\s*task\.php/i', 'edit_task.php', $record['message']);
+        $record['message'] = preg_replace('/\btaskid=/i', 'task_id=', $record['message']);
+    }
+    $messages[] = $record;
 }
 
 // Get message attachments
@@ -778,6 +879,56 @@ $user_name = GetSessionParam("UserName");
         .task-description-content .msg-h1 { font-size: 1.1em; }
         .task-description-content .msg-h2 { font-size: 1.05em; }
         .task-description-content .msg-h3 { font-size: 1em; }
+        .message-content .msg-code, .task-description-content .msg-code {
+            display: block; margin: 0.5em 0; padding: 10px 12px; background: #f1f5f9; border-radius: 6px; font-size: 0.85em;
+            font-family: ui-monospace, monospace; overflow-x: auto; white-space: pre; border: 1px solid #e2e8f0;
+        }
+        .msg-code-wrap {
+            position: relative;
+            margin: 0.5em 0;
+        }
+        .msg-code-wrap .msg-code {
+            margin: 0;
+            padding-right: 40px;
+        }
+        .copy-code-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: #fff;
+            color: #718096;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.15s, color 0.15s, background 0.15s;
+        }
+        .msg-code-wrap:hover .copy-code-btn {
+            opacity: 1;
+        }
+        .copy-code-btn:hover {
+            background: #f1f5f9;
+            color: #667eea;
+        }
+        .copy-code-btn.copied {
+            color: #38a169;
+        }
+        .message-content .msg-table, .task-description-content .msg-table {
+            border-collapse: collapse; margin: 0.5em 0; font-size: 0.9em; width: 100%;
+        }
+        .message-content .msg-table th, .message-content .msg-table td,
+        .task-description-content .msg-table th, .task-description-content .msg-table td {
+            border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left;
+        }
+        .message-content .msg-table th, .task-description-content .msg-table th {
+            background: #f1f5f9; font-weight: 600; text-align: left;
+        }
 
         .task-description h3 {
             display: flex;
@@ -1937,6 +2088,9 @@ $user_name = GetSessionParam("UserName");
             min-height: 100px;
             resize: vertical;
         }
+        #editTaskDesc:focus {
+            min-height: 280px;
+        }
 
         .help-text { font-size: 0.8rem; color: #718096; margin-top: 6px; }
         .desc-attachment-area { margin-top: 12px; }
@@ -2365,6 +2519,25 @@ $user_name = GetSessionParam("UserName");
         html.dark-mode .message-author-name { color: #e2e8f0; }
         html.dark-mode .message-date { color: #8b949e; }
         html.dark-mode .message-content { color: #cbd5e0; }
+        html.dark-mode .message-content .msg-code, html.dark-mode .task-description-content .msg-code {
+            background: #1c2333; border-color: #2d333b; color: #e2e8f0;
+        }
+        html.dark-mode .copy-code-btn {
+            background: #252d3d;
+            border-color: #2d333b;
+            color: #8b949e;
+        }
+        html.dark-mode .copy-code-btn:hover {
+            background: #1c2333;
+            color: #93c5fd;
+        }
+        html.dark-mode .message-content .msg-table th, html.dark-mode .message-content .msg-table td,
+        html.dark-mode .task-description-content .msg-table th, html.dark-mode .task-description-content .msg-table td {
+            border-color: #2d333b;
+        }
+        html.dark-mode .message-content .msg-table th, html.dark-mode .task-description-content .msg-table th {
+            background: #252d3d; color: #e2e8f0; text-align: left;
+        }
         html.dark-mode .message-status { background: #1c2333; color: #8b949e; }
         html.dark-mode .message-attachments { border-top-color: #2d333b; }
 
@@ -3039,7 +3212,7 @@ $user_name = GetSessionParam("UserName");
                                         }
                                     }
                                 }
-                                echo $msg_html;
+                                echo normalize_monitor_task_urls($msg_html);
                             ?></div>
                             
                             <?php if (isset($message_attachments[$msg['message_id']])): ?>
@@ -3083,6 +3256,61 @@ $user_name = GetSessionParam("UserName");
     </div>
 
     <script>
+    // Fix broken monitor task URLs in message content (edittask.php?taskid= -> edit_task.php?task_id=)
+    // Runs on existing and dynamically added content so links work regardless of caching/code path
+    function fixMonitorTaskLinksInElement(el) {
+        if (!el) return;
+        var root = el.nodeType === 9 ? el.body : el;
+        if (!root) return;
+        var links = root.querySelectorAll ? root.querySelectorAll('.message-content a[href]') : [];
+        for (var i = 0; i < links.length; i++) {
+            var a = links[i];
+            var h = a.getAttribute('href') || a.href || '';
+            if (/edittask\.php/i.test(h) || /\btaskid=/i.test(h)) {
+                var fixed = h.replace(/edit\s*_?\s*task\.php/gi, 'edit_task.php').replace(/\btaskid=/gi, 'task_id=');
+                a.setAttribute('href', fixed);
+                a.href = fixed;
+                if (a.textContent && (a.textContent.indexOf('edittask') !== -1 || a.textContent.indexOf('taskid=') !== -1)) {
+                    a.textContent = a.textContent.replace(/edit\s*_?\s*task\.php/gi, 'edit_task.php').replace(/\btaskid=/gi, 'task_id=');
+                }
+            }
+        }
+    }
+    fixMonitorTaskLinksInElement(document);
+
+    // Copy code block to clipboard
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.copy-code-btn');
+        if (!btn) return;
+        var wrap = btn.closest('.msg-code-wrap');
+        var codeEl = wrap ? wrap.querySelector('pre code') : null;
+        var text = codeEl ? codeEl.textContent : '';
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                btn.classList.add('copied');
+                btn.setAttribute('title', 'Copied!');
+                setTimeout(function() {
+                    btn.classList.remove('copied');
+                    btn.setAttribute('title', 'Copy to clipboard');
+                }, 1500);
+            });
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            btn.classList.add('copied');
+            btn.setAttribute('title', 'Copied!');
+            setTimeout(function() {
+                btn.classList.remove('copied');
+                btn.setAttribute('title', 'Copy to clipboard');
+            }, 1500);
+        }
+    });
+
     // ==================== Mark Task as Seen ====================
     (function() {
         var STORAGE_KEY = 'seenTasks';
@@ -3783,7 +4011,8 @@ $user_name = GetSessionParam("UserName");
                     container.insertAdjacentHTML('beforeend', div);
                     messagesLoaded++;
                 });
-                
+                fixMonitorTaskLinksInElement(container);
+
                 messagesTotal = data.total || messagesTotal;
                 var remaining = messagesTotal - messagesLoaded;
                 if (remaining <= 0) {
@@ -3878,7 +4107,8 @@ $user_name = GetSessionParam("UserName");
         });
         
         container.innerHTML = html;
-        
+        fixMonitorTaskLinksInElement(container);
+
         // Remove highlight after 3 seconds
         if (highlightFirst) {
             setTimeout(function() {
@@ -3893,26 +4123,37 @@ $user_name = GetSessionParam("UserName");
     // Format message content with quotes and simple markdown (## ### ** *)
     function formatMessageContent(text) {
         if (!text) return '';
-        
+        text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         var lines = text.split('\n');
         var html = '';
         
         function applySimpleMarkdown(escapedLine) {
-            var t = escapedLine;
+            var urlPattern = /(https?:\/\/[^\s<]+)/g;
+            var urls = [];
+            var t = escapedLine.replace(urlPattern, function(m) {
+                urls.push(m);
+                return '\x01U' + (urls.length - 1) + '\x01';
+            });
             if (/^###\s+/.test(t)) {
-                return '<h3 class="msg-heading msg-h3">' + t.replace(/^###\s+/, '') + '</h3>';
+                t = '<h3 class="msg-heading msg-h3">' + t.replace(/^###\s+/, '') + '</h3>';
+            } else if (/^##\s+/.test(t)) {
+                t = '<h2 class="msg-heading msg-h2">' + t.replace(/^##\s+/, '') + '</h2>';
+            } else if (/^#\s+/.test(t)) {
+                t = '<h1 class="msg-heading msg-h1">' + t.replace(/^#\s+/, '') + '</h1>';
+            } else {
+                t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                t = t.replace(/__(.+?)__/g, '<strong>$1</strong>');
+                t = t.replace(/_(.+?)_/g, '<em>$1</em>');
+                t = t.replace(/^\s+|\s+$/g, '') === '' ? '<br>' : t + '<br>';
             }
-            if (/^##\s+/.test(t)) {
-                return '<h2 class="msg-heading msg-h2">' + t.replace(/^##\s+/, '') + '</h2>';
-            }
-            if (/^#\s+/.test(t)) {
-                return '<h1 class="msg-heading msg-h1">' + t.replace(/^#\s+/, '') + '</h1>';
-            }
-            t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
-            t = t.replace(/__(.+?)__/g, '<strong>$1</strong>');
-            t = t.replace(/_(.+?)_/g, '<em>$1</em>');
-            return t + '<br>';
+            urls.forEach(function(url, i) {
+                url = url.replace(/&amp;/g, '&');
+                url = url.replace(/edit\s*_?\s*task\.php/gi, 'edit_task.php').replace(/\btaskid=/gi, 'task_id=');
+                var link = '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(url) + '</a>';
+                t = t.split('\x01U' + i + '\x01').join(link);
+            });
+            return t;
         }
         
         lines.forEach(function(line) {
@@ -3924,16 +4165,16 @@ $user_name = GetSessionParam("UserName");
             }
             var raw = level > 0 ? trimmed : line;
             var escaped = escapeHtml(raw);
-            var withMd = applySimpleMarkdown(escaped);
-            var withLinks = linkifyUrls(withMd);
+            var withLinks = normalizeMonitorTaskUrls(applySimpleMarkdown(escaped));
+            var cappedLevel = Math.min(level, 5);
             if (level > 0) {
-                var cappedLevel = Math.min(level, 5);
                 html += '<span class="quote-line quote-level-' + cappedLevel + '">' + withLinks + '</span>';
             } else {
                 html += withLinks;
             }
         });
         
+        html = normalizeMonitorTaskUrls(html);
         return html;
     }
 
@@ -3941,6 +4182,11 @@ $user_name = GetSessionParam("UserName");
     function linkifyUrls(text) {
         var urlPattern = /(https?:\/\/[^\s<]+)/g;
         return text.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    }
+
+    // Fix broken monitor task URLs (edittask.php?taskid= -> edit_task.php?task_id=)
+    function normalizeMonitorTaskUrls(html) {
+        return html.replace(/edit\s*_?\s*task\.php/gi, 'edit_task.php').replace(/\btaskid=/gi, 'task_id=');
     }
 
     // Update deadline hidden fields when date picker changes
@@ -3956,6 +4202,114 @@ $user_name = GetSessionParam("UserName");
             document.getElementById('deadlineYear').value = new Date().getFullYear();
         }
     }
+
+    // ==================== Description editor: VS Code–like line shortcuts ====================
+    (function() {
+        function attachEditorShortcuts(el) {
+            if (!el) return;
+
+            function getLines() {
+                return el.value.split('\n');
+            }
+            function setLines(lines) {
+                el.value = lines.join('\n');
+            }
+            function getLineIndex(pos) {
+                return (el.value.substring(0, pos).match(/\n/g) || []).length;
+            }
+            function getLineRange(lineIndex) {
+                var text = el.value;
+                var lines = text.split('\n');
+                if (lineIndex < 0 || lineIndex >= lines.length) return { start: 0, end: 0 };
+                var start = 0;
+                for (var i = 0; i < lineIndex; i++) start += lines[i].length + 1;
+                var end = start + lines[lineIndex].length;
+                return { start: start, end: end };
+            }
+            function selectLine() {
+                var lineIndex = getLineIndex(el.selectionStart);
+                var r = getLineRange(lineIndex);
+                el.setSelectionRange(r.start, r.end);
+                el.focus();
+            }
+            function deleteLine() {
+                var lineIndex = getLineIndex(el.selectionStart);
+                var lines = getLines();
+                if (lines.length <= 1) {
+                    el.value = '';
+                    el.setSelectionRange(0, 0);
+                    return;
+                }
+                lines.splice(lineIndex, 1);
+                setLines(lines);
+                var r = getLineRange(Math.min(lineIndex, lines.length - 1));
+                el.setSelectionRange(r.start, r.start);
+                el.focus();
+            }
+            function moveLine(delta) {
+                var lineIndex = getLineIndex(el.selectionStart);
+                var lines = getLines();
+                var newIndex = lineIndex + delta;
+                if (newIndex < 0 || newIndex >= lines.length) return;
+                var line = lines.splice(lineIndex, 1)[0];
+                lines.splice(newIndex, 0, line);
+                setLines(lines);
+                var r = getLineRange(newIndex);
+                el.setSelectionRange(r.start, r.end);
+                el.focus();
+            }
+            function copyLine(delta) {
+                var lineIndex = getLineIndex(el.selectionStart);
+                var lines = getLines();
+                var line = lines[lineIndex];
+                var newIndex = lineIndex + delta;
+                if (newIndex < 0 || newIndex > lines.length) return;
+                lines.splice(newIndex, 0, line);
+                setLines(lines);
+                var r = getLineRange(newIndex);
+                el.setSelectionRange(r.start, r.end);
+                el.focus();
+            }
+
+            el.addEventListener('keydown', function(e) {
+                var mod = e.ctrlKey || e.metaKey;
+
+                if (mod && e.key === 'l') {
+                    e.preventDefault();
+                    selectLine();
+                    return;
+                }
+                if (mod && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+                    e.preventDefault();
+                    deleteLine();
+                    return;
+                }
+                if (e.altKey && e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    moveLine(-1);
+                    return;
+                }
+                if (e.altKey && e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    moveLine(1);
+                    return;
+                }
+                if (e.shiftKey && e.altKey && e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    copyLine(-1);
+                    return;
+                }
+                if (e.shiftKey && e.altKey && e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    copyLine(1);
+                    return;
+                }
+            });
+        }
+
+        attachEditorShortcuts(document.getElementById('editTaskDesc'));
+        attachEditorShortcuts(document.getElementById('messageTextarea'));
+    })();
 
     // ==================== Description Attachments (Edit Form) ====================
     (function() {
