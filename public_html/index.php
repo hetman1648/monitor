@@ -4883,10 +4883,3 @@ while ($db->next_record()) {
 </html>
 <?php
 ?>
-eY(-20px); }
-    }
-    </style>
-</body>
-</html>
-<?php
-?>

@@ -37,8 +37,8 @@ function normalize_monitor_task_urls($html) {
 }
 
 // Simple markdown to HTML (call on already htmlspecialchars'd text): ## ### ** * ``` code fences, pipe tables |
-// URLs are protected with placeholders so underscores in URLs are not treated as italic.
-// Code blocks are extracted FIRST so URLs inside them are not linkified or replaced.
+// URLs are protected with placeholders so they are not linkified in the middle of processing.
+// Underscores are left as-is (no _italic_ or __bold__) so identifiers like include_nofollow and domain_name are preserved.
 function simple_markdown_to_html($escaped_text) {
     $escaped_text = str_replace(["\r\n", "\r"], "\n", $escaped_text);
 
@@ -117,11 +117,9 @@ function simple_markdown_to_html($escaped_text) {
         } elseif (preg_match('/^#\s+(.*)$/', $t, $m)) {
             $t = '<h1 class="msg-heading msg-h1">' . $m[1] . '</h1>';
         } else {
-            // Bold **text** and italic *text* (URLs already replaced with placeholders)
+            // Bold **text** and italic *text* only (underscores left as literal so e.g. include_nofollow stays)
             $t = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $t);
             $t = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $t);
-            $t = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $t);
-            $t = preg_replace('/_(.+?)_/s', '<em>$1</em>', $t);
             if (trim($t) === '') {
                 $t = '<br>';
             } else {
@@ -1046,6 +1044,36 @@ $user_name = GetSessionParam("UserName");
             margin-bottom: 10px;
         }
 
+        .task-modal-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .task-modal-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-modal-btn {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #f7fafc;
+            color: #4a5568;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .task-modal-btn:hover {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+
         .task-modal-description {
             font-size: 0.95rem;
             color: #2d3748;
@@ -1922,10 +1950,14 @@ $user_name = GetSessionParam("UserName");
             max-width: 100%;
             margin: 6px 0;
             cursor: pointer;
+            vertical-align: middle;
         }
         .message-inline-image img {
             max-width: 100%;
-            max-height: 400px;
+            max-height: 280px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
             border-radius: 6px;
             border: 1px solid #e2e8f0;
             transition: opacity 0.15s;
@@ -2576,6 +2608,8 @@ $user_name = GetSessionParam("UserName");
         html.dark-mode .task-modal-section h4 { color: #8b949e; }
         html.dark-mode .task-modal-description { color: #cbd5e0; background: #0d1117; border-radius: 6px; padding: 12px 14px; }
         html.dark-mode .task-modal-description a { color: #90cdf4; }
+        html.dark-mode .task-modal-btn { border-color: #30363d; background: #21262d; color: #c9d1d9; }
+        html.dark-mode .task-modal-btn:hover { background: #30363d; color: #e6edf3; }
         html.dark-mode .task-modal-attachment { background: #1c2333; color: #cbd5e0; }
         html.dark-mode .task-modal-attachment:hover { background: #252d3a; color: #90cdf4; }
         html.dark-mode .task-modal-attachment-image { background: #1c2333; border-color: #2d333b; }
@@ -2835,7 +2869,13 @@ $user_name = GetSessionParam("UserName");
                             <div class="task-modal-body">
                                 <?php if ($task['task_desc']): ?>
                                 <div class="task-modal-section">
-                                    <h4>Description</h4>
+                                    <h4 class="task-modal-section-header">
+                                        Description
+                                        <span class="task-modal-actions">
+                                            <button type="button" class="task-modal-btn" onclick="copyModalDescription()" title="Copy to clipboard">📋 Copy</button>
+                                            <a href="edit_task.php?task_id=<?php echo (int)$task_id; ?>&edit=1#editTaskDesc" class="task-modal-btn" title="Edit description">✏️ Edit</a>
+                                        </span>
+                                    </h4>
                                     <div class="task-modal-description"><?php echo expand_task_desc_attachments($task['task_desc'], $task_id, $task_attachments); ?></div>
                                 </div>
                                 <?php endif; ?>
@@ -3204,22 +3244,28 @@ $user_name = GetSessionParam("UserName");
                                 <?php endif; ?>
                             </div>
                             <div class="message-content"><?php
-                                $msg_html = format_message_with_quotes($msg['message']);
-                                // Replace [filename.ext] references with inline images or links when attachment exists
+                                $raw_msg = $msg['message'];
+                                $placeholders = array();
                                 if (isset($message_attachments[$msg['message_id']])) {
                                     foreach ($message_attachments[$msg['message_id']] as $att) {
-                                        $att_url = 'attachments/message/' . $msg['message_id'] . '_' . htmlspecialchars($att['file_name']);
-                                        $escaped_name = htmlspecialchars($att['file_name']);
-                                        $bracket_ref = '[' . $escaped_name . ']';
-                                        $att_ext = strtolower(pathinfo($att['file_name'], PATHINFO_EXTENSION));
-                                        if (in_array($att_ext, array('jpg', 'jpeg', 'png', 'gif', 'webp'))) {
-                                            $inline_img = '<a href="' . $att_url . '" class="message-inline-image gallery-image" data-gallery="msg-' . $msg['message_id'] . '" onclick="openLightbox(this); return false;"><img src="' . $att_url . '" alt="' . $escaped_name . '"></a>';
-                                            $msg_html = str_replace($bracket_ref, $inline_img, $msg_html);
-                                        } else {
-                                            $link = '<a href="' . $att_url . '" class="message-attachment-link" target="_blank" rel="noopener">' . $bracket_ref . '</a>';
-                                            $msg_html = str_replace($bracket_ref, $link, $msg_html);
-                                        }
+                                        $bracket_ref = '[' . $att['file_name'] . ']';
+                                        $placeholder = '{{INLINEIMG:' . $msg['message_id'] . ':' . $att['file_name'] . '}}';
+                                        $raw_msg = str_replace($bracket_ref, $placeholder, $raw_msg);
+                                        $placeholders[] = array('placeholder' => $placeholder, 'att' => $att);
                                     }
+                                }
+                                $msg_html = format_message_with_quotes($raw_msg);
+                                foreach ($placeholders as $p) {
+                                    $att = $p['att'];
+                                    $att_url = 'attachments/message/' . $msg['message_id'] . '_' . htmlspecialchars($att['file_name']);
+                                    $escaped_name = htmlspecialchars($att['file_name']);
+                                    $att_ext = strtolower(pathinfo($att['file_name'], PATHINFO_EXTENSION));
+                                    if (in_array($att_ext, array('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'))) {
+                                        $replacement = '<a href="' . $att_url . '" class="message-inline-image gallery-image" data-gallery="msg-' . $msg['message_id'] . '" data-name="' . $escaped_name . '" onclick="openLightbox(this); return false;"><img src="' . $att_url . '" alt="' . $escaped_name . '"></a>';
+                                    } else {
+                                        $replacement = '<a href="' . $att_url . '" class="message-attachment-link" target="_blank" rel="noopener">[' . $escaped_name . ']</a>';
+                                    }
+                                    $msg_html = str_replace($p['placeholder'], $replacement, $msg_html);
                                 }
                                 echo normalize_monitor_task_urls($msg_html);
                             ?></div>
@@ -3790,6 +3836,23 @@ $user_name = GetSessionParam("UserName");
         }
     }
 
+    function copyModalDescription() {
+        var descEl = document.querySelector('#taskModal .task-modal-description');
+        if (!descEl) return;
+        var text = descEl.innerText || descEl.textContent || '';
+        text = text.trim();
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showCopyToast('Description copied to clipboard');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
     function fallbackCopy(text) {
         var ta = document.createElement('textarea');
         ta.value = text;
@@ -4140,22 +4203,30 @@ $user_name = GetSessionParam("UserName");
         html += '</div></div>';
         html += statusBadge;
         html += '</div>';
-        var contentHtml = formatMessageContent(msg.message || '');
-        // Replace [filename.ext] references with inline images or links to attachments
+        var contentHtml;
+        var rawMsg = msg.message || '';
+        var placeholders = [];
         if (attachments && attachments[msg.message_id]) {
             attachments[msg.message_id].forEach(function(att) {
-                var filePath = 'attachments/message/' + msg.message_id + '_' + att.file_name;
-                var bracketRef = '[' + escapeHtml(att.file_name) + ']';
-                var ext = att.file_name.split('.').pop().toLowerCase();
-                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].indexOf(ext) !== -1) {
-                    var inlineImg = '<a href="' + filePath + '" class="message-inline-image gallery-image" data-gallery="msg-' + msg.message_id + '" onclick="openLightbox(this); return false;"><img src="' + filePath + '" alt="' + escapeHtml(att.file_name) + '"></a>';
-                    contentHtml = contentHtml.split(bracketRef).join(inlineImg);
-                } else {
-                    var link = '<a href="' + filePath + '" class="message-attachment-link" target="_blank" rel="noopener">' + bracketRef + '</a>';
-                    contentHtml = contentHtml.split(bracketRef).join(link);
-                }
+                var bracketRef = '[' + att.file_name + ']';
+                var placeholder = '{{INLINEIMG:' + msg.message_id + ':' + att.file_name + '}}';
+                rawMsg = rawMsg.split(bracketRef).join(placeholder);
+                placeholders.push({ placeholder: placeholder, att: att });
             });
         }
+        contentHtml = formatMessageContent(rawMsg);
+        placeholders.forEach(function(p) {
+            var att = p.att;
+            var filePath = 'attachments/message/' + msg.message_id + '_' + att.file_name;
+            var ext = att.file_name.split('.').pop().toLowerCase();
+            var replacement;
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].indexOf(ext) !== -1) {
+                replacement = '<a href="' + filePath + '" class="message-inline-image gallery-image" data-gallery="msg-' + msg.message_id + '" data-name="' + escapeHtml(att.file_name) + '" onclick="openLightbox(this); return false;"><img src="' + filePath + '" alt="' + escapeHtml(att.file_name) + '"></a>';
+            } else {
+                replacement = '<a href="' + filePath + '" class="message-attachment-link" target="_blank" rel="noopener">[' + escapeHtml(att.file_name) + ']</a>';
+            }
+            contentHtml = contentHtml.split(p.placeholder).join(replacement);
+        });
         html += '<div class="message-content">' + contentHtml + '</div>';
         
         // Add attachments (thumbnails at bottom)

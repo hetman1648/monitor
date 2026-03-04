@@ -65,6 +65,27 @@
 		case "save_task_priorities":
 			ajax_save_task_priorities();
 		break;
+		case "get_vacation_reasons":
+			ajax_get_vacation_reasons();
+		break;
+		case "calculate_working_days":
+			ajax_calculate_working_days();
+		break;
+		case "get_vacation":
+			ajax_get_vacation();
+		break;
+		case "check_vacation_overlap":
+			ajax_check_vacation_overlap();
+		break;
+		case "apply_vacation":
+			ajax_apply_vacation();
+		break;
+		case "update_vacation":
+			ajax_update_vacation();
+		break;
+		case "delete_holiday":
+			ajax_delete_holiday();
+		break;
 	}
 		
 	function ajax_search_domains() {
@@ -255,8 +276,255 @@
 				set_task_priority($task_id, $priority, true);
 			}
 		}
+
 		$set_by = GetSessionParam("UserName");
-		echo json_encode(array('success' => true, 'set_by' => $set_by ? $set_by : ''));
+		$set_by = $set_by ? $set_by : '';
+
+		// Email the user whose priorities were set: list tasks in the new order
+		$ordered_task_ids = array();
+		foreach ($priorities as $item) {
+			$tid = isset($item['task_id']) ? (int) $item['task_id'] : 0;
+			if ($tid > 0) $ordered_task_ids[] = $tid;
+		}
+		if (!empty($ordered_task_ids)) {
+			$db->query("SELECT email FROM users WHERE user_id = " . (int) $user_id);
+			if ($db->next_record()) {
+				$to_email = trim($db->f("email"));
+				if ($to_email !== '') {
+					$task_titles = array();
+					$db->query("SELECT task_id, task_title FROM tasks WHERE task_id IN (" . implode(",", array_map("intval", $ordered_task_ids)) . ")");
+					while ($db->next_record()) {
+						$task_titles[(int) $db->f("task_id")] = str_replace(array("\r", "\n"), " ", $db->f("task_title"));
+					}
+					$base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'monitor.sayu.co.uk');
+					$report_url = $base_url . '/report_people.php?report_user_id=' . $user_id;
+					$lines = array();
+					$lines[] = "Your task priorities have been updated by " . $set_by . ".";
+					$lines[] = "";
+					$lines[] = "Your tasks in the new order:";
+					$num = 1;
+					foreach ($ordered_task_ids as $tid) {
+						$title = isset($task_titles[$tid]) ? $task_titles[$tid] : ("Task #" . $tid);
+						$lines[] = $num . ". " . $title;
+						$num++;
+					}
+					$lines[] = "";
+					$lines[] = "View your report: " . $report_url;
+					$body = implode("\n", $lines);
+					$subject = "Monitor: Your task priorities have been updated";
+					$headers = "From: monitor@" . (isset($_SERVER['HTTP_HOST']) ? preg_replace('/^www\./', '', $_SERVER['HTTP_HOST']) : 'sayu.co.uk') . "\r\nContent-Type: text/plain; charset=UTF-8";
+					@mail($to_email, $subject, $body, $headers);
+				}
+			}
+		}
+
+		echo json_encode(array('success' => true, 'set_by' => $set_by));
+		exit;
+	}
+
+	function ajax_get_vacation_reasons() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		$reasons = array();
+		$db->query("SELECT reason_id AS id, reason_name AS name FROM reasons ORDER BY reason_id");
+		while ($db->next_record()) {
+			$reasons[] = array('id' => (int) $db->f("id"), 'name' => $db->f("name"));
+		}
+		echo json_encode(array('success' => true, 'reasons' => $reasons));
+		exit;
+	}
+
+	function ajax_calculate_working_days() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		$start = GetParam("start_date");
+		$end = GetParam("end_date");
+		if (!$start || !$end) {
+			echo json_encode(array('success' => false));
+			exit;
+		}
+		$start_ts = strtotime($start);
+		$end_ts = strtotime($end);
+		if ($start_ts === false || $end_ts === false || $end_ts < $start_ts) {
+			echo json_encode(array('success' => false));
+			exit;
+		}
+		$holidays = array();
+		$db->query("SELECT holiday_date FROM national_holidays WHERE WEEKDAY(holiday_date) <= 4 AND holiday_date >= '" . date('Y-m-d', $start_ts) . "' AND holiday_date <= '" . date('Y-m-d', $end_ts) . "'");
+		while ($db->next_record()) {
+			$holidays[$db->f("holiday_date")] = true;
+		}
+		$count = 0;
+		for ($t = $start_ts; $t <= $end_ts; $t += 86400) {
+			$d = date('Y-m-d', $t);
+			$w = date('w', $t);
+			if ($w != 0 && $w != 6 && !isset($holidays[$d])) $count++;
+		}
+		echo json_encode(array('success' => true, 'working_days' => $count));
+		exit;
+	}
+
+	function ajax_get_vacation() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		$period_id = (int) GetParam("period_id");
+		$user_id = GetSessionParam("UserID");
+		if (!$period_id) {
+			echo json_encode(array('success' => false));
+			exit;
+		}
+		$db->query("SELECT period_id, period_title, reason_id, start_date, end_date, total_days, notes FROM days_off WHERE period_id = " . $period_id . " AND user_id = " . (int) $user_id);
+		if (!$db->next_record()) {
+			echo json_encode(array('success' => false));
+			exit;
+		}
+		echo json_encode(array(
+			'success' => true,
+			'vacation' => array(
+				'period_id' => (int) $db->f("period_id"),
+				'period_title' => $db->f("period_title"),
+				'reason_id' => (int) $db->f("reason_id"),
+				'start_date' => $db->f("start_date"),
+				'end_date' => $db->f("end_date"),
+				'total_days' => (int) $db->f("total_days"),
+				'notes' => $db->f("notes")
+			)
+		));
+		exit;
+	}
+
+	function ajax_check_vacation_overlap() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		$start = GetParam("start_date");
+		$end = GetParam("end_date");
+		$exclude_period = (int) GetParam("exclude_period_id");
+		if (!$start || !$end) {
+			echo json_encode(array('success' => true, 'has_overlaps' => false, 'overlaps' => array()));
+			exit;
+		}
+		$sql = "SELECT d.period_id, d.user_id, d.period_title, d.start_date, d.end_date, CONCAT(u.first_name, ' ', u.last_name) AS user_name
+			FROM days_off d
+			INNER JOIN users u ON u.user_id = d.user_id
+			WHERE d.is_paid = 0 AND (d.start_date <= " . ToSQL($end, "text") . " AND d.end_date >= " . ToSQL($start, "text") . ")";
+		if ($exclude_period > 0) $sql .= " AND d.period_id != " . $exclude_period;
+		$db->query($sql);
+		$overlaps = array();
+		while ($db->next_record()) {
+			$overlaps[] = array(
+				'user_id' => (int) $db->f("user_id"),
+				'user_name' => $db->f("user_name"),
+				'start_date' => $db->f("start_date"),
+				'end_date' => $db->f("end_date"),
+				'period_title' => $db->f("period_title")
+			);
+		}
+		echo json_encode(array('success' => true, 'has_overlaps' => count($overlaps) > 0, 'overlaps' => $overlaps));
+		exit;
+	}
+
+	function ajax_apply_vacation() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		$raw = file_get_contents('php://input');
+		$data = json_decode($raw, true);
+		if (!$data || !isset($data['user_id']) || !isset($data['start_date']) || !isset($data['end_date']) || !isset($data['total_days'])) {
+			echo json_encode(array('success' => false, 'error' => 'Missing required fields'));
+			exit;
+		}
+		$user_id = (int) $data['user_id'];
+		$session_id = (int) GetSessionParam("UserID");
+		if ($user_id != $session_id) {
+			echo json_encode(array('success' => false, 'error' => 'Unauthorized'));
+			exit;
+		}
+		$db->query("SELECT COALESCE(MAX(period_id), 0) + 1 AS next_id FROM days_off");
+		$db->next_record();
+		$period_id = (int) $db->f("next_id");
+		$title = isset($data['title']) ? $data['title'] : '';
+		$notes = isset($data['notes']) ? $data['notes'] : '';
+		$reason_id = isset($data['reason_id']) ? (int) $data['reason_id'] : 1;
+		$total_days = (int) $data['total_days'];
+		$is_paid = (isset($data['is_paid']) && $data['is_paid']) ? 1 : 0;
+		$start_date = $data['start_date'];
+		$end_date = $data['end_date'];
+		$sql = "INSERT INTO days_off (period_id, user_id, period_title, notes, reason_id, start_date, end_date, total_days, is_paid) VALUES (" .
+			$period_id . ", " . $user_id . ", " . ToSQL($title, "text") . ", " . ToSQL($notes, "text") . ", " . $reason_id . ", " .
+			ToSQL($start_date, "text") . ", " . ToSQL($end_date, "text") . ", " . $total_days . ", " . $is_paid . ")";
+		$db->query($sql);
+		echo json_encode(array('success' => true, 'period_id' => $period_id));
+		exit;
+	}
+
+	function ajax_update_vacation() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		$raw = file_get_contents('php://input');
+		$data = json_decode($raw, true);
+		if (!$data || !isset($data['period_id']) || !isset($data['start_date']) || !isset($data['end_date']) || !isset($data['total_days'])) {
+			echo json_encode(array('success' => false, 'error' => 'Missing required fields'));
+			exit;
+		}
+		$period_id = (int) $data['period_id'];
+		$user_id = (int) GetSessionParam("UserID");
+		$db->query("SELECT period_id FROM days_off WHERE period_id = " . $period_id . " AND user_id = " . $user_id);
+		if (!$db->next_record()) {
+			echo json_encode(array('success' => false, 'error' => 'Not found'));
+			exit;
+		}
+		$title = isset($data['title']) ? $data['title'] : '';
+		$notes = isset($data['notes']) ? $data['notes'] : '';
+		$reason_id = isset($data['reason_id']) ? (int) $data['reason_id'] : 1;
+		$total_days = (int) $data['total_days'];
+		$is_paid = (isset($data['is_paid']) && $data['is_paid']) ? 1 : 0;
+		$start_date = $data['start_date'];
+		$end_date = $data['end_date'];
+		$sql = "UPDATE days_off SET period_title = " . ToSQL($title, "text") . ", notes = " . ToSQL($notes, "text") . ", reason_id = " . $reason_id . ", start_date = " . ToSQL($start_date, "text") . ", end_date = " . ToSQL($end_date, "text") . ", total_days = " . $total_days . ", is_paid = " . $is_paid . " WHERE period_id = " . $period_id . " AND user_id = " . $user_id;
+		$db->query($sql);
+		echo json_encode(array('success' => true));
+		exit;
+	}
+
+	function ajax_delete_holiday() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		if (GetSessionParam("privilege_id") == 9) {
+			echo json_encode(array('success' => false, 'error' => 'Access denied'));
+			exit;
+		}
+		$raw = file_get_contents('php://input');
+		$data = json_decode($raw, true);
+		if (!$data || !isset($data['table']) || !isset($data['id'])) {
+			echo json_encode(array('success' => false, 'error' => 'Missing table or id'));
+			exit;
+		}
+		$allowed_tables = array('national_holidays', 'english_holidays');
+		if (!in_array($data['table'], $allowed_tables)) {
+			echo json_encode(array('success' => false, 'error' => 'Invalid table'));
+			exit;
+		}
+		$id = (int) $data['id'];
+		if ($id < 1) {
+			echo json_encode(array('success' => false, 'error' => 'Invalid id'));
+			exit;
+		}
+		$table = $data['table'];
+		$db->query("DELETE FROM " . $table . " WHERE holiday_id = " . $id);
+		echo json_encode(array('success' => true));
 		exit;
 	}
 

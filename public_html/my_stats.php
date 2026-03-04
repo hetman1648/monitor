@@ -1787,6 +1787,109 @@ $month_name = date("F", mktime(0, 0, 0, $month_selected, 1, $year_selected));
         font-size: 0.8rem;
         color: #92400e;
     }
+
+    /* Leave Type dropdown: ensure it appears above modal */
+    .custom-select-options {
+        z-index: 1100;
+    }
+    .modal-body {
+        overflow: visible;
+    }
+    .modal {
+        overflow-y: auto;
+    }
+
+    /* Dark mode: holiday modal */
+    html.dark-mode .modal-overlay {
+        background: rgba(0, 0, 0, 0.75);
+    }
+    html.dark-mode .modal {
+        background: #161b22;
+        border: 1px solid #30363d;
+    }
+    html.dark-mode .modal-header {
+        background: linear-gradient(135deg, #1e3a5f 0%, #0d1117 100%);
+        border-bottom: 1px solid #30363d;
+    }
+    html.dark-mode .modal-body {
+        background: #161b22;
+        color: #c9d1d9;
+    }
+    html.dark-mode .modal-footer {
+        background: #0d1117;
+        border-top: 1px solid #30363d;
+    }
+    html.dark-mode .form-group label {
+        color: #8b949e;
+    }
+    html.dark-mode .form-input {
+        background: #0d1117;
+        border-color: #30363d;
+        color: #c9d1d9;
+    }
+    html.dark-mode .form-input::placeholder {
+        color: #6e7681;
+    }
+    html.dark-mode .form-input:focus {
+        border-color: #58a6ff;
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+    html.dark-mode .form-input:read-only {
+        background: #21262d;
+        color: #8b949e;
+    }
+    html.dark-mode .custom-select-trigger {
+        background: #0d1117;
+        border-color: #30363d;
+        color: #c9d1d9;
+    }
+    html.dark-mode .custom-select-trigger:hover {
+        border-color: #484f58;
+    }
+    html.dark-mode .custom-select.open .custom-select-trigger {
+        border-color: #58a6ff;
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+    html.dark-mode .custom-select-arrow {
+        color: #8b949e;
+    }
+    html.dark-mode .custom-select-options {
+        background: #21262d;
+        border-color: #30363d;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    html.dark-mode .custom-select-option {
+        color: #c9d1d9;
+    }
+    html.dark-mode .custom-select-option:hover {
+        background: #30363d;
+    }
+    html.dark-mode .custom-select-option.selected {
+        background: rgba(88, 166, 255, 0.15);
+        color: #58a6ff;
+    }
+    html.dark-mode textarea.form-input {
+        background: #0d1117;
+        border-color: #30363d;
+        color: #c9d1d9;
+    }
+    html.dark-mode .overlap-warning {
+        background: rgba(210, 153, 34, 0.15);
+        border-color: #d29922;
+    }
+    html.dark-mode .overlap-header,
+    html.dark-mode .overlap-list,
+    html.dark-mode .overlap-note {
+        color: #e3b341;
+    }
+    html.dark-mode .sick-note-group {
+        background: rgba(210, 153, 34, 0.15);
+        border-color: #d29922;
+    }
+    html.dark-mode .checkbox-label,
+    html.dark-mode .field-hint {
+        color: #e3b341;
+    }
 </style>
 
 <script>
@@ -2013,27 +2116,45 @@ document.addEventListener('click', function(e) {
 function calculateDays() {
     const startDate = document.getElementById('holiday_start').value;
     const endDate = document.getElementById('holiday_end').value;
-    
+
     if (!startDate || !endDate) return;
-    
-    fetch(`ajax_responder.php?action=calculate_working_days&start_date=${startDate}&end_date=${endDate}`)
+
+    fetch(`ajax_responder.php?action=calculate_working_days&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`)
         .then(r => r.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.working_days !== undefined) {
                 document.getElementById('holiday_days').value = data.working_days;
-                // Update illness visibility based on number of days
                 updateIllnessVisibility();
             } else {
-                document.getElementById('holiday_days').value = '';
+                setDaysFallback(startDate, endDate);
             }
         })
         .catch(err => {
             console.error('Failed to calculate days:', err);
-            document.getElementById('holiday_days').value = '';
+            setDaysFallback(startDate, endDate);
         });
-    
-    // Check for overlaps
+
     checkOverlaps();
+}
+
+function setDaysFallback(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+        document.getElementById('holiday_days').value = '';
+        return;
+    }
+    let count = 0;
+    const cur = new Date(start);
+    cur.setHours(0, 0, 0, 0);
+    const endVal = end.getTime();
+    while (cur.getTime() <= endVal) {
+        const d = cur.getDay();
+        if (d !== 0 && d !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+    }
+    document.getElementById('holiday_days').value = count;
+    updateIllnessVisibility();
 }
 
 function checkOverlaps() {
@@ -2321,6 +2442,9 @@ document.addEventListener('keydown', e => {
 document.getElementById('holidayModal').addEventListener('click', e => {
     if (e.target.classList.contains('modal-overlay')) closeHolidayModal();
 });
+
+// Preload vacation reasons so Leave Type dropdown is ready when modal opens
+loadReasons();
 </script>
 
 <style>
