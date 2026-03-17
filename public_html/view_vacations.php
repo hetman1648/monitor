@@ -11,6 +11,9 @@ if (getsessionparam("privilege_id") == 9) {
 $user_id = GetSessionParam("UserID");
 $user_name = GetSessionParam("UserName");
 
+// Can this user approve vacation requests? (same as index.php)
+$can_approve_vacations = ($user_id == 3);
+
 // SECOND DATABASE OBJECT
 $db2 = new DB_Sql;
 $db2->Database = DATABASE_NAME;
@@ -536,6 +539,35 @@ for ($y = date("Y"); $y >= 2004; $y--) {
             color: #3730a3;
         }
 
+        .btn-inline {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 0 2px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-approve {
+            background: #38a169;
+            color: #fff;
+        }
+        .btn-approve:hover {
+            background: #2f855a;
+            color: #fff;
+        }
+        .btn-decline {
+            background: transparent;
+            color: #718096;
+            border: 1px solid #cbd5e0;
+        }
+        .btn-decline:hover {
+            background: #fed7d7;
+            color: #c53030;
+            border-color: #fc8181;
+        }
+
         .empty-state {
             text-align: center;
             padding: 30px;
@@ -669,6 +701,11 @@ for ($y = date("Y"); $y >= 2004; $y--) {
             background: rgba(67, 56, 202, 0.3);
             color: #c3dafe;
         }
+
+        html.dark-mode .btn-approve { background: #276749; color: #9ae6b4; }
+        html.dark-mode .btn-approve:hover { background: #22543d; color: #c6f6d5; }
+        html.dark-mode .btn-decline { color: #a0aec0; border-color: #4a5568; }
+        html.dark-mode .btn-decline:hover { background: rgba(220, 38, 38, 0.3); color: #feb2b2; border-color: #e53e3e; }
         html.dark-mode .section-title { color: #e2e8f0; }
         html.dark-mode .stats-value { color: #e2e8f0; }
         html.dark-mode .stats-value.highlight { color: #90cdf4; }
@@ -867,6 +904,7 @@ for ($y = date("Y"); $y >= 2004; $y--) {
                             <th>To</th>
                             <th class="text-center">Days</th>
                             <th class="text-center">Status</th>
+                            <?php if ($can_approve_vacations): ?><th class="text-center">Actions</th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -887,6 +925,16 @@ for ($y = date("Y"); $y >= 2004; $y--) {
                                     <span class="badge badge-pending">Pending</span>
                                 <?php endif; ?>
                             </td>
+                            <?php if ($can_approve_vacations): ?>
+                            <td class="text-center">
+                                <?php if ($d['status'] == 'pending'): ?>
+                                    <a href="approve_vacation.php?approve=1&period_id=<?php echo $d['period_id']; ?>" class="btn-inline btn-approve" onclick="return confirm('Approve this request?')">Approve</a>
+                                    <a href="approve_vacation.php?decline=1&period_id=<?php echo $d['period_id']; ?>" class="btn-inline btn-decline" onclick="return confirm('Decline this request?')">Decline</a>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
+                            <?php endif; ?>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -915,6 +963,7 @@ for ($y = date("Y"); $y >= 2004; $y--) {
                             <th>To</th>
                             <th class="text-center">Days</th>
                             <th class="text-center">Status</th>
+                            <?php if ($can_approve_vacations): ?><th class="text-center">Actions</th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -934,6 +983,16 @@ for ($y = date("Y"); $y >= 2004; $y--) {
                                     <span class="badge badge-pending">Pending</span>
                                 <?php endif; ?>
                             </td>
+                            <?php if ($can_approve_vacations): ?>
+                            <td class="text-center">
+                                <?php if ($d['status'] == 'pending'): ?>
+                                    <a href="approve_vacation.php?approve=1&period_id=<?php echo $d['period_id']; ?>" class="btn-inline btn-approve" onclick="return confirm('Approve this request?')">Approve</a>
+                                    <a href="approve_vacation.php?decline=1&period_id=<?php echo $d['period_id']; ?>" class="btn-inline btn-decline" onclick="return confirm('Decline this request?')">Decline</a>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
+                            <?php endif; ?>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

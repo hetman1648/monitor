@@ -124,14 +124,16 @@ if ($db->next_record()) {
     $show_users_list = $db->f("show_users_list");
 }
 
-// Load pending vacation approvals
+// Load pending vacation approvals (only current/future – same idea as view_vacations.php)
 $pending_vacations = array();
 if ($approve_vacations) {
     $sql2 = "SELECT d.*, u.first_name, u.last_name, r.reason_name 
              FROM days_off d 
              INNER JOIN users u ON u.user_id = d.user_id 
              LEFT JOIN reasons r ON r.reason_id = d.reason_id 
-             WHERE d.is_approved='0' AND d.is_declined='0'
+             WHERE (d.is_approved IS NULL OR d.is_approved = '0' OR d.is_approved = 0)
+             AND (d.is_declined IS NULL OR d.is_declined = '0' OR d.is_declined = 0)
+             AND d.start_date >= CURDATE()
              ORDER BY d.start_date";
     $db2->query($sql2);
     while ($db2->next_record()) {
@@ -883,6 +885,115 @@ while ($db->next_record()) {
             color: #718096;
         }
 
+        /* Dark mode – Upcoming Time Off */
+        html.dark-mode .upcoming-holidays {
+            background: #161b22;
+            border-color: #2d333b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        html.dark-mode .upcoming-holidays-header h3 {
+            color: #e2e8f0;
+        }
+        html.dark-mode .upcoming-holidays-header a {
+            color: #8b949e;
+        }
+        html.dark-mode .upcoming-holidays-header a:hover {
+            color: #cbd5e0;
+        }
+        html.dark-mode .upcoming-holiday-item {
+            border-bottom-color: #2d333b;
+        }
+        html.dark-mode .upcoming-holiday-user {
+            color: #e2e8f0;
+        }
+        html.dark-mode .upcoming-holiday-dates {
+            color: #a0aec0;
+        }
+        html.dark-mode .upcoming-holiday-reason {
+            background: #252d3d;
+            color: #a0aec0;
+        }
+        html.dark-mode .upcoming-holiday-today {
+            background: rgba(220, 38, 38, 0.25);
+            color: #fca5a5;
+        }
+        html.dark-mode .upcoming-holiday-hide {
+            color: #8b949e;
+        }
+        html.dark-mode .upcoming-holiday-hide:hover {
+            color: #cbd5e0;
+        }
+
+        /* Pending vacation approvals banner (index – only for approver) */
+        .pending-approvals-banner {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            padding: 16px 20px;
+        }
+        .pending-approvals-banner-inner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 12px 20px;
+        }
+        .pending-approvals-icon {
+            font-size: 1.5rem;
+        }
+        .pending-approvals-content {
+            flex: 1;
+            min-width: 200px;
+        }
+        .pending-approvals-content strong {
+            display: block;
+            color: #92400e;
+            font-size: 1rem;
+        }
+        .pending-approvals-hint {
+            display: block;
+            font-size: 0.8rem;
+            color: #b45309;
+            margin-top: 2px;
+        }
+        .pending-approvals-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .pending-approvals-item {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .pending-approvals-user {
+            font-weight: 600;
+            color: #1a202c;
+        }
+        .pending-approvals-dates {
+            color: #4a5568;
+        }
+        .pending-approvals-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+        .pending-approvals-link {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #b45309;
+            text-decoration: none;
+        }
+        .pending-approvals-link:hover {
+            text-decoration: underline;
+        }
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -967,14 +1078,40 @@ while ($db->next_record()) {
             margin-right: 6px;
             vertical-align: middle;
             flex-shrink: 0;
+            animation: unread-dot-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes unread-dot-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+            50% { opacity: 0.85; transform: scale(1.15); box-shadow: 0 0 0 4px rgba(102, 126, 234, 0); }
         }
 
-        /* Unread kanban cards */
+        /* Unread kanban cards (By Project & By Status) */
         .kb-card.task-unread {
             border-left: 3px solid #667eea;
+            animation: unread-border-pulse 2s ease-in-out infinite;
+        }
+        .kb-card.task-unread .kb-card-title {
+            position: relative;
+            padding-left: 14px;
+        }
+        .kb-card.task-unread .kb-card-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.4em;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: unread-dot-pulse 1.5s ease-in-out infinite;
+            flex-shrink: 0;
         }
         .kb-card.task-unread .kb-card-title a {
             font-weight: 700;
+        }
+        @keyframes unread-border-pulse {
+            0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.08), -2px 0 8px 0 rgba(102, 126, 234, 0.35); }
+            50% { box-shadow: 0 1px 3px rgba(0,0,0,0.08), -2px 0 12px 2px rgba(102, 126, 234, 0.5); }
         }
 
         .data-table a {
@@ -2187,6 +2324,42 @@ while ($db->next_record()) {
         .data-table tr.selected-row { background:#eef2ff !important; }
 
         /* ==================== DARK MODE overrides for index.php ==================== */
+        html.dark-mode .holiday-banner {
+            background: linear-gradient(135deg, #1e3a5f 0%, #172a45 100%);
+            border: 1px solid #2d4a6f;
+        }
+        html.dark-mode .holiday-banner span {
+            color: #e2e8f0;
+        }
+        html.dark-mode .holiday-banner strong {
+            color: #f0f4f8;
+        }
+        html.dark-mode .holiday-banner .region {
+            background: rgba(59, 130, 246, 0.35);
+            color: #e2e8f0;
+        }
+        html.dark-mode .birthday-banner {
+            background: linear-gradient(135deg, #3a2a0a 0%, #2d2208 100%);
+            border: 1px solid #4a3a10;
+        }
+        html.dark-mode .birthday-banner span {
+            color: #fef3c7;
+        }
+
+        html.dark-mode .pending-approvals-banner {
+            background: linear-gradient(135deg, #422006 0%, #451a03 100%);
+            border-color: #b45309;
+        }
+        html.dark-mode .pending-approvals-content strong { color: #fcd34d; }
+        html.dark-mode .pending-approvals-hint { color: #fbbf24; }
+        html.dark-mode .pending-approvals-item {
+            background: rgba(0,0,0,0.2);
+        }
+        html.dark-mode .pending-approvals-user { color: #e2e8f0; }
+        html.dark-mode .pending-approvals-dates { color: #a0aec0; }
+        html.dark-mode .pending-approvals-link { color: #fbbf24; }
+        html.dark-mode .pending-approvals-link:hover { color: #fcd34d; }
+
         html.dark-mode .dashboard-grid .card { background: #161b22; }
         html.dark-mode .dashboard-grid .card-header { background: linear-gradient(135deg, #1c2333 0%, #161b22 100%); }
 
@@ -2263,6 +2436,21 @@ while ($db->next_record()) {
         /* Unread tasks dark mode */
         html.dark-mode .data-table tr.task-unread .task-title-cell::before { background: #90cdf4; }
         html.dark-mode .kb-card.task-unread { border-left-color: #90cdf4; }
+        html.dark-mode .kb-card.task-unread .kb-card-title::before { background: #90cdf4; animation-name: unread-dot-pulse-dark; }
+        @keyframes unread-dot-pulse-dark {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(144, 205, 244, 0.4); }
+            50% { opacity: 0.9; transform: scale(1.15); box-shadow: 0 0 0 4px rgba(144, 205, 244, 0); }
+        }
+        @keyframes unread-border-pulse-dark {
+            0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.5), -2px 0 8px 0 rgba(144, 205, 244, 0.3); }
+            50% { box-shadow: 0 1px 3px rgba(0,0,0,0.5), -2px 0 12px 2px rgba(144, 205, 244, 0.45); }
+        }
+        html.dark-mode .data-table tr.task-unread .task-title-cell::before {
+            animation-name: unread-dot-pulse-dark;
+        }
+        html.dark-mode .kb-card.task-unread {
+            animation-name: unread-border-pulse-dark;
+        }
 
         /* Action buttons dark mode */
         html.dark-mode .action-start { background: #22543d; color: #9ae6b4; }
@@ -2387,6 +2575,8 @@ while ($db->next_record()) {
                     <span class="upcoming-holiday-dates">
                         <?php if ($holiday['is_today']): ?>
                             <span class="upcoming-holiday-reason upcoming-holiday-today">Starting today</span>
+                        <?php elseif ($holiday['start_date'] === $holiday['end_date']): ?>
+                            <?php echo $holiday['start_date']; ?>
                         <?php else: ?>
                             <?php echo $holiday['start_date']; ?> - <?php echo $holiday['end_date']; ?>
                         <?php endif; ?>
@@ -2398,6 +2588,32 @@ while ($db->next_record()) {
                 <a href="index.php?hide_holiday_id=<?php echo $holiday['period_id']; ?>" class="upcoming-holiday-hide" title="Hide">&#10005;</a>
             </div>
             <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($pending_vacations)): ?>
+        <!-- Pending vacation approvals banner (visible only to approver) -->
+        <div class="pending-approvals-banner">
+            <div class="pending-approvals-banner-inner">
+                <span class="pending-approvals-icon">&#128197;</span>
+                <div class="pending-approvals-content">
+                    <strong>Pending vacation approvals (<?php echo count($pending_vacations); ?>)</strong>
+                    <span class="pending-approvals-hint">Approve or decline from here or from the sidebar.</span>
+                </div>
+                <div class="pending-approvals-list">
+                    <?php foreach ($pending_vacations as $vac): ?>
+                    <div class="pending-approvals-item">
+                        <span class="pending-approvals-user"><?php echo htmlspecialchars($vac['user_name']); ?></span>
+                        <span class="pending-approvals-dates"><?php echo date('j M', strtotime($vac['start_date'])); ?> – <?php echo date('j M Y', strtotime($vac['end_date'])); ?></span>
+                        <span class="pending-approvals-actions">
+                            <a href="approve_vacation.php?approve=1&period_id=<?php echo $vac['period_id']; ?>" class="btn btn-sm btn-success" onclick="return confirm('Approve this request?')">Approve</a>
+                            <a href="approve_vacation.php?decline=1&period_id=<?php echo $vac['period_id']; ?>" class="btn btn-sm btn-outline" onclick="return confirm('Decline this request?')">Decline</a>
+                        </span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <a href="view_vacations.php" class="pending-approvals-link">View all &rarr;</a>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -2628,6 +2844,38 @@ while ($db->next_record()) {
                     </div>
                 </div>
 
+                <?php if ($approve_vacations && !empty($pending_vacations)): ?>
+                <!-- Pending vacation approvals – above tasks list (for user_id=3 only, hidden when empty) -->
+                <div class="card pending-approvals-card">
+                    <div class="card-header warning">
+                        <span class="card-title">Pending vacation approvals (<?php echo count($pending_vacations); ?>)</span>
+                        <a href="view_vacations.php" style="font-size: 0.8rem; font-weight: 600; color: inherit; opacity: 0.9;">View all &rarr;</a>
+                    </div>
+                    <div class="card-body">
+                        <?php foreach ($pending_vacations as $vac): ?>
+                        <div class="vacation-card">
+                            <div class="vacation-header">
+                                <span class="vacation-user"><?php echo htmlspecialchars($vac['user_name']); ?></span>
+                                <span class="vacation-type"><?php echo $vac['is_paid'] ? 'Overwork' : 'Vacation'; ?></span>
+                            </div>
+                            <div class="vacation-details">
+                                <a href="create_vacation.php?vacation_id=<?php echo $vac['period_id']; ?>"><?php echo htmlspecialchars($vac['title'] ?: 'No title'); ?></a>
+                                <?php if ($vac['reason']): ?> – <?php echo htmlspecialchars($vac['reason']); ?><?php endif; ?>
+                            </div>
+                            <div class="vacation-dates">
+                                <span><?php echo date('j M Y', strtotime($vac['start_date'])); ?> – <?php echo date('j M Y', strtotime($vac['end_date'])); ?></span>
+                                <span><strong><?php echo $vac['total_days']; ?> days</strong></span>
+                            </div>
+                            <div class="vacation-actions">
+                                <a href="approve_vacation.php?approve=1&period_id=<?php echo $vac['period_id']; ?>" class="btn btn-sm btn-success" onclick="return confirm('Approve this request?')">Approve</a>
+                                <a href="approve_vacation.php?decline=1&period_id=<?php echo $vac['period_id']; ?>" class="btn btn-sm btn-outline" onclick="return confirm('Decline this request?')">Decline</a>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- My Tasks -->
                 <div class="card">
                     <div class="card-header">
@@ -2737,7 +2985,7 @@ while ($db->next_record()) {
                                         elseif ($t['status_id'] == 9) $sc = 'status-reassigned';
                                         elseif ($t['status_id'] == 10) $sc = 'status-bug';
                                     ?>
-                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" onclick="window.location='edit_task.php?task_id=<?php echo $t['task_id']; ?>'" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $pid; ?>">
+                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" onclick="window.location='edit_task.php?task_id=<?php echo $t['task_id']; ?>'" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $pid; ?>" data-last-modified="<?php echo $t['last_modified_raw'] ?: ''; ?>">
                                         <div class="kb-card-title">
                                             <a href="edit_task.php?task_id=<?php echo $t['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($t['task_title']); ?></a>
                                         </div>
@@ -4808,11 +5056,20 @@ while ($db->next_record()) {
         }
 
         function isTaskUnseen(taskId, lastModified) {
-            if (!lastModified) return false; // no messages = not "new"
+            if (!lastModified || String(lastModified).trim() === '') return false;
             var seen = getSeenTasks();
-            if (!seen[taskId]) return true; // never opened
-            // Task was modified after it was last seen
-            return lastModified > seen[taskId];
+            if (!seen[taskId]) return true; // never opened = unread
+            var modTs = parseLastModified(lastModified);
+            var seenTs = parseLastModified(seen[taskId]);
+            if (isNaN(modTs) || isNaN(seenTs)) return lastModified > seen[taskId]; // fallback string compare
+            return modTs > seenTs;
+        }
+        function parseLastModified(val) {
+            if (!val) return NaN;
+            var s = String(val).trim();
+            if (!s) return NaN;
+            var d = new Date(s.replace(' ', 'T')); // MySQL "Y-m-d H:i:s" -> ISO-like for parsing
+            return d.getTime();
         }
 
         // Apply unread class to table rows

@@ -3267,6 +3267,28 @@ $user_name = GetSessionParam("UserName");
                                     }
                                     $msg_html = str_replace($p['placeholder'], $replacement, $msg_html);
                                 }
+                                // Replace any remaining {{INLINEIMG:message_id:filename}} (e.g. stored literally or case mismatch)
+                                $msg_html = preg_replace_callback('/\{\{INLINEIMG:(\d+):([^\s\}]+)\}\}/i', function ($m) use ($message_attachments) {
+                                    $mid = (int) $m[1];
+                                    $filename = $m[2];
+                                    $file_for_url = $filename;
+                                    if (isset($message_attachments[$mid])) {
+                                        foreach ($message_attachments[$mid] as $a) {
+                                            if (strcasecmp($a['file_name'], $filename) === 0) {
+                                                $file_for_url = $a['file_name'];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    $att_url = 'attachments/message/' . $mid . '_' . htmlspecialchars($file_for_url);
+                                    $escaped_name = htmlspecialchars($file_for_url);
+                                    $ext = strtolower(pathinfo($file_for_url, PATHINFO_EXTENSION));
+                                    $is_img = in_array($ext, array('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'));
+                                    if ($is_img) {
+                                        return '<a href="' . $att_url . '" class="message-inline-image gallery-image" data-gallery="msg-' . $mid . '" data-name="' . $escaped_name . '" onclick="openLightbox(this); return false;"><img src="' . $att_url . '" alt="' . $escaped_name . '"></a>';
+                                    }
+                                    return '<a href="' . $att_url . '" class="message-attachment-link" target="_blank" rel="noopener">[' . $escaped_name . ']</a>';
+                                }, $msg_html);
                                 echo normalize_monitor_task_urls($msg_html);
                             ?></div>
                             
@@ -3801,6 +3823,43 @@ $user_name = GetSessionParam("UserName");
         }
     }
 
+    // When message starts with "done", "fixed", "Hi [Name]\n\nfixed", etc. — auto-set status to Done
+    function messageIndicatesDone(text) {
+        if (!text || typeof text !== 'string') return false;
+        var t = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        if (!t) return false;
+        // First line / first word style: "done", "fixed", "completed", "done.", "Fixed\n..."
+        if (/^(done|fixed|completed|resolved)\s*[\.\s]*$/im.test(t)) return true;
+        if (/^(done|fixed|completed|resolved)[\s\.\n]/.im.test(t)) return true;
+        // "Hi Name"\n\n"fixed" or "done" (after greeting line and blank line)
+        if (/^Hi\s+.+[\r\n]+\s*(done|fixed|completed|resolved)\s*[\.\s]*$/im.test(t)) return true;
+        if (/^Hi\s+.+[\r\n]+\s*(done|fixed|completed|resolved)[\s\.\n]/im.test(t)) return true;
+        return false;
+    }
+    function setMessageFormStatusToDone() {
+        var statusHidden = document.getElementById('msg_task_status_id');
+        var statusTrigger = document.querySelector('#statusSelectMsg .custom-select-trigger span');
+        if (!statusHidden || !statusTrigger) return;
+        var doneOption = document.querySelector('#statusSelectMsg .custom-select-option[data-value="' + STATUS_DONE + '"]');
+        if (!doneOption) return;
+        statusHidden.value = STATUS_DONE;
+        statusTrigger.textContent = doneOption.textContent.trim();
+        document.querySelectorAll('#statusSelectMsg .custom-select-option').forEach(function(opt) {
+            opt.classList.remove('selected');
+        });
+        doneOption.classList.add('selected');
+        var completionInput = document.getElementById('msg_task_completion');
+        if (completionInput) completionInput.value = 100;
+    }
+    var messageTextareaForStatus = document.getElementById('messageTextarea');
+    if (messageTextareaForStatus) {
+        messageTextareaForStatus.addEventListener('input', function() {
+            if (messageIndicatesDone(messageTextareaForStatus.value)) {
+                setMessageFormStatusToDone();
+            }
+        });
+    }
+
     // Task Detail Modal functions
     // Move modal to body so it escapes any stacking context (e.g. sticky sidebar)
     (function() {
@@ -4226,6 +4285,24 @@ $user_name = GetSessionParam("UserName");
                 replacement = '<a href="' + filePath + '" class="message-attachment-link" target="_blank" rel="noopener">[' + escapeHtml(att.file_name) + ']</a>';
             }
             contentHtml = contentHtml.split(p.placeholder).join(replacement);
+        });
+        contentHtml = contentHtml.replace(/\{\{INLINEIMG:(\d+):([^\s\}]+)\}\}/gi, function(m, mid, filename) {
+            var fileForUrl = filename;
+            if (attachments && attachments[mid]) {
+                for (var i = 0; i < attachments[mid].length; i++) {
+                    if (attachments[mid][i].file_name.toLowerCase() === filename.toLowerCase()) {
+                        fileForUrl = attachments[mid][i].file_name;
+                        break;
+                    }
+                }
+            }
+            var path = 'attachments/message/' + mid + '_' + fileForUrl;
+            var ext = (fileForUrl.split('.').pop() || '').toLowerCase();
+            var isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].indexOf(ext) !== -1;
+            if (isImg) {
+                return '<a href="' + path + '" class="message-inline-image gallery-image" data-gallery="msg-' + mid + '" data-name="' + escapeHtml(fileForUrl) + '" onclick="openLightbox(this); return false;"><img src="' + path + '" alt="' + escapeHtml(fileForUrl) + '"></a>';
+            }
+            return '<a href="' + path + '" class="message-attachment-link" target="_blank" rel="noopener">[' + escapeHtml(fileForUrl) + ']</a>';
         });
         html += '<div class="message-content">' + contentHtml + '</div>';
         

@@ -434,13 +434,19 @@ $pageTitle = $isEdit ? htmlspecialchars($client['client_name']) : 'New Client';
         }
         
         .site-url {
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-size: 1.15rem;
+            font-weight: 700;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
+        }
+        
+        .site-url > a:first-of-type {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
         }
         
         .site-url a {
@@ -743,8 +749,16 @@ include("./includes/modern_header.php");
             $admin_login_url = '';
             if ($site['admin_web_address'] && $site['admin_login']) {
                 $admin_base = $site['admin_web_address'];
-                if (strpos($admin_base, 'http') !== 0) {
-                    $admin_base = 'http://' . $site['web_address'] . '/' . ltrim($admin_base, '/');
+                if (strpos($admin_base, 'http') === 0) {
+                    $admin_base = preg_replace('#^http://#', 'https://', $admin_base);
+                } else {
+                    $first_slash = strpos($admin_base, '/');
+                    // If admin_web_address is full host+path (e.g. www.domain.com/path), use it as-is with https
+                    if ($first_slash !== false && strpos(substr($admin_base, 0, $first_slash), '.') !== false) {
+                        $admin_base = 'https://' . $admin_base;
+                    } else {
+                        $admin_base = 'https://' . rtrim($site['web_address'], '/') . '/' . ltrim($admin_base, '/');
+                    }
                 }
                 $admin_login_url = rtrim($admin_base, '/') . '/admin_login.php?operation=login&login=' . urlencode($site['admin_login']) . '&password=' . urlencode($site['admin_password']);
             }

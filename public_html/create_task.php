@@ -3,12 +3,15 @@ include("./includes/common.php");
 CheckSecurity(1);
 
 define("ROBOTS_CHECK_PROJECT_ID", 135);
+define("CREATE_TASK_FROM_TICKET_PROJECT_ID", 79); // Sayu Web – main project when creating from support ticket
 
 $temp_path = "temp_attachments/";
 $path = "attachments/task/";
 header("Cache-Control: private");
 
 $task_id = (int) GetParam('task_id');
+$ticket_id = (int) GetParam('ticket_id');
+$is_debug = (int) GetParam('is_debug');
 $action = GetParam('action');
 $user_id = GetSessionParam("UserID");
 $hash = GetParam("hash") ? GetParam("hash") : substr(md5(time()), 0, 8);
@@ -19,6 +22,7 @@ if (!$rp) {
 
 $errors = array();
 $success = false;
+$ticket_match_debug = null;
 
 // Handle form submission
 if ($action == "insert") {
@@ -197,6 +201,100 @@ if ($action == "insert") {
             }
         }
     }
+
+    // If creating from support ticket (ticket_id in URL), load from sayu database
+    if ($ticket_id) {
+        // Always show "Ticket -> Loading Data from Helpdesk" box when ticket_id is in URL
+        $ticket_match_debug = array('ticket_id' => $ticket_id, 'ticket_found' => false, 'user_company' => '', 'message' => 'Connecting to sayu DB...');
+        $db_sayu = new DB_Sql();
+        $db_sayu->Database = SAYU_DATABASE_NAME;
+        $db_sayu->User     = SAYU_DATABASE_USER;
+        $db_sayu->Password = SAYU_DATABASE_PASSWORD;
+        $db_sayu->Host     = SAYU_DATABASE_HOST;
+
+        $sql = "SELECT summary, description, user_company, mail_body_text, mail_body_html FROM va_support WHERE support_id = " . ToSQL($ticket_id, "integer");
+        $db_sayu->query($sql);
+        if ($db_sayu->next_record()) {
+            // Read from ticket row now; later we run another query and would lose this result set
+            $user_company = trim((string) $db_sayu->f("user_company"));
+            $ticket_match_debug['ticket_found'] = true;
+            $ticket_match_debug['user_company'] = $user_company;
+            $task_title = $db_sayu->f("summary");
+            $ticket_desc = trim((string) $db_sayu->f("description"));
+            if ($ticket_desc !== "") {
+                $ticket_desc = strip_tags($ticket_desc);
+            }
+            $mail_body_text = trim((string) $db_sayu->f("mail_body_text"));
+            $mail_body_html = trim((string) $db_sayu->f("mail_body_html"));
+
+            // Task description: use longer of ticket description vs last message, so we don't lose content
+            $task_desc = $ticket_desc;
+            $last_msg = '';
+            $sql_last = "SELECT message_text, is_html FROM va_support_messages WHERE support_id = " . ToSQL($ticket_id, "integer") . " ORDER BY date_added DESC LIMIT 1";
+            $db_sayu->query($sql_last);
+            if ($db_sayu->next_record()) {
+                $last_msg = trim((string) $db_sayu->f("message_text"));
+                if ($last_msg !== "") {
+                    if ($db_sayu->f("is_html")) {
+                        $last_msg = strip_tags($last_msg);
+                    }
+                    // Prefer whichever is longer (full ticket often has more context than last reply)
+                    if (strlen($last_msg) > strlen($ticket_desc)) {
+                        $task_desc = $last_msg;
+                    }
+                }
+            }
+            if ($task_desc === "" && $mail_body_text !== "") {
+                $task_desc = strip_tags($mail_body_text);
+            }
+            if ($task_desc === "" && $mail_body_html !== "") {
+                $task_desc = strip_tags($mail_body_html);
+            }
+
+            // Project: always Sayu Web (79). Sub-project: match by va_support.user_company to project_title (clever matching)
+            $project_id = CREATE_TASK_FROM_TICKET_PROJECT_ID;
+            $sub_project_id = 0;
+            if ($user_company !== "") {
+                // Always pass debug so the green box shows match result; extra detail (candidates table) only when is_debug=1
+                $sub_project_id = match_company_to_subproject($db, $user_company, CREATE_TASK_FROM_TICKET_PROJECT_ID, $ticket_match_debug);
+                if (is_array($ticket_match_debug)) {
+                    $ticket_match_debug['ticket_id'] = $ticket_id;
+                    $ticket_match_debug['ticket_found'] = true;
+                    if (!isset($ticket_match_debug['message']) || $ticket_match_debug['message'] === 'Connecting to sayu DB...') {
+                        $ticket_match_debug['message'] = $sub_project_id ? 'Matched sub-project id ' . $sub_project_id : 'No sub-project matched (id=0).';
+                    }
+                    // When not is_debug, hide detailed candidates so box stays compact
+                    if (!$is_debug && isset($ticket_match_debug['candidates'])) {
+                        $ticket_match_debug['_hide_candidates'] = true;
+                    }
+                }
+            } else {
+                $ticket_match_debug['message'] = 'user_company is empty; no sub-project matching attempted.';
+            }
+
+            // Debug: description sources (so we can see why task_desc might be empty)
+            $desc_source = 'none';
+            if ($task_desc !== '') {
+                if ($last_msg !== '' && $task_desc === $last_msg) {
+                    $desc_source = 'last_message';
+                } elseif ($task_desc === $ticket_desc) {
+                    $desc_source = 'ticket_description';
+                } elseif ($mail_body_text !== '' && $task_desc === strip_tags($mail_body_text)) {
+                    $desc_source = 'mail_body_text';
+                } else {
+                    $desc_source = 'mail_body_html';
+                }
+            }
+            $ticket_match_debug['desc_source']         = $desc_source;
+            $ticket_match_debug['desc_len']            = strlen($task_desc);
+            $ticket_match_debug['ticket_desc_len']     = strlen($ticket_desc);
+            $ticket_match_debug['last_msg_len']        = strlen($last_msg);
+            $ticket_match_debug['mail_body_text_len']  = strlen($mail_body_text);
+            $ticket_match_debug['mail_body_html_len']  = strlen($mail_body_html);
+        } else {
+            $ticket_match_debug['message'] = 'Ticket not found in va_support for support_id=' . $ticket_id;
+        }
+    }
 }
 
 // If project_id passed via URL (e.g. from view_project_tasks), set sub_project_id
@@ -330,6 +428,140 @@ if ($db->next_record()) {
     $user_name = $db->f("first_name") . " " . $db->f("last_name");
 }
 
+// Helper: normalize string for comparison (remove spaces, hyphens, underscores; lowercase)
+function _normalize_company_for_match($s) {
+    $s = preg_replace('/[\s\-_\.]+/', '', $s);
+    return strtolower($s);
+}
+
+// Helper: get set of words (split on non-alphanumeric, lowercase, skip empty)
+function _company_words($s) {
+    $words = preg_split('/[^a-zA-Z0-9]+/', $s, -1, PREG_SPLIT_NO_EMPTY);
+    return array_unique(array_map('strtolower', $words));
+}
+
+// Match helpdesk user_company to a sub-project under parent_project_id (e.g. 79). Uses exact, normalized, then word-based matching.
+// If $debug_out is provided (array by reference), it is filled with matching debug info.
+function match_company_to_subproject($db, $user_company, $parent_project_id, &$debug_out = null) {
+    $user_company = trim($user_company);
+    if ($user_company === '') return 0;
+
+    $sql = "SELECT project_id, project_title FROM projects WHERE parent_project_id = " . ToSQL($parent_project_id, "integer") . " AND (is_closed IS NULL OR is_closed = 0) ORDER BY project_title";
+    $db->query($sql);
+    $candidates = array();
+    while ($db->next_record()) {
+        $candidates[] = array('id' => (int) $db->f("project_id"), 'title' => $db->f("project_title"));
+    }
+    if (empty($candidates)) {
+        if ($debug_out !== null) {
+            $debug_out = array(
+                'user_company'     => $user_company,
+                'message'          => 'No sub-projects found for parent project ' . $parent_project_id,
+                'parent_project_id'=> $parent_project_id,
+                'candidates'       => array(),
+                'matched_id'       => 0,
+                'matched_rank'     => 0,
+                'matched_reason'   => '—',
+            );
+        }
+        return 0;
+    }
+
+    $norm_company = _normalize_company_for_match($user_company);
+    $words_company = _company_words($user_company);
+    sort($words_company);
+
+    $best_id = 0;
+    $best_rank = -1;
+    $best_reason = '';
+    $rank_reasons = array(
+        100 => 'exact (case-insensitive)',
+        90  => 'normalized (ignore spaces/hyphens/underscores)',
+        80  => 'same set of words',
+        70  => 'all company words in project title',
+        60  => 'all project words in company',
+    );
+
+    $debug_candidates = array();
+
+    foreach ($candidates as $p) {
+        $title = $p['title'];
+        $norm_title = _normalize_company_for_match($title);
+        $words_title = _company_words($title);
+        sort($words_title);
+
+        $rank = 0;
+        $reason = 'no match';
+        // 1) Exact match (case-insensitive)
+        if (strcasecmp(trim($user_company), trim($title)) === 0) {
+            $rank = 100;
+            $reason = $rank_reasons[100];
+        }
+        // 2) Normalized match (e.g. "AGD Equipment" vs "AGD-Equipment")
+        elseif ($norm_company !== '' && $norm_company === $norm_title) {
+            $rank = 90;
+            $reason = $rank_reasons[90];
+        }
+        // 3) Same set of words
+        elseif ($words_company === $words_title) {
+            $rank = 80;
+            $reason = $rank_reasons[80];
+        }
+        // 4) All company words appear in project title
+        elseif (!empty($words_company) && count(array_intersect($words_company, $words_title)) >= count($words_company)) {
+            $rank = 70;
+            $reason = $rank_reasons[70];
+        }
+        // 5) All project words appear in company
+        elseif (!empty($words_title) && count(array_intersect($words_title, $words_company)) >= count($words_title)) {
+            $rank = 60;
+            $reason = $rank_reasons[60];
+        }
+        // 6) Partial word overlap (not used for match, but shown in debug)
+        else {
+            $common = count(array_intersect($words_company, $words_title));
+            if ($common > 0) {
+                $rank = (int)(50 * ($common / max(count($words_company), count($words_title))));
+                $reason = 'partial word overlap (rank ' . $rank . ', below threshold 50)';
+            }
+        }
+
+        if ($debug_out !== null) {
+            $debug_candidates[] = array(
+                'project_id'   => $p['id'],
+                'title'        => $title,
+                'normalized'   => $norm_title,
+                'words'        => implode(', ', $words_title),
+                'rank'         => $rank,
+                'reason'       => $reason,
+            );
+        }
+
+        if ($rank > $best_rank) {
+            $best_rank = $rank;
+            $best_id = $p['id'];
+            $best_reason = $reason;
+        }
+    }
+
+    if ($debug_out !== null) {
+        $matched = $best_rank >= 50;
+        $debug_out = array(
+            'user_company'     => $user_company,
+            'normalized'       => $norm_company,
+            'words'             => implode(', ', $words_company),
+            'parent_project_id'=> $parent_project_id,
+            'candidates'       => $debug_candidates,
+            'matched_id'       => $matched ? $best_id : 0,
+            'matched_rank'     => $best_rank,
+            'matched_reason'   => $matched ? $best_reason : '(no match: best rank ' . $best_rank . ' < 50)',
+            'message'          => $matched ? 'Matched sub-project id ' . $best_id : 'No match (best rank ' . $best_rank . ' < 50)',
+        );
+    }
+
+    return $best_rank >= 50 ? $best_id : 0;
+}
+
 // Helper function
 function parseEstimatedHours($estimated_hours) {
     $estimated_hours = str_replace(" ", "", $estimated_hours);
@@ -416,6 +648,22 @@ $months = array(
         .breadcrumb a:hover {
             text-decoration: underline;
         }
+
+        .debug-box {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.8rem;
+            color: #166534;
+        }
+        .debug-box h3 { font-size: 0.95rem; margin: 0 0 8px 0; color: #15803d; }
+        .debug-box table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .debug-box th, .debug-box td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #bbf7d0; }
+        .debug-box th { font-weight: 600; width: 140px; }
+        .debug-box .mono { font-family: ui-monospace, monospace; }
+        .debug-box .matched { background: #dcfce7; font-weight: 600; }
 
         .card {
             background: #fff;
@@ -1060,6 +1308,16 @@ $months = array(
             </div>
         </div>
 
+        <?php if (!empty($ticket_match_debug) && is_array($ticket_match_debug)): ?>
+        <div class="debug-box">
+            <h3>Ticket → Loading Data from Helpdesk</h3>
+            <table>
+                <tr><th>Ticket ID</th><td><?php echo isset($ticket_match_debug['ticket_id']) ? (int)$ticket_match_debug['ticket_id'] : '—'; ?></td></tr>
+                <tr><th>Ticket found</th><td><?php echo !empty($ticket_match_debug['ticket_found']) ? 'Yes' : 'No'; ?></td></tr>
+            </table>
+        </div>
+        <?php endif; ?>
+
         <div class="card">
             <div class="card-header">
                 <span class="card-title">Task Details</span>
@@ -1337,7 +1595,13 @@ $months = array(
                     <div class="form-row full">
                         <div class="form-group">
                             <label class="form-label">Description</label>
-                            <textarea name="task_desc" id="task_desc" class="form-control" placeholder="Enter task description... (You can paste images here)"><?php echo htmlspecialchars($task_desc); ?></textarea>
+                            <?php
+                            $task_desc_safe = str_replace("\0", '', $task_desc);
+                            $task_desc_b64 = base64_encode($task_desc_safe);
+                            ?>
+                            <script type="text/javascript">var __TASK_DESC_B64=<?php echo json_encode($task_desc_b64); ?>;</script>
+                            <textarea name="task_desc" id="task_desc" class="form-control" placeholder="Enter task description... (You can paste images here)"></textarea>
+                            <script type="text/javascript">(function(){var t=document.getElementById('task_desc');if(t&&typeof __TASK_DESC_B64!=='undefined'&&__TASK_DESC_B64){try{t.value=decodeURIComponent(escape(atob(__TASK_DESC_B64)));}catch(e){t.value=atob(__TASK_DESC_B64);}}})();</script>
                             <div class="help-text">Tip: Paste images (Ctrl+V) directly into description to attach them</div>
                         </div>
                     </div>
@@ -1649,7 +1913,7 @@ $months = array(
     document.querySelectorAll('.custom-select').forEach(function(select) {
         initCustomSelect(select);
     });
-    
+
     // Close dropdowns when clicking outside
     document.addEventListener('click', function() {
         document.querySelectorAll('.custom-select.open').forEach(function(select) {
