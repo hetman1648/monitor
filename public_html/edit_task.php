@@ -5,14 +5,6 @@ include("./includes/common.php");
 include_once("./includes/viart_support.php");
 include("./includes/date_functions.php");
 
-// Ensure text is valid UTF-8 (converts from Windows-1252/ISO-8859-1 if needed)
-function ensure_utf8($text) {
-    if ($text === null || $text === '') return '';
-    if (mb_check_encoding($text, 'UTF-8')) return $text;
-    // Try Windows-1252 first (superset of ISO-8859-1, handles smart quotes etc.)
-    return mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
-}
-
 // Convert URLs to clickable links
 function linkify_urls($text) {
     $text = htmlspecialchars(ensure_utf8($text));
@@ -1667,6 +1659,135 @@ $user_name = GetSessionParam("UserName");
             min-height: 350px;
         }
 
+        /* Fullscreen description composer (edit mode) */
+        .edit-desc-label-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 6px;
+        }
+        .edit-desc-label-row .form-label { margin-bottom: 0; }
+        .edit-desc-fullscreen-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            color: #4a5568;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .edit-desc-fullscreen-btn:hover {
+            background: #f7fafc;
+            border-color: #667eea;
+            color: #667eea;
+        }
+        .edit-desc-fullscreen-btn svg { width: 18px; height: 18px; display: block; }
+        .edit-desc-fs-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 25000;
+            flex-direction: column;
+            background: #f8fafc;
+            box-sizing: border-box;
+        }
+        .edit-desc-fs-overlay.is-open {
+            display: flex;
+        }
+        .edit-desc-fs-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .edit-desc-fs-toolbar strong { font-size: 1rem; font-weight: 600; }
+        .edit-desc-fs-toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .edit-desc-fs-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            padding: 0 14px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+        }
+        .edit-desc-fs-btn--secondary {
+            background: rgba(255,255,255,0.22);
+            color: #fff;
+        }
+        .edit-desc-fs-btn--secondary:hover { background: rgba(255,255,255,0.35); }
+        .edit-desc-fs-btn--primary {
+            background: #fff;
+            color: #5a4fcf;
+        }
+        .edit-desc-fs-btn--primary:hover { background: #f0f4ff; }
+        .edit-desc-fs-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 36px;
+            padding: 0 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 1.25rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .edit-desc-fs-close:hover { background: rgba(255,255,255,0.35); }
+        .edit-desc-fs-textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            margin: 0;
+            padding: 16px 20px;
+            border: none;
+            border-radius: 0;
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: none;
+            box-sizing: border-box;
+        }
+        .edit-desc-fs-textarea:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 2px rgba(102, 126, 234, 0.35);
+        }
+        .edit-desc-fs-hint {
+            flex-shrink: 0;
+            padding: 8px 16px 12px;
+            font-size: 0.78rem;
+            color: #718096;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
         .message-options {
             display: flex;
             flex-wrap: wrap;
@@ -2055,6 +2176,37 @@ $user_name = GetSessionParam("UserName");
             margin-top: 10px;
             padding-top: 10px;
             border-top: 1px solid #f0f0f0;
+        }
+
+        .message-attachment-wrap {
+            position: relative;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .message-attachment-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .message-attachment-delete:hover {
+            background: #e53e3e;
         }
 
         /* Edit Mode Form */
@@ -2577,10 +2729,31 @@ $user_name = GetSessionParam("UserName");
         }
         html.dark-mode .message-status { background: #1c2333; color: #8b949e; }
         html.dark-mode .message-attachments { border-top-color: #2d333b; }
+        html.dark-mode .message-attachment-delete { background: rgba(0, 0, 0, 0.65); }
+        html.dark-mode .message-attachment-delete:hover { background: #e53e3e; }
 
         /* Message composer */
         html.dark-mode .message-composer { background: #1c2333; }
         html.dark-mode .message-textarea { background: #161b22 !important; color: #e2e8f0 !important; border-color: #2d333b !important; }
+        html.dark-mode .edit-desc-fullscreen-btn {
+            background: #161b22;
+            border-color: #2d333b;
+            color: #a0aec0;
+        }
+        html.dark-mode .edit-desc-fullscreen-btn:hover {
+            border-color: #667eea;
+            color: #90cdf4;
+        }
+        html.dark-mode .edit-desc-fs-overlay { background: #0d1117; }
+        html.dark-mode .edit-desc-fs-textarea {
+            background: #0d1117 !important;
+            color: #e2e8f0 !important;
+        }
+        html.dark-mode .edit-desc-fs-hint {
+            background: #161b22;
+            color: #8b949e;
+            border-top-color: #2d333b;
+        }
         html.dark-mode .message-dropzone { background: #161b22; border-color: #2d333b; color: #8b949e; }
         html.dark-mode .message-dropzone:hover,
         html.dark-mode .message-dropzone.drag-over { background: #1c2333; border-color: #667eea; }
@@ -2684,7 +2857,7 @@ $user_name = GetSessionParam("UserName");
                         </button>
                     </h2>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <div id="task-action-buttons" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <div class="layout-toggle" title="Switch layout">
                         <button type="button" class="layout-toggle-btn active" data-layout="stacked" onclick="setLayout('stacked')" title="Stacked layout">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="8" rx="1"/><rect x="3" y="13" width="18" height="8" rx="1"/></svg>
@@ -2787,6 +2960,15 @@ $user_name = GetSessionParam("UserName");
                         <div class="meta-item">
                             <span class="meta-label">Client</span>
                             <span class="meta-value"><?php echo htmlspecialchars($task['client_name']); ?></span>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($task['ticket_id'])): ?>
+                        <?php
+                        $helpdesk_ticket_url = (defined('HELPDESK_ADMIN_SUPPORT_BASE') ? HELPDESK_ADMIN_SUPPORT_BASE : 'https://www.sayu.co.uk/sa_tool_290708/admin_support.php') . '#ticket-' . (int) $task['ticket_id'];
+                        ?>
+                        <div class="meta-item">
+                            <span class="meta-label">Helpdesk ticket</span>
+                            <span class="meta-value"><a href="<?php echo htmlspecialchars($helpdesk_ticket_url); ?>" target="_blank" rel="noopener noreferrer">#<?php echo (int) $task['ticket_id']; ?> (Sayu admin)</a></span>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -2923,7 +3105,7 @@ $user_name = GetSessionParam("UserName");
 
                 <!-- Edit Mode -->
                 <div class="edit-form <?php echo $edit_mode ? 'active' : ''; ?>">
-                    <form method="POST" action="edit_task.php?task_id=<?php echo $task_id; ?>">
+                    <form id="editTaskForm" method="POST" action="edit_task.php?task_id=<?php echo $task_id; ?>">
                         <input type="hidden" name="FormName" value="Form">
                         <input type="hidden" name="FormAction" value="update">
                         <input type="hidden" name="rp" value="<?php echo htmlspecialchars($return_page); ?>">
@@ -3096,7 +3278,14 @@ $user_name = GetSessionParam("UserName");
 
                         <div class="form-row">
                             <div class="form-group full">
-                                <label class="form-label">Description</label>
+                                <div class="edit-desc-label-row">
+                                    <label class="form-label" for="editTaskDesc">Description</label>
+                                    <button type="button" class="edit-desc-fullscreen-btn" onclick="openEditDescFullscreen()" title="Open description in full screen" aria-label="Full screen description editor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                                        </svg>
+                                    </button>
+                                </div>
                                 <textarea name="task_desc" id="editTaskDesc" class="form-control" rows="6" placeholder="Enter task description... (You can paste images here)"><?php echo htmlspecialchars(ensure_utf8($task['task_desc'])); ?></textarea>
                                 <div class="help-text">Tip: Paste images (Ctrl+V) directly into description to attach them</div>
                                 <div class="desc-attachment-area">
@@ -3299,7 +3488,14 @@ $user_name = GetSessionParam("UserName");
                                         $ext = strtolower(pathinfo($att['file_name'], PATHINFO_EXTENSION));
                                         $is_image = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
                                         $file_url = 'attachments/message/' . $msg['message_id'] . '_' . htmlspecialchars($att['file_name']);
+                                        $aid = (int) $att['attachment_id'];
                                     ?>
+                                    <div class="message-attachment-wrap">
+                                        <button type="button" class="message-attachment-delete" title="Remove attachment" aria-label="Remove attachment"
+                                            data-attachment-id="<?php echo $aid; ?>"
+                                            data-message-id="<?php echo (int) $msg['message_id']; ?>"
+                                            data-file-name="<?php echo htmlspecialchars($att['file_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            onclick="event.stopPropagation(); deleteMessageAttachment(this);">×</button>
                                     <?php if ($is_image): ?>
                                     <a href="<?php echo $file_url; ?>" class="attachment-thumbnail gallery-image" 
                                        data-gallery="msg-<?php echo $msg['message_id']; ?>" data-name="<?php echo htmlspecialchars($att['file_name']); ?>"
@@ -3308,10 +3504,11 @@ $user_name = GetSessionParam("UserName");
                                         <span class="attachment-thumbnail-name"><?php echo htmlspecialchars($att['file_name']); ?></span>
                                     </a>
                                     <?php else: ?>
-                                    <a href="<?php echo $file_url; ?>" class="attachment-item" target="_blank">
+                                    <a href="<?php echo $file_url; ?>" class="attachment-item" target="_blank" rel="noopener">
                                         📎 <?php echo htmlspecialchars($att['file_name']); ?>
                                     </a>
                                     <?php endif; ?>
+                                    </div>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
@@ -3330,6 +3527,20 @@ $user_name = GetSessionParam("UserName");
             </div>
         </div>
         </div><!-- /layout-wrap -->
+    </div>
+
+    <!-- Fullscreen description editor: before main script so DOM exists when init runs; outside .card so position:fixed is not clipped -->
+    <div id="editDescFullscreenOverlay" class="edit-desc-fs-overlay" aria-hidden="true" role="dialog" aria-labelledby="editDescFsTitle">
+        <div class="edit-desc-fs-toolbar">
+            <strong id="editDescFsTitle">Description</strong>
+            <div class="edit-desc-fs-toolbar-actions">
+                <button type="button" class="edit-desc-fs-btn edit-desc-fs-btn--primary" id="editDescFsSaveBtn" onclick="saveTaskFromDescFullscreen()" title="Save task (same as Save Changes on the form)">Save task</button>
+                <button type="button" class="edit-desc-fs-btn edit-desc-fs-btn--secondary" onclick="closeEditDescFullscreen()" title="Return to the form without saving other fields">Close</button>
+                <button type="button" class="edit-desc-fs-close" onclick="closeEditDescFullscreen()" title="Close full screen (Esc)" aria-label="Close full screen">×</button>
+            </div>
+        </div>
+        <textarea id="editTaskDescFullscreen" class="edit-desc-fs-textarea form-control" autocomplete="off" placeholder="Enter task description... (paste images to attach)"></textarea>
+        <div class="edit-desc-fs-hint">Edits sync to the form as you type. <strong>Save task</strong> submits the whole edit form. <strong>Close</strong> only exits this view (use Save on the form if you changed other fields). Paste images to attach. <kbd>Esc</kbd> closes.</div>
     </div>
 
     <script>
@@ -4018,6 +4229,70 @@ $user_name = GetSessionParam("UserName");
         }, 4000);
     }
 
+    function removeInlineAttachmentRefsFromMessage(msgItem, messageId, fileName) {
+        var content = msgItem.querySelector('.message-content');
+        if (!content) return;
+        var needle = String(messageId) + '_' + fileName;
+        var links = content.querySelectorAll('a[href]');
+        for (var i = 0; i < links.length; i++) {
+            var a = links[i];
+            var h = a.getAttribute('href') || '';
+            try { h = decodeURIComponent(h); } catch (e) {}
+            if (h.indexOf('attachments/message/') !== -1 && h.indexOf(needle) !== -1) {
+                a.remove();
+            }
+        }
+    }
+
+    function deleteMessageAttachment(btn) {
+        var aid = btn.getAttribute('data-attachment-id');
+        if (!aid) {
+            showFlashMessage('Cannot remove this attachment', 'error');
+            return;
+        }
+        if (!confirm('Remove this attachment? The file will be deleted permanently.')) return;
+
+        var taskEl = document.getElementById('msg_task_id');
+        if (!taskEl) return;
+        var formData = new FormData();
+        formData.append('action', 'delete_message_attachment');
+        formData.append('task_id', taskEl.value);
+        formData.append('attachment_id', aid);
+
+        btn.disabled = true;
+
+        fetch('ajax_responder.php', { method: 'POST', body: formData, credentials: 'include' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) {
+                btn.disabled = false;
+                showFlashMessage(data.error || 'Failed to remove attachment', 'error');
+                return;
+            }
+            var wrap = btn.closest('.message-attachment-wrap');
+            var msgItem = wrap ? wrap.closest('.message-item') : null;
+            var mid = data.message_id || btn.getAttribute('data-message-id');
+            var fn = data.file_name || btn.getAttribute('data-file-name');
+            if (wrap) wrap.remove();
+            if (msgItem && mid && fn) {
+                removeInlineAttachmentRefsFromMessage(msgItem, mid, fn);
+            }
+            if (msgItem) {
+                var list = msgItem.querySelector('.attachments-list');
+                if (list && !list.querySelector('.message-attachment-wrap')) {
+                    var sec = msgItem.querySelector('.message-attachments');
+                    if (sec) sec.remove();
+                }
+            }
+            showFlashMessage('Attachment removed', 'success');
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            showFlashMessage('Error removing attachment', 'error');
+            console.error(err);
+        });
+    }
+
     // Submit message via AJAX
     function submitMessageAjax() {
         var submitBtn = document.getElementById('sendMessageBtn');
@@ -4313,13 +4588,19 @@ $user_name = GetSessionParam("UserName");
                 var ext = att.file_name.split('.').pop().toLowerCase();
                 var isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].indexOf(ext) !== -1;
                 var filePath = 'attachments/message/' + msg.message_id + '_' + att.file_name;
+                var aid = att.attachment_id != null ? att.attachment_id : '';
+                html += '<div class="message-attachment-wrap">';
+                html += '<button type="button" class="message-attachment-delete" title="Remove attachment" aria-label="Remove attachment"';
+                html += ' data-attachment-id="' + aid + '" data-message-id="' + msg.message_id + '" data-file-name="' + escapeHtml(att.file_name).replace(/"/g, '&quot;') + '"';
+                html += ' onclick="event.stopPropagation(); deleteMessageAttachment(this);">×</button>';
                 if (isImage) {
                     html += '<a href="' + filePath + '" class="attachment-thumbnail gallery-image" data-gallery="msg-' + msg.message_id + '" onclick="openLightbox(this); return false;">';
                     html += '<img src="' + filePath + '" alt="' + escapeHtml(att.file_name) + '">';
                     html += '<span class="attachment-thumbnail-name">' + escapeHtml(att.file_name) + '</span></a>';
                 } else {
-                    html += '<a href="' + filePath + '" class="attachment-item" target="_blank">📎 ' + escapeHtml(att.file_name) + '</a>';
+                    html += '<a href="' + filePath + '" class="attachment-item" target="_blank" rel="noopener">📎 ' + escapeHtml(att.file_name) + '</a>';
                 }
+                html += '</div>';
             });
             html += '</div></div>';
         }
@@ -4361,7 +4642,7 @@ $user_name = GetSessionParam("UserName");
         }
     }
 
-    // Format message content with quotes and simple markdown (## ### ** *)
+    // Format message content with quotes and simple markdown (## ### ** * only; no _italic_ — underscores break filenames)
     function formatMessageContent(text) {
         if (!text) return '';
         text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -4384,8 +4665,6 @@ $user_name = GetSessionParam("UserName");
             } else {
                 t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
                 t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
-                t = t.replace(/__(.+?)__/g, '<strong>$1</strong>');
-                t = t.replace(/_(.+?)_/g, '<em>$1</em>');
                 t = t.replace(/^\s+|\s+$/g, '') === '' ? '<br>' : t + '<br>';
             }
             urls.forEach(function(url, i) {
@@ -4549,7 +4828,73 @@ $user_name = GetSessionParam("UserName");
         }
 
         attachEditorShortcuts(document.getElementById('editTaskDesc'));
+        attachEditorShortcuts(document.getElementById('editTaskDescFullscreen'));
         attachEditorShortcuts(document.getElementById('messageTextarea'));
+    })();
+
+    // ==================== Fullscreen description composer (edit form) ====================
+    (function() {
+        var overlay = document.getElementById('editDescFullscreenOverlay');
+        var mainTa = document.getElementById('editTaskDesc');
+        var fsTa = document.getElementById('editTaskDescFullscreen');
+        if (!overlay || !mainTa || !fsTa) {
+            return;
+        }
+
+        function syncFsFromMain() {
+            if (overlay.classList.contains('is-open')) {
+                fsTa.value = mainTa.value;
+            }
+        }
+        function syncMainFromFs() {
+            mainTa.value = fsTa.value;
+        }
+
+        window.syncEditDescFullscreenFromMain = syncFsFromMain;
+
+        window.openEditDescFullscreen = function() {
+            fsTa.value = mainTa.value;
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            fsTa.focus();
+        };
+        window.closeEditDescFullscreen = function() {
+            syncMainFromFs();
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        };
+
+        window.saveTaskFromDescFullscreen = function() {
+            syncMainFromFs();
+            var f = document.getElementById('editTaskForm');
+            if (!f) {
+                return;
+            }
+            if (typeof f.requestSubmit === 'function') {
+                f.requestSubmit();
+            } else {
+                f.submit();
+            }
+        };
+
+        fsTa.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                window.saveTaskFromDescFullscreen();
+            }
+        });
+
+        fsTa.addEventListener('input', syncMainFromFs);
+        mainTa.addEventListener('input', syncFsFromMain);
+
+        overlay.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                window.closeEditDescFullscreen();
+            }
+        });
     })();
 
     // ==================== Description Attachments (Edit Form) ====================
@@ -4558,6 +4903,7 @@ $user_name = GetSessionParam("UserName");
         var descFileInput = document.getElementById('descFileInput');
         var descAttachmentList = document.getElementById('descAttachmentList');
         var editTaskDesc = document.getElementById('editTaskDesc');
+        var editTaskDescFs = document.getElementById('editTaskDescFullscreen');
         var descHashInput = document.getElementById('descHash');
         if (!descDropzone || !editTaskDesc || !descHashInput) return;
 
@@ -4609,6 +4955,9 @@ $user_name = GetSessionParam("UserName");
                         item.querySelector('.file-size').textContent = descFormatSize(file.size);
                         if (editTaskDesc.value && !editTaskDesc.value.endsWith('\n')) editTaskDesc.value += '\n';
                         editTaskDesc.value += '[' + data.safe_name + ']';
+                        if (typeof window.syncEditDescFullscreenFromMain === 'function') {
+                            window.syncEditDescFullscreenFromMain();
+                        }
                     } else {
                         item.querySelector('.file-size').textContent = 'Upload failed';
                         item.style.background = '#fed7d7';
@@ -4642,7 +4991,9 @@ $user_name = GetSessionParam("UserName");
         });
 
         document.addEventListener('paste', function(e) {
-            if (!editTaskDesc || document.activeElement !== editTaskDesc) return;
+            if (!editTaskDesc) return;
+            var ae = document.activeElement;
+            if (ae !== editTaskDesc && (!editTaskDescFs || ae !== editTaskDescFs)) return;
             var items = e.clipboardData && e.clipboardData.items;
             if (!items) return;
             var files = [];
@@ -4664,6 +5015,14 @@ $user_name = GetSessionParam("UserName");
                 descFileInput.click();
             }
         });
+        if (editTaskDescFs) {
+            editTaskDescFs.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                    e.preventDefault();
+                    descFileInput.click();
+                }
+            });
+        }
     })();
 
     // Copy task link to clipboard
@@ -5131,6 +5490,47 @@ $user_name = GetSessionParam("UserName");
             }
         }
     });
+    </script>
+
+    <style>
+        /* ── Time Doctor timer — sits inline in the action-buttons row ── */
+
+        /* Make the wrapper divs transparent to the flex layout so the
+           actual TD button participates directly in the flex row.       */
+        #task-action-buttons #td-trello-compat,
+        #task-action-buttons #td-trello-compat [data-testid="card-back-name"],
+        #task-action-buttons #td-trello-compat [data-testid="card-back-title-input"],
+        #task-action-buttons #td-trello-compat [data-testid="board-name-input"],
+        #task-action-buttons #td-trello-compat [data-testid="card-back-actions-button"],
+        #task-action-buttons #td-trello-compat [data-testid="card-back-actions-button"] > div[role="presentation"] {
+            display: contents;
+        }
+
+        /* Make TD's button blend with the other action buttons */
+        #task-action-buttons button.timedoctor2 {
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+            letter-spacing: 0.04em !important;
+            padding: 5px 14px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
+        }
+        html.dark-mode #task-action-buttons button.timedoctor2 {
+            filter: brightness(0.92);
+        }
+    </style>
+    <script>
+    // Time Doctor: activate timer for this task as soon as the page loads
+    (function() {
+        var taskName    = <?php echo json_encode(isset($task['task_title'])   ? $task['task_title']   : ''); ?>;
+        var projectName = <?php echo json_encode(isset($task['project_title']) ? $task['project_title'] : 'Sayu Monitor'); ?>;
+
+        if (window.TDCompat && taskName) {
+            // Append the TD timer button inside the action-buttons row (same row as Start/Edit/Duplicate/Close).
+            var anchor = document.getElementById('task-action-buttons');
+            TDCompat.startTask(taskName, projectName, anchor || null);
+        }
+    })();
     </script>
 </body>
 </html>

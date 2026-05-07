@@ -1652,10 +1652,9 @@ function format_message_for_email($text) {
 		} elseif (preg_match('/^#\s+(.*)$/', $t, $m)) {
 			$t = '<h1 style="font-size:1.2em;margin:8px 0 4px;font-weight:bold;">' . $m[1] . '</h1>';
 		} else {
+			// ** and * only (match simple_markdown_to_html in edit_task.php; no _emphasis_ — breaks filenames)
 			$t = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $t);
 			$t = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $t);
-			$t = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $t);
-			$t = preg_replace('/_(.+?)_/s', '<em>$1</em>', $t);
 			if (trim($t) === '') {
 				$t = '<br>';
 			} else {
@@ -1895,7 +1894,7 @@ function delete_task($task_id)
 
 function add_task($responsible_user_id, $priority_id, $task_status_id, $project_id, $client_id,
 				$task_title, $task_desc, $planed_date, $created_user_id, $estimated_hours=false,
-				$task_type_id, $attachment_hash, $is_wish=false)
+				$task_type_id, $attachment_hash, $is_wish=false, $helpdesk_ticket_id=0)
 {
 	global $db, $temp_path, $path, $session_now;
 
@@ -1924,6 +1923,9 @@ function add_task($responsible_user_id, $priority_id, $task_status_id, $project_
 	$sql = " INSERT INTO tasks (project_id, client_id, task_title, task_desc, planed_date, creation_date, modified_date ";
 	$sql.= " ,task_status_id, responsible_user_id, created_person_id, priority_id, estimated_hours, started_time ";
 	$sql.= " ,is_planned, task_type_id, is_wish ";
+	if ((int)$helpdesk_ticket_id > 0) {
+		$sql.= " ,ticket_id ";
+	}
 	$sql.= " ) VALUES (";
 	$sql.= ToSQL($project_id, "integer") . "," . ToSQL($client_id, "integer");
 	$sql.= ", ".ToSQL($task_title, "Text")  . "," . ToSQL($task_desc, "Text");
@@ -1937,7 +1939,11 @@ function add_task($responsible_user_id, $priority_id, $task_status_id, $project_
 		$sql.= ", NULL ";
 	}	
 	$sql.= ", ".ToSQL($is_planned, "integer", false) . ", ".ToSQL($task_type_id, "integer", false);
-	$sql.= ", ".ToSQL($is_wish, "integer", false).")";
+	$sql.= ", ".ToSQL($is_wish, "integer", false);
+	if ((int)$helpdesk_ticket_id > 0) {
+		$sql.= ", ".ToSQL((int)$helpdesk_ticket_id, "integer", false);
+	}
+	$sql.= ")";
 	$db->query($sql);
 	
 	
@@ -2123,7 +2129,7 @@ function update_task($task_id, $update_vars)
 				}
 				$type = "integer";
 			} elseif ($name == "project_id" || $name == "priority_id" || $name == "task_type_id"
-					|| $name == "task_status_id" || $name == "is_wish" || $name == "release_id" || $name == "client_id" || $name == "parent_task_id") {
+					|| $name == "task_status_id" || $name == "is_wish" || $name == "release_id" || $name == "client_id" || $name == "parent_task_id" || $name == "ticket_id") {
 				$type = "integer";
 			} elseif ($name == "estimated_hours" || $name=="task_cost" || $name == "hourly_charge") {
 				$type = "number";
@@ -2153,6 +2159,65 @@ function update_task($task_id, $update_vars)
 		}
 	}
 	return $task_updated;	
+}
+
+/**
+ * After creating a Monitor task from a Sayu helpdesk ticket: set va_support.monitor_task_id
+ * and add an internal note on va_support_messages.
+ */
+function sync_helpdesk_after_monitor_task_created($monitor_task_id, $support_id, $creator_display_name) {
+	global $db;
+	$monitor_task_id = (int) $monitor_task_id;
+	$support_id = (int) $support_id;
+	if ($monitor_task_id <= 0 || $support_id <= 0) {
+		return;
+	}
+	if (!defined('HELPDESK_ADMIN_SUPPORT_BASE')) {
+		define('HELPDESK_ADMIN_SUPPORT_BASE', 'https://www.sayu.co.uk/sa_tool_290708/admin_support.php');
+	}
+	if (!defined('MONITOR_PUBLIC_BASE')) {
+		define('MONITOR_PUBLIC_BASE', 'https://monitor.sayu.co.uk');
+	}
+	$db_sayu = new DB_Sql();
+	$db_sayu->Database = SAYU_DATABASE_NAME;
+	$db_sayu->User     = SAYU_DATABASE_USER;
+	$db_sayu->Password = SAYU_DATABASE_PASSWORD;
+	$db_sayu->Host     = SAYU_DATABASE_HOST;
+
+	$sql = "UPDATE va_support SET monitor_task_id = " . ToSQL($monitor_task_id, "integer") . " WHERE support_id = " . ToSQL($support_id, "integer");
+	$db_sayu->query($sql);
+
+	$dep_id = 0;
+	$status_id = 0;
+	$sql = "SELECT dep_id, support_status_id FROM va_support WHERE support_id = " . ToSQL($support_id, "integer");
+	$db_sayu->query($sql);
+	if ($db_sayu->next_record()) {
+		$dep_id = (int) $db_sayu->f("dep_id");
+		$status_id = (int) $db_sayu->f("support_status_id");
+	}
+
+	$monitor_link = rtrim(MONITOR_PUBLIC_BASE, '/') . '/edit_task.php?task_id=' . $monitor_task_id;
+	$name = trim($creator_display_name);
+	if ($name === '') {
+		$name = 'Monitor user';
+	}
+
+	$task_title_for_note = '';
+	$sql_t = "SELECT task_title FROM tasks WHERE task_id = " . ToSQL($monitor_task_id, "integer");
+	$db->query($sql_t);
+	if ($db->next_record()) {
+		$task_title_for_note = trim((string) $db->f("task_title"));
+	}
+	if ($task_title_for_note !== '') {
+		$note_text = 'Monitor task created: ' . $task_title_for_note . ' — ' . $monitor_link . ' (logged by ' . $name . ')';
+	} else {
+		$note_text = 'Monitor task added for ' . $name . ', ' . $monitor_link;
+	}
+
+	$sql = "INSERT INTO va_support_messages (support_id, is_note, dep_id, support_status_id, admin_id_assign_by, admin_id_assign_to, subject, message_text, date_added, is_user_reply, is_html, message_type, internal) VALUES (";
+	$sql .= ToSQL($support_id, "integer") . ", 1, " . ToSQL($dep_id, "integer") . ", " . ToSQL($status_id, "integer");
+	$sql .= ", NULL, NULL, NULL, " . ToSQL($note_text, "text") . ", NOW(), 0, 0, 'note', 1)";
+	$db_sayu->query($sql);
 }
 
 

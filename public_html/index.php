@@ -25,6 +25,20 @@ function escape_task_title_for_js($title) {
     return $t;
 }
 
+/** Visible title for dashboard lists/cards when DB title is empty */
+function my_task_title_display_text($title, $task_id) {
+    $raw = isset($title) ? $title : '';
+    $t = trim(ensure_utf8(is_string($raw) ? $raw : ''));
+    if ($t === '') {
+        return '(Untitled · #' . (int)$task_id . ')';
+    }
+    return $t;
+}
+
+function htmlspecialchars_my_task_title($title, $task_id) {
+    return htmlspecialchars(my_task_title_display_text($title, $task_id), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+}
+
 if (GetParam('close_project_id')){
     unset($_SESSION["session_perms"]['projects'][GetParam('close_project_id')]);
 }
@@ -2174,6 +2188,25 @@ while ($db->next_record()) {
         .kb-column-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0; }
         .kb-column-title { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .kb-column-count { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.5); }
+        .kb-column-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .kb-column-add {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.55);
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 1.15rem;
+            font-weight: 500;
+            line-height: 1;
+            transition: background 0.15s, color 0.15s, transform 0.1s;
+        }
+        .kb-column-add:hover { background: #667eea; color: #fff; transform: scale(1.05); }
+        html.dark-mode .kb-column-add { background: rgba(0,0,0,0.35); color: #e2e8f0; }
+        html.dark-mode .kb-column-add:hover { background: #667eea; color: #fff; }
         .kb-cards { padding: 8px 10px 12px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
         .kb-card { background: #fff; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: grab; transition: box-shadow 0.15s, transform 0.15s; border-left: 3px solid transparent; }
         .kb-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
@@ -2688,11 +2721,11 @@ while ($db->next_record()) {
                         <div class="quick-block" id="currentlyWorkingBlock">
                             <div class="quick-block-header">Currently Working On</div>
                             <div class="quick-block-body">
-                                <a href="#" onclick="confirmTaskAction('stop', <?php echo $current_task['task_id']; ?>, '<?php echo escape_task_title_for_js($current_task['task_title']); ?>', <?php echo intval($current_task['completion']); ?>, <?php echo $current_task['is_periodic'] ? 'true' : 'false'; ?>); return false;" 
+                                <a href="#" onclick="confirmTaskAction('stop', <?php echo $current_task['task_id']; ?>, '<?php echo escape_task_title_for_js(my_task_title_display_text($current_task['task_title'], $current_task['task_id'])); ?>', <?php echo intval($current_task['completion']); ?>, <?php echo $current_task['is_periodic'] ? 'true' : 'false'; ?>); return false;" 
                                    class="btn-current-task">
                                     <span class="stop-icon">&#9632;</span>
                                     <span class="task-info">
-                                        <span class="task-title" title="<?php echo htmlspecialchars($current_task['task_title']); ?>"><?php echo htmlspecialchars($current_task['task_title']); ?></span>
+                                        <span class="task-title" title="<?php echo htmlspecialchars_my_task_title($current_task['task_title'], $current_task['task_id']); ?>"><?php echo htmlspecialchars_my_task_title($current_task['task_title'], $current_task['task_id']); ?></span>
                                         <span class="task-project"><?php echo htmlspecialchars($current_task['project_title']); ?></span>
                                     </span>
                                     <span class="task-time" id="actual_time"><?php echo $current_task['actual_hours']; ?></span>
@@ -2706,10 +2739,10 @@ while ($db->next_record()) {
                             <div class="quick-block-body">
                                 <?php foreach ($periodic_tasks as $pt): ?>
                                 <?php $is_active = ($pt['status_id'] == 1); ?>
-                                <a href="#" onclick="confirmTaskAction('<?php echo $is_active ? 'stop' : 'start'; ?>', <?php echo $pt['task_id']; ?>, '<?php echo escape_task_title_for_js($pt['task_title']); ?>', <?php echo intval($pt['completion']); ?>, true); return false;" 
+                                <a href="#" onclick="confirmTaskAction('<?php echo $is_active ? 'stop' : 'start'; ?>', <?php echo $pt['task_id']; ?>, '<?php echo escape_task_title_for_js(my_task_title_display_text($pt['task_title'], $pt['task_id'])); ?>', <?php echo intval($pt['completion']); ?>, true); return false;" 
                                    class="btn-quick <?php echo $is_active ? 'active' : ''; ?>">
                                     <?php echo $is_active ? '&#9632;' : '&#9654;'; ?>
-                                    <?php echo htmlspecialchars($pt['task_title']); ?>
+                                    <?php echo htmlspecialchars_my_task_title($pt['task_title'], $pt['task_id']); ?>
                                     <?php if ($is_active): ?><span class="quick-time"><?php echo $pt['actual_hours']; ?></span><?php endif; ?>
                                 </a>
                                 <?php endforeach; ?>
@@ -2927,11 +2960,11 @@ while ($db->next_record()) {
                             </thead>
                             <tbody>
                                 <?php foreach ($my_tasks as $task): ?>
-                                <tr class="clickable-row" onclick="window.location='edit_task.php?task_id=<?php echo $task['task_id']; ?>'" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $task['status_id']; ?>" data-task-completion="<?php echo intval($task['completion']); ?>" data-task-periodic="<?php echo $task['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $task['project_id']; ?>" data-last-modified="<?php echo $task['last_modified_raw'] ?: ''; ?>">
+                                <tr class="clickable-row" onclick="window.location='edit_task.php?task_id=<?php echo $task['task_id']; ?>'" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars_my_task_title($task['task_title'], $task['task_id']); ?>" data-task-status="<?php echo $task['status_id']; ?>" data-task-completion="<?php echo intval($task['completion']); ?>" data-task-periodic="<?php echo $task['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $task['project_id']; ?>" data-last-modified="<?php echo $task['last_modified_raw'] ?: ''; ?>">
                                     <td style="padding:12px 6px 12px 12px;" onclick="event.stopPropagation()"><input type="checkbox" class="task-check" value="<?php echo $task['task_id']; ?>" onclick="updateBulkBar()" style="width:16px;height:16px;accent-color:#667eea;cursor:pointer;"></td>
                                     <td class="col-project"><strong><?php echo htmlspecialchars($task['project_title']); ?></strong></td>
                                     <td class="task-title-cell">
-                                        <?php echo htmlspecialchars($task['task_title']); ?>
+                                        <?php echo htmlspecialchars_my_task_title($task['task_title'], $task['task_id']); ?>
                                     </td>
                                     <td class="text-center col-priority">
                                         <span class="priority-badge" style="background: <?php echo isset($priority_colors[$task['priority_id']]) ? $priority_colors[$task['priority_id']] : '#718096'; ?>">
@@ -2954,11 +2987,11 @@ while ($db->next_record()) {
                                     <td>
                                         <div class="task-actions" onclick="event.stopPropagation()">
                                             <?php if ($task['status_id'] == 1): ?>
-                                            <a href="#" onclick="confirmTaskAction('stop', <?php echo $task['task_id']; ?>, '<?php echo escape_task_title_for_js($task['task_title']); ?>', <?php echo intval($task['completion']); ?>, <?php echo $task['is_periodic'] ? 'true' : 'false'; ?>); return false;" class="action-link action-stop">Stop</a>
+                                            <a href="#" onclick="confirmTaskAction('stop', <?php echo $task['task_id']; ?>, '<?php echo escape_task_title_for_js(my_task_title_display_text($task['task_title'], $task['task_id'])); ?>', <?php echo intval($task['completion']); ?>, <?php echo $task['is_periodic'] ? 'true' : 'false'; ?>); return false;" class="action-link action-stop">Stop</a>
                                             <?php else: ?>
-                                            <a href="#" onclick="confirmTaskAction('start', <?php echo $task['task_id']; ?>, '<?php echo escape_task_title_for_js($task['task_title']); ?>', <?php echo intval($task['completion']); ?>, <?php echo $task['is_periodic'] ? 'true' : 'false'; ?>); return false;" class="action-link action-start">Start</a>
+                                            <a href="#" onclick="confirmTaskAction('start', <?php echo $task['task_id']; ?>, '<?php echo escape_task_title_for_js(my_task_title_display_text($task['task_title'], $task['task_id'])); ?>', <?php echo intval($task['completion']); ?>, <?php echo $task['is_periodic'] ? 'true' : 'false'; ?>); return false;" class="action-link action-start">Start</a>
                                             <?php endif; ?>
-                                            <a href="#" onclick="confirmTaskAction('close', <?php echo $task['task_id']; ?>, '<?php echo escape_task_title_for_js($task['task_title']); ?>', <?php echo intval($task['completion']); ?>); return false;" class="action-link action-close">Close</a>
+                                            <a href="#" onclick="confirmTaskAction('close', <?php echo $task['task_id']; ?>, '<?php echo escape_task_title_for_js(my_task_title_display_text($task['task_title'], $task['task_id'])); ?>', <?php echo intval($task['completion']); ?>); return false;" class="action-link action-close">Close</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -2974,7 +3007,10 @@ while ($db->next_record()) {
                             <div class="kb-column kb-col-new" data-project-id="<?php echo $pid; ?>">
                                 <div class="kb-column-header">
                                     <a href="view_project_tasks.php?project_id=<?php echo $pid; ?>" class="kb-column-title"><?php echo htmlspecialchars($proj['title']); ?></a>
-                                    <span class="kb-column-count"><?php echo count($proj['tasks']); ?></span>
+                                    <div class="kb-column-header-actions">
+                                        <a href="create_task.php?project_id=<?php echo (int) $pid; ?>&amp;rp=index.php" class="kb-column-add" title="New task in this project" onclick="event.stopPropagation()" aria-label="New task in <?php echo htmlspecialchars($proj['title'], ENT_QUOTES, 'UTF-8'); ?>">+</a>
+                                        <span class="kb-column-count"><?php echo count($proj['tasks']); ?></span>
+                                    </div>
                                 </div>
                                 <div class="kb-cards">
                                     <?php foreach ($proj['tasks'] as $t):
@@ -2985,9 +3021,9 @@ while ($db->next_record()) {
                                         elseif ($t['status_id'] == 9) $sc = 'status-reassigned';
                                         elseif ($t['status_id'] == 10) $sc = 'status-bug';
                                     ?>
-                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" onclick="window.location='edit_task.php?task_id=<?php echo $t['task_id']; ?>'" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $pid; ?>" data-last-modified="<?php echo $t['last_modified_raw'] ?: ''; ?>">
+                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" onclick="window.location='edit_task.php?task_id=<?php echo $t['task_id']; ?>'" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars_my_task_title($t['task_title'], $t['task_id']); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $pid; ?>" data-last-modified="<?php echo $t['last_modified_raw'] ?: ''; ?>">
                                         <div class="kb-card-title">
-                                            <a href="edit_task.php?task_id=<?php echo $t['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($t['task_title']); ?></a>
+                                            <a href="edit_task.php?task_id=<?php echo $t['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars_my_task_title($t['task_title'], $t['task_id']); ?></a>
                                         </div>
                                         <div class="kb-card-meta">
                                             <?php if ($t['actual_hours'] && $t['actual_hours'] !== '0'): ?>
@@ -3040,9 +3076,9 @@ while ($db->next_record()) {
                                         elseif ($t['status_id'] == 9) $sc = 'status-reassigned';
                                         elseif ($t['status_id'] == 10) $sc = 'status-bug';
                                     ?>
-                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars($t['task_title'], ENT_QUOTES); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $t['project_id']; ?>" data-task-assign="<?php echo $session_user_id; ?>" data-last-modified="<?php echo $t['last_modified_raw'] ?: ''; ?>">
+                                    <div class="kb-card <?php echo $t['is_overdue'] ? 'overdue' : ''; ?>" draggable="true" data-task-id="<?php echo $t['task_id']; ?>" data-priority-id="<?php echo (int)$t['priority_id']; ?>" data-task-title="<?php echo htmlspecialchars_my_task_title($t['task_title'], $t['task_id']); ?>" data-task-status="<?php echo $t['status_id']; ?>" data-task-completion="<?php echo intval($t['completion']); ?>" data-task-periodic="<?php echo $t['is_periodic'] ? '1' : '0'; ?>" data-project-id="<?php echo $t['project_id']; ?>" data-task-assign="<?php echo $session_user_id; ?>" data-last-modified="<?php echo $t['last_modified_raw'] ?: ''; ?>">
                                         <div class="kb-card-title">
-                                            <a href="edit_task.php?task_id=<?php echo $t['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($t['task_title']); ?></a>
+                                            <a href="edit_task.php?task_id=<?php echo $t['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars_my_task_title($t['task_title'], $t['task_id']); ?></a>
                                         </div>
                                         <div class="kb-card-meta">
                                             <span class="kb-card-project"><?php echo htmlspecialchars($t['project_title']); ?></span>
@@ -3776,6 +3812,14 @@ while ($db->next_record()) {
         return d.innerHTML;
     }
 
+    function kbDisplayTaskTitle(title, taskId) {
+        var t = title == null ? '' : String(title).trim();
+        if (!t) {
+            return '(Untitled · #' + taskId + ')';
+        }
+        return t;
+    }
+
     // ==================== Execute Drop (Move & Send) ====================
     function executeKbDrop() {
         if (!kbDragTaskId) return;
@@ -4014,14 +4058,14 @@ while ($db->next_record()) {
                 card.className = 'kb-card';
                 card.draggable = true;
                 card.dataset.taskId = t.task_id;
-                card.dataset.taskTitle = t.task_title;
+                card.dataset.taskTitle = kbDisplayTaskTitle(t.task_title, t.task_id);
                 card.dataset.taskStatus = t.status_id;
                 card.dataset.taskCompletion = 0;
                 card.dataset.taskPeriodic = '0';
                 card.dataset.projectId = t.project_id;
                 card.dataset.taskAssign = kbSessionUserId;
                 card.innerHTML =
-                    '<div class="kb-card-title"><a href="edit_task.php?task_id=' + t.task_id + '" onclick="event.stopPropagation()">' + kbEscapeHtml(t.task_title) + '</a></div>' +
+                    '<div class="kb-card-title"><a href="edit_task.php?task_id=' + t.task_id + '" onclick="event.stopPropagation()">' + kbEscapeHtml(kbDisplayTaskTitle(t.task_title, t.task_id)) + '</a></div>' +
                     '<div class="kb-card-meta"><span class="kb-card-project">' + kbEscapeHtml(t.project_title) + '</span></div>' +
                     '<div class="kb-card-footer"><span class="status-badge ' + sc + '" style="font-size:0.62rem;padding:1px 6px;">' + kbEscapeHtml(t.status_desc) + '</span></div>';
 

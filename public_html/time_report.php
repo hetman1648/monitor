@@ -9,6 +9,76 @@ if (getsessionparam("privilege_id") == 9) {
     exit;
 }
 
+$current_user_id = (int) GetSessionParam("UserID");
+// Only this admin may edit other people's time records from this page.
+$can_edit_time_records = ($current_user_id === 3);
+
+// Flash message for edit/delete feedback (survives PRG redirect).
+$tr_flash = GetParam('tr_flash');
+$tr_flash_msg = '';
+if ($tr_flash === 'updated')      $tr_flash_msg = 'Time record updated.';
+else if ($tr_flash === 'deleted') $tr_flash_msg = 'Time record deleted.';
+else if ($tr_flash === 'invalid') $tr_flash_msg = 'Invalid input — nothing was changed.';
+
+// --- Handle edit/delete actions (admin only). PRG pattern keeps the URL clean. ---
+if ($can_edit_time_records && $_SERVER['REQUEST_METHOD'] === 'POST' && GetParam('tr_action')) {
+    $tr_action = GetParam('tr_action');
+    $edit_report_id = (int) GetParam('report_id');
+
+    // Rebuild redirect URL preserving the existing filter.
+    $preserved = array();
+    foreach (array('period','start_date','end_date','team','person_selected','submit') as $k) {
+        $v = GetParam($k);
+        if ($v !== '' && $v !== null) $preserved[$k] = $v;
+    }
+    $redirect_to = function($flash) use ($preserved) {
+        $preserved['tr_flash'] = $flash;
+        header('Location: time_report.php?' . http_build_query($preserved));
+        exit;
+    };
+
+    if ($edit_report_id > 0 && $tr_action === 'delete') {
+        $sql = "DELETE FROM time_report WHERE report_id = " . ToSQL($edit_report_id, "integer");
+        $db->query($sql, __FILE__, __LINE__);
+        $redirect_to('deleted');
+    }
+
+    if ($edit_report_id > 0 && $tr_action === 'update_time') {
+        $new_start_dt = GetParam('new_start_dt'); // "YYYY-MM-DDTHH:MM" (displayed/local time)
+        $new_end_dt   = GetParam('new_end_dt');
+
+        // Fetch the existing row so we know which shift (is_viart) to reapply.
+        $sql = "SELECT u.is_viart FROM time_report tr JOIN users u ON u.user_id = tr.user_id "
+             . "WHERE tr.report_id = " . ToSQL($edit_report_id, "integer");
+        $db->query($sql, __FILE__, __LINE__);
+        if ($db->next_record()) {
+            $row_is_viart = (int) $db->f('is_viart');
+            // Display subtracts 2h for non-viart to show local Ukraine time; reverse for storage.
+            $shift_seconds = $row_is_viart ? 0 : 2 * 3600;
+            $re_local = '/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/';
+            if (preg_match($re_local, $new_start_dt, $ms) && preg_match($re_local, $new_end_dt, $me)) {
+                $ms_sec = isset($ms[6]) ? (int)$ms[6] : 0;
+                $me_sec = isset($me[6]) ? (int)$me[6] : 0;
+                $start_ts_display = mktime((int)$ms[4], (int)$ms[5], $ms_sec, (int)$ms[2], (int)$ms[3], (int)$ms[1]);
+                $end_ts_display   = mktime((int)$me[4], (int)$me[5], $me_sec, (int)$me[2], (int)$me[3], (int)$me[1]);
+                if ($end_ts_display > $start_ts_display) {
+                    $start_ts = $start_ts_display + $shift_seconds;
+                    $end_ts   = $end_ts_display   + $shift_seconds;
+                    $spent_hours = ($end_ts - $start_ts) / 3600;
+                    $sql  = "UPDATE time_report SET ";
+                    $sql .= " started_date = " . ToSQL(date('Y-m-d H:i:s', $start_ts), "text") . ", ";
+                    $sql .= " report_date  = " . ToSQL(date('Y-m-d H:i:s', $end_ts),   "text") . ", ";
+                    $sql .= " spent_hours  = " . ToSQL($spent_hours, "number");
+                    $sql .= " WHERE report_id = " . ToSQL($edit_report_id, "integer");
+                    $db->query($sql, __FILE__, __LINE__);
+                    $redirect_to('updated');
+                }
+            }
+        }
+        $redirect_to('invalid');
+    }
+}
+
 $default_period = 1;
 
 // --- Filter logic (replaces filter.php + iTemplate) ---
@@ -88,7 +158,7 @@ $csv_rows = array();
 $has_results = false;
 
 if ($submit) {
-    $sql  = " SELECT CONCAT(u.first_name, ' ', u.last_name) as person, t.task_title, tr.task_id, tr.spent_hours, is_viart, ";
+    $sql  = " SELECT tr.report_id, CONCAT(u.first_name, ' ', u.last_name) as person, t.task_title, tr.task_id, tr.spent_hours, is_viart, ";
     $sql .= " DATE_FORMAT(tr.started_date, '%d %b %Y - %W') AS date, DATE_FORMAT(tr.report_date, '%d %b %Y - %W') AS rdate, ";
     $sql .= " task_domain_url, ";
     $sql .= " DATE_FORMAT(tr.started_date, '%d %b %Y') AS m_date, ";
@@ -113,14 +183,20 @@ if ($submit) {
         }
         if (!$date && $rdate) $date = $rdate;
 
+        $start_u_local = $db->f("start_time_u") - $uk_shift;
+        $end_u_local   = $db->f("end_time_u")   - $uk_shift;
         $records[] = array(
+            'report_id' => $db->f("report_id"),
             'date' => $date,
             'person' => $db->f("person"),
             'task_title' => $db->f("task_title"),
             'task_id' => $db->f("task_id"),
             'time_period' => $start_time . " - " . $end_time_str,
             'spent_hours' => $db->f("spent_hours"),
-            'spent_hours_fmt' => Hours2HoursMins($db->f("spent_hours"))
+            'spent_hours_fmt' => Hours2HoursMins($db->f("spent_hours")),
+            // Local (displayed) times for the inline edit modal, as "YYYY-MM-DDTHH:MM"
+            'edit_start_dt' => date('Y-m-d\TH:i', $start_u_local),
+            'edit_end_dt'   => date('Y-m-d\TH:i', $end_u_local)
         );
 
         $csv_rows[] = array(
@@ -350,6 +426,86 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
             .page-title { font-size: 1.2rem; }
             .data-table td, .data-table th { padding: 6px 8px; font-size: 0.8rem; }
         }
+
+        /* Edit-time action */
+        .tr-actions-cell { width: 1%; white-space: nowrap; text-align: center; }
+        .tr-edit-btn {
+            background: transparent; border: 1px solid transparent; border-radius: 6px;
+            padding: 4px 6px; cursor: pointer; color: #667eea; line-height: 0;
+            transition: all 0.15s;
+        }
+        .tr-edit-btn:hover { background: #edf2ff; border-color: #c3cfe2; color: #4c51bf; }
+        html.dark-mode .tr-edit-btn { color: #93c5fd; }
+        html.dark-mode .tr-edit-btn:hover { background: #1c2333; border-color: #2d333b; color: #bee3f8; }
+
+        /* Flash banner */
+        .tr-flash {
+            padding: 10px 14px; border-radius: 8px; margin-bottom: 16px;
+            font-size: 0.9rem; border: 1px solid transparent;
+        }
+        .tr-flash--updated { background: #f0fdf4; color: #166534; border-color: #86efac; }
+        .tr-flash--deleted { background: #fff7ed; color: #9a3412; border-color: #fdba74; }
+        .tr-flash--invalid { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        html.dark-mode .tr-flash--updated { background: #064e3b; color: #bbf7d0; border-color: #166534; }
+        html.dark-mode .tr-flash--deleted { background: #7c2d12; color: #fed7aa; border-color: #9a3412; }
+        html.dark-mode .tr-flash--invalid { background: #7f1d1d; color: #fecaca; border-color: #991b1b; }
+
+        /* Edit-time modal */
+        .tr-modal-backdrop {
+            position: fixed; inset: 0; background: rgba(15,20,25,0.55);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .tr-modal-backdrop.open { display: flex; }
+        .tr-modal {
+            background: #fff; border-radius: 12px; width: min(460px, 94vw);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); overflow: hidden;
+        }
+        .tr-modal-header {
+            padding: 14px 18px; border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .tr-modal-header h3 { font-size: 1rem; margin: 0; color: #2d3748; font-weight: 600; }
+        .tr-modal-close {
+            background: none; border: none; font-size: 1.3rem; color: #718096;
+            cursor: pointer; padding: 0 4px; line-height: 1;
+        }
+        .tr-modal-body { padding: 16px 18px; }
+        .tr-modal-body .tr-meta {
+            font-size: 0.8rem; color: #718096; margin-bottom: 14px;
+            padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;
+        }
+        .tr-modal-body label {
+            display: block; font-size: 0.75rem; font-weight: 600; color: #4a5568;
+            text-transform: uppercase; letter-spacing: 0.4px; margin: 10px 0 4px;
+        }
+        .tr-modal-body input[type="datetime-local"] {
+            width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0;
+            border-radius: 6px; font-family: inherit; font-size: 0.9rem;
+        }
+        .tr-modal-footer {
+            padding: 12px 18px; border-top: 1px solid #e2e8f0; background: #f8fafc;
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+        }
+        .tr-btn-delete {
+            background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;
+        }
+        .tr-btn-delete:hover { background: #fecaca; }
+        html.dark-mode .tr-modal { background: #161b22; }
+        html.dark-mode .tr-modal-header { border-bottom-color: #2d333b; }
+        html.dark-mode .tr-modal-header h3 { color: #e2e8f0; }
+        html.dark-mode .tr-modal-close { color: #8b949e; }
+        html.dark-mode .tr-modal-body .tr-meta { color: #8b949e; border-bottom-color: #2d333b; }
+        html.dark-mode .tr-modal-body label { color: #cbd5e0; }
+        html.dark-mode .tr-modal-body input[type="datetime-local"] {
+            background: #1c2333; color: #e2e8f0; border-color: #2d333b;
+            color-scheme: dark;
+        }
+        html.dark-mode .tr-modal-body input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: brightness(0) invert(1) opacity(0.92);
+        }
+        html.dark-mode .tr-modal-footer { background: #1c2333; border-top-color: #2d333b; }
+        html.dark-mode .tr-btn-delete { background: #7f1d1d; color: #fecaca; border-color: #991b1b; }
+        html.dark-mode .tr-btn-delete:hover { background: #991b1b; }
     </style>
 </head>
 <body>
@@ -404,6 +560,12 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
             </form>
         </div>
 
+        <?php if ($tr_flash_msg): ?>
+        <div class="tr-flash tr-flash--<?php echo htmlspecialchars($tr_flash, ENT_QUOTES, 'UTF-8'); ?>">
+            <?php echo htmlspecialchars($tr_flash_msg); ?>
+        </div>
+        <?php endif; ?>
+
         <?php if ($submit): ?>
         <div class="card">
             <div class="card-header">
@@ -419,6 +581,11 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
             </div>
             <?php if ($has_results): ?>
             <div style="overflow-x: auto;">
+                <?php
+                    $base_cols = $person_selected ? 3 : 4; // Time Period, Task, Hours (+ User if not filtered)
+                    $total_cols = $base_cols + ($can_edit_time_records ? 1 : 0);
+                    $daytotal_label_span = $total_cols - 1 - ($can_edit_time_records ? 1 : 0);
+                ?>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -426,6 +593,7 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
                             <th>Time Period</th>
                             <th>Task</th>
                             <th style="text-align:center">Hours</th>
+                            <?php if ($can_edit_time_records): ?><th style="text-align:center; width:1%">&nbsp;</th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -443,8 +611,9 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
                         if (!$first && ($is_new_date || (!$person_selected && $is_new_person))):
                     ?>
                         <tr class="total-row">
-                            <td colspan="<?php echo $person_selected ? 2 : 3; ?>" style="text-align:right">Day Total:</td>
+                            <td colspan="<?php echo $daytotal_label_span; ?>" style="text-align:right">Day Total:</td>
                             <td style="text-align:center"><?php echo Hours2HoursMins($day_hours); ?></td>
+                            <?php if ($can_edit_time_records): ?><td></td><?php endif; ?>
                         </tr>
                     <?php
                             $day_hours = 0;
@@ -453,7 +622,7 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
                         if ($is_new_date):
                     ?>
                         <tr class="date-header">
-                            <td colspan="<?php echo $person_selected ? 3 : 4; ?>"><?php echo htmlspecialchars($r['date']); ?></td>
+                            <td colspan="<?php echo $total_cols; ?>"><?php echo htmlspecialchars($r['date']); ?></td>
                         </tr>
                     <?php
                         endif;
@@ -461,7 +630,7 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
                         if (!$person_selected && $is_new_person):
                     ?>
                         <tr class="person-header">
-                            <td colspan="<?php echo $person_selected ? 3 : 4; ?>"><?php echo htmlspecialchars($r['person']); ?></td>
+                            <td colspan="<?php echo $total_cols; ?>"><?php echo htmlspecialchars($r['person']); ?></td>
                         </tr>
                     <?php endif; ?>
 
@@ -470,6 +639,19 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
                             <td style="white-space:nowrap"><?php echo htmlspecialchars($r['time_period']); ?></td>
                             <td><a href="edit_task.php?task_id=<?php echo $r['task_id']; ?>"><?php echo htmlspecialchars($r['task_title']); ?></a></td>
                             <td style="text-align:center"><?php echo $r['spent_hours_fmt']; ?></td>
+                            <?php if ($can_edit_time_records): ?>
+                            <td class="tr-actions-cell">
+                                <button type="button" class="tr-edit-btn"
+                                        title="Edit time record"
+                                        data-report-id="<?php echo (int)$r['report_id']; ?>"
+                                        data-start="<?php echo htmlspecialchars($r['edit_start_dt'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-end="<?php echo htmlspecialchars($r['edit_end_dt'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-task="<?php echo htmlspecialchars($r['task_title'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-person="<?php echo htmlspecialchars($r['person'], ENT_QUOTES, 'UTF-8'); ?>">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                </button>
+                            </td>
+                            <?php endif; ?>
                         </tr>
                     <?php
                         $day_hours += $r['spent_hours'];
@@ -482,15 +664,17 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
                     if (!$first):
                     ?>
                         <tr class="total-row">
-                            <td colspan="<?php echo $person_selected ? 2 : 3; ?>" style="text-align:right">Day Total:</td>
+                            <td colspan="<?php echo $daytotal_label_span; ?>" style="text-align:right">Day Total:</td>
                             <td style="text-align:center"><?php echo Hours2HoursMins($day_hours); ?></td>
+                            <?php if ($can_edit_time_records): ?><td></td><?php endif; ?>
                         </tr>
                     <?php endif; ?>
 
                     <?php if ($total_all_hours && $person_selected): ?>
                         <tr class="grand-total-row">
-                            <td colspan="2" style="text-align:right">Total of all days:</td>
+                            <td colspan="<?php echo $daytotal_label_span; ?>" style="text-align:right">Total of all days:</td>
                             <td style="text-align:center"><?php echo Hours2HoursMins($total_all_hours); ?></td>
+                            <?php if ($can_edit_time_records): ?><td></td><?php endif; ?>
                         </tr>
                     <?php endif; ?>
                     </tbody>
@@ -504,6 +688,44 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
         </div>
         <?php endif; ?>
     </div>
+
+    <?php if ($can_edit_time_records): ?>
+    <div class="tr-modal-backdrop" id="trEditBackdrop">
+        <div class="tr-modal" role="dialog" aria-modal="true" aria-labelledby="trEditTitle">
+            <div class="tr-modal-header">
+                <h3 id="trEditTitle">Edit time record</h3>
+                <button type="button" class="tr-modal-close" id="trEditClose" aria-label="Close">&times;</button>
+            </div>
+            <form method="POST" action="time_report.php<?php
+                $qs = $_SERVER['QUERY_STRING']; echo $qs ? '?' . htmlspecialchars($qs, ENT_QUOTES, 'UTF-8') : '';
+            ?>" id="trEditForm">
+                <?php foreach (array('period','start_date','end_date','team','person_selected','submit') as $_k): ?>
+                    <input type="hidden" name="<?php echo $_k; ?>" value="<?php echo htmlspecialchars(GetParam($_k) ?: '', ENT_QUOTES, 'UTF-8'); ?>">
+                <?php endforeach; ?>
+                <input type="hidden" name="report_id" id="trEditReportId" value="">
+                <input type="hidden" name="tr_action" id="trEditAction" value="update_time">
+
+                <div class="tr-modal-body">
+                    <div class="tr-meta">
+                        <div><strong id="trEditPerson"></strong></div>
+                        <div id="trEditTask" style="margin-top:2px"></div>
+                    </div>
+                    <label for="trEditStart">Start</label>
+                    <input type="datetime-local" name="new_start_dt" id="trEditStart" required>
+                    <label for="trEditEnd">End</label>
+                    <input type="datetime-local" name="new_end_dt" id="trEditEnd" required>
+                </div>
+                <div class="tr-modal-footer">
+                    <button type="button" class="btn btn-sm tr-btn-delete" id="trEditDeleteBtn">Delete</button>
+                    <div style="display:flex; gap:8px">
+                        <button type="button" class="btn btn-secondary btn-sm" id="trEditCancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <script>
     var allPeople = <?php echo json_encode($people_list); ?>;
@@ -545,6 +767,50 @@ foreach ($records as $r) $total_all_hours += $r['spent_hours'];
     }
 
     filterPeople();
+
+    <?php if ($can_edit_time_records): ?>
+    // --- Time-record edit modal ---
+    (function () {
+        var backdrop = document.getElementById('trEditBackdrop');
+        var form     = document.getElementById('trEditForm');
+        var fReport  = document.getElementById('trEditReportId');
+        var fAction  = document.getElementById('trEditAction');
+        var fStart   = document.getElementById('trEditStart');
+        var fEnd     = document.getElementById('trEditEnd');
+        var elPerson = document.getElementById('trEditPerson');
+        var elTask   = document.getElementById('trEditTask');
+
+        function openModal(btn) {
+            fReport.value = btn.getAttribute('data-report-id') || '';
+            fAction.value = 'update_time';
+            fStart.value  = btn.getAttribute('data-start') || '';
+            fEnd.value    = btn.getAttribute('data-end')   || '';
+            elPerson.textContent = btn.getAttribute('data-person') || '';
+            elTask.textContent   = btn.getAttribute('data-task')   || '';
+            backdrop.classList.add('open');
+            setTimeout(function(){ fStart.focus(); }, 50);
+        }
+        function closeModal() { backdrop.classList.remove('open'); }
+
+        document.addEventListener('click', function (ev) {
+            var btn = ev.target.closest && ev.target.closest('.tr-edit-btn');
+            if (btn) { ev.preventDefault(); openModal(btn); }
+        });
+        document.getElementById('trEditClose').addEventListener('click', closeModal);
+        document.getElementById('trEditCancel').addEventListener('click', closeModal);
+        backdrop.addEventListener('click', function (ev) { if (ev.target === backdrop) closeModal(); });
+        document.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Escape' && backdrop.classList.contains('open')) closeModal();
+        });
+
+        document.getElementById('trEditDeleteBtn').addEventListener('click', function () {
+            if (!fReport.value) return;
+            if (!confirm('Delete this time record? This cannot be undone.')) return;
+            fAction.value = 'delete';
+            form.submit();
+        });
+    })();
+    <?php endif; ?>
     </script>
 </body>
 </html>

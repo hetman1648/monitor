@@ -23,6 +23,20 @@ if (!isset($user_name) || empty($user_name)) {
 <script>
 // Apply dark mode immediately to prevent flash
 (function(){try{if(localStorage.getItem('sayuDarkMode')==='1')document.documentElement.classList.add('dark-mode');}catch(e){}})();
+// Intercept Time Doctor's Trello board-lookup API call so it resolves cleanly
+// without the user needing a Trello login. The button injection still proceeds.
+(function(){
+    var _fetch = window.fetch;
+    window.fetch = function(url) {
+        if (typeof url === 'string' && url.indexOf('trello.com/1/Members/me') !== -1) {
+            return Promise.resolve(new Response('{"boards":[]}', {
+                status: 200,
+                headers: {'Content-Type':'application/json'}
+            }));
+        }
+        return _fetch.apply(this, arguments);
+    };
+})();
 </script>
 <style>
     .site-header {
@@ -335,6 +349,30 @@ if (!isset($user_name) || empty($user_name)) {
     html.dark-mode textarea:focus,
     html.dark-mode select:focus { border-color: #667eea !important; }
 
+    /* Native date picker icon is dark; invert so it reads on dark inputs */
+    html.dark-mode input[type="date"] {
+        color-scheme: dark;
+    }
+    html.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+        /* brightness(0) then invert(1) reliably lightens the default dark glyph */
+        filter: brightness(0) invert(1) opacity(0.92) !important;
+        -webkit-filter: brightness(0) invert(1) opacity(0.92) !important;
+        opacity: 1 !important;
+        cursor: pointer;
+    }
+    html.dark-mode input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        filter: brightness(0) invert(1) !important;
+        -webkit-filter: brightness(0) invert(1) !important;
+        opacity: 1 !important;
+    }
+
+    html.dark-mode .form-label {
+        color: #cbd5e1;
+    }
+    html.dark-mode .form-label .required {
+        color: #fca5a5;
+    }
+
     /* Buttons */
     html.dark-mode .btn-secondary { background: #1c2333; color: #e2e8f0; border-color: #2d333b; }
     html.dark-mode .btn-secondary:hover { background: #2d333b; }
@@ -613,3 +651,4 @@ function toggleDarkMode() {
     try { localStorage.setItem('sayuDarkMode', isDark ? '1' : '0'); } catch(e) {}
 }
 </script>
+<script src="/scripts/timedoctor-trello-compat.js"></script>

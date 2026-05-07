@@ -1,4 +1,26 @@
 <?php
+
+if (!function_exists('ensure_utf8')) {
+	/**
+	 * Normalize legacy DB text to valid UTF-8 for HTML/JS (Windows-1252 smart punctuation etc.).
+	 */
+	function ensure_utf8($text) {
+		if ($text === null || $text === '') {
+			return '';
+		}
+		if (!is_string($text)) {
+			return '';
+		}
+		if (function_exists('mb_check_encoding') && mb_check_encoding($text, 'UTF-8')) {
+			return $text;
+		}
+		if (function_exists('mb_convert_encoding')) {
+			return mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
+		}
+		return $text;
+	}
+}
+
 	function get_setting_value($settings_array, $setting_name, $default_value = "") {
 		return (is_array($settings_array) && isset($settings_array[$setting_name]) && strlen($settings_array[$setting_name])) ? $settings_array[$setting_name] : $default_value;
 	}

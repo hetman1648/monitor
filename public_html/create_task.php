@@ -68,6 +68,10 @@ if ($action == "insert") {
     if (!$responsible_user_id) {
         $errors[] = "Responsible person is required";
     }
+    $helpdesk_ticket_submit = (int) GetParam('helpdesk_ticket_id');
+    if ($helpdesk_ticket_submit <= 0) {
+        $helpdesk_ticket_submit = (int) GetParam('ticket_id');
+    }
     // Allow empty or zero estimated time; only error when format is invalid (unparseable or negative)
     $param_estimated = trim(GetParam("task_estimated_time"));
     if (strlen($param_estimated) > 0) {
@@ -122,7 +126,9 @@ if ($action == "insert") {
             $user_id,
             $estimated_hours,
             $task_type_id,
-            $hash
+            $hash,
+            false,
+            $helpdesk_ticket_submit
         );
         
         update_task($new_task_id, array(
@@ -131,6 +137,16 @@ if ($action == "insert") {
             "parent_task_id" => $parent_task_id,
             "task_domain_url" => $task_domain,
         ));
+
+        if ($helpdesk_ticket_submit > 0) {
+            $creator_name = '';
+            $sql_cn = "SELECT CONCAT(first_name, ' ', last_name) AS n FROM users WHERE user_id = " . ToSQL($user_id, "integer");
+            $db->query($sql_cn);
+            if ($db->next_record()) {
+                $creator_name = trim($db->f("n"));
+            }
+            sync_helpdesk_after_monitor_task_created($new_task_id, $helpdesk_ticket_submit, $creator_name);
+        }
         
         // Set flash message
         $_SESSION['flash_message'] = array(
@@ -220,10 +236,7 @@ if ($action == "insert") {
             $ticket_match_debug['ticket_found'] = true;
             $ticket_match_debug['user_company'] = $user_company;
             $task_title = $db_sayu->f("summary");
-            $ticket_desc = trim((string) $db_sayu->f("description"));
-            if ($ticket_desc !== "") {
-                $ticket_desc = strip_tags($ticket_desc);
-            }
+            $ticket_desc = helpdesk_ticket_description_to_plain($db_sayu->f("description"));
             $mail_body_text = trim((string) $db_sayu->f("mail_body_text"));
             $mail_body_html = trim((string) $db_sayu->f("mail_body_html"));
 
@@ -233,10 +246,12 @@ if ($action == "insert") {
             $sql_last = "SELECT message_text, is_html FROM va_support_messages WHERE support_id = " . ToSQL($ticket_id, "integer") . " ORDER BY date_added DESC LIMIT 1";
             $db_sayu->query($sql_last);
             if ($db_sayu->next_record()) {
-                $last_msg = trim((string) $db_sayu->f("message_text"));
-                if ($last_msg !== "") {
+                $raw_msg = trim((string) $db_sayu->f("message_text"));
+                if ($raw_msg !== "") {
                     if ($db_sayu->f("is_html")) {
-                        $last_msg = strip_tags($last_msg);
+                        $last_msg = helpdesk_html_to_plain_text($raw_msg);
+                    } else {
+                        $last_msg = helpdesk_plain_text_normalize($raw_msg);
                     }
                     // Prefer whichever is longer (full ticket often has more context than last reply)
                     if (strlen($last_msg) > strlen($ticket_desc)) {
@@ -245,10 +260,10 @@ if ($action == "insert") {
                 }
             }
             if ($task_desc === "" && $mail_body_text !== "") {
-                $task_desc = strip_tags($mail_body_text);
+                $task_desc = helpdesk_plain_text_normalize($mail_body_text);
             }
             if ($task_desc === "" && $mail_body_html !== "") {
-                $task_desc = strip_tags($mail_body_html);
+                $task_desc = helpdesk_html_to_plain_text($mail_body_html);
             }
 
             // Project: always Sayu Web (79). Sub-project: match by va_support.user_company to project_title (clever matching)
@@ -279,7 +294,7 @@ if ($action == "insert") {
                     $desc_source = 'last_message';
                 } elseif ($task_desc === $ticket_desc) {
                     $desc_source = 'ticket_description';
-                } elseif ($mail_body_text !== '' && $task_desc === strip_tags($mail_body_text)) {
+                } elseif ($mail_body_text !== '' && $task_desc === helpdesk_plain_text_normalize($mail_body_text)) {
                     $desc_source = 'mail_body_text';
                 } else {
                     $desc_source = 'mail_body_html';
@@ -295,6 +310,12 @@ if ($action == "insert") {
             $ticket_match_debug['message'] = 'Ticket not found in va_support for support_id=' . $ticket_id;
         }
     }
+}
+
+// Preserve helpdesk ticket id on form (URL or POST after validation errors)
+$helpdesk_ticket_for_form = (int) GetParam('helpdesk_ticket_id');
+if ($helpdesk_ticket_for_form <= 0 && !empty($ticket_id)) {
+    $helpdesk_ticket_for_form = (int) $ticket_id;
 }
 
 // If project_id passed via URL (e.g. from view_project_tasks), set sub_project_id
@@ -426,6 +447,41 @@ $sql = "SELECT first_name, last_name FROM users WHERE user_id = " . ToSQL($user_
 $db->query($sql);
 if ($db->next_record()) {
     $user_name = $db->f("first_name") . " " . $db->f("last_name");
+}
+
+// Helpdesk HTML email → plain text: keep line breaks (<br>, blocks), then strip tags and decode entities
+function helpdesk_html_to_plain_text($html) {
+    if ($html === null || $html === '') {
+        return '';
+    }
+    $s = str_replace(array("\r\n", "\r"), "\n", (string) $html);
+    $s = preg_replace('/<\s*br\s*\/?>/i', "\n", $s);
+    $s = preg_replace('/<\/(p|div|tr|h[1-6]|li|table|section|article)\s*>/i', "\n", $s);
+    $s = strip_tags($s);
+    $s = html_entity_decode($s, ENT_QUOTES, 'UTF-8');
+    $s = preg_replace("/\n{5,}/", "\n\n\n\n", $s);
+    return trim($s);
+}
+
+// Plain helpdesk text: normalise CRLF and decode entities (do not strip_tags — may contain <tag> as text)
+function helpdesk_plain_text_normalize($s) {
+    if ($s === null || $s === '') {
+        return '';
+    }
+    $s = str_replace(array("\r\n", "\r"), "\n", (string) $s);
+    $s = html_entity_decode($s, ENT_QUOTES, 'UTF-8');
+    return trim($s);
+}
+
+function helpdesk_ticket_description_to_plain($s) {
+    $s = trim((string) $s);
+    if ($s === '') {
+        return '';
+    }
+    if (preg_match('/<\s*br\b/i', $s) || preg_match('/<\/(p|div|tr|li|h[1-6])\b/i', $s)) {
+        return helpdesk_html_to_plain_text($s);
+    }
+    return helpdesk_plain_text_normalize($s);
 }
 
 // Helper: normalize string for comparison (remove spaces, hyphens, underscores; lowercase)
@@ -1125,6 +1181,59 @@ $months = array(
             background: #fed7d7;
         }
 
+        /* Dark mode – page chrome & form labels (this sheet loads after modern_header) */
+        html.dark-mode body {
+            background: #0f1419;
+            color: #cbd5e1;
+        }
+        html.dark-mode .page-title {
+            color: #f1f5f9;
+        }
+        html.dark-mode .breadcrumb {
+            color: #94a3b8;
+        }
+        html.dark-mode .card {
+            background: #161b22;
+            border-color: #2d333b;
+        }
+        html.dark-mode .card-header {
+            background: #1c2333;
+            color: #e2e8f0;
+            border-bottom-color: #2d333b;
+        }
+        html.dark-mode .help-text {
+            color: #94a3b8;
+        }
+        html.dark-mode .btn-secondary {
+            background: #2d333b;
+            color: #e2e8f0;
+        }
+        html.dark-mode .btn-secondary:hover {
+            background: #3d4656;
+        }
+        html.dark-mode #domainSearchLink {
+            color: #94a3b8 !important;
+        }
+
+        /* Date picker: force native calendar glyph to a light silhouette (WebKit/Blink) */
+        html.dark-mode input[type="date"].form-control {
+            color-scheme: dark;
+        }
+        html.dark-mode input[type="date"].form-control::-webkit-calendar-picker-indicator {
+            opacity: 1 !important;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 2px;
+            filter: brightness(0) invert(1) opacity(0.92) !important;
+            -webkit-filter: brightness(0) invert(1) opacity(0.92) !important;
+        }
+        html.dark-mode input[type="date"].form-control::-webkit-calendar-picker-indicator:hover {
+            filter: brightness(0) invert(1) !important;
+            -webkit-filter: brightness(0) invert(1) !important;
+        }
+
         /* Dark mode – attachments area */
         html.dark-mode .attachment-dropzone {
             background: #1c2333;
@@ -1206,6 +1315,26 @@ $months = array(
         }
         html.dark-mode .custom-select-empty {
             color: #8b949e;
+        }
+
+        /* Helpdesk ticket banner — dark mode (was too bright mint on navy) */
+        html.dark-mode .debug-box {
+            background: #1a2332;
+            border: 1px solid #2d4a3e;
+            color: #c4d4c8;
+        }
+        html.dark-mode .debug-box h3 {
+            color: #86efac;
+        }
+        html.dark-mode .debug-box th,
+        html.dark-mode .debug-box td {
+            border-bottom-color: #2d3d35;
+        }
+        html.dark-mode .debug-box th {
+            color: #a7f3d0;
+        }
+        html.dark-mode .debug-box .matched {
+            background: rgba(34, 197, 94, 0.15);
         }
 
         .paste-indicator {
@@ -1337,6 +1466,10 @@ $months = array(
                     <input type="hidden" name="action" value="insert">
                     <input type="hidden" name="rp" value="<?php echo htmlspecialchars($rp); ?>">
                     <input type="hidden" name="task_id" value="<?php echo $task_id; ?>">
+                    <?php if ($helpdesk_ticket_for_form > 0): ?>
+                    <input type="hidden" name="helpdesk_ticket_id" value="<?php echo (int) $helpdesk_ticket_for_form; ?>">
+                    <input type="hidden" name="ticket_id" value="<?php echo (int) $helpdesk_ticket_for_form; ?>">
+                    <?php endif; ?>
                     <input type="hidden" name="hash" value="<?php echo htmlspecialchars($hash); ?>">
 
                     <div class="form-row full">

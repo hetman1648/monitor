@@ -47,6 +47,9 @@
 		case "upload_temp_attachment":
 			ajax_upload_temp_attachment();
 		break;
+		case "delete_message_attachment":
+			ajax_delete_message_attachment();
+		break;
 		case "reassign_task":
 			ajax_reassign_task();
 		break;
@@ -826,6 +829,66 @@
 		} else {
 			echo json_encode(array('success' => false, 'error' => 'Failed to save file'));
 		}
+		exit;
+	}
+
+	function ajax_delete_message_attachment() {
+		global $db;
+
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+
+		$session_user_id = (int) GetSessionParam("UserID");
+		if (!$session_user_id) {
+			echo json_encode(array("success" => false, "error" => "Not logged in"));
+			exit;
+		}
+
+		$task_id = (int) GetParam("task_id");
+		$attachment_id = (int) GetParam("attachment_id");
+		if (!$task_id || !$attachment_id) {
+			echo json_encode(array("success" => false, "error" => "Missing task or attachment"));
+			exit;
+		}
+
+		$priv = (int) GetSessionParam("privilege_id");
+		if ($priv === 9) {
+			$db->query("SELECT task_id FROM tasks WHERE task_id = " . ToSQL($task_id, "integer") . " AND created_person_id = " . ToSQL($session_user_id, "integer"));
+			if (!$db->next_record()) {
+				echo json_encode(array("success" => false, "error" => "Access denied"));
+				exit;
+			}
+		}
+
+		$sql = "SELECT a.attachment_id, a.identity_id AS message_id, a.file_name, a.identity_type
+				FROM attachments a
+				INNER JOIN messages m ON m.message_id = a.identity_id AND m.identity_type = 'task' AND m.identity_id = " . ToSQL($task_id, "integer") . "
+				WHERE a.attachment_id = " . ToSQL($attachment_id, "integer") . " AND a.identity_type = 'message'";
+		$db->query($sql);
+		if (!$db->next_record()) {
+			echo json_encode(array("success" => false, "error" => "Attachment not found"));
+			exit;
+		}
+
+		$message_id = (int) $db->f("message_id");
+		$file_name = $db->f("file_name");
+		$rel_path = 'attachments/message/' . $message_id . '_' . $file_name;
+		if (is_file($rel_path)) {
+			@unlink($rel_path);
+		}
+
+		$db->query("DELETE FROM attachments WHERE attachment_id = " . ToSQL($attachment_id, "integer"));
+
+		$bracket_ref = '[' . $file_name . ']';
+		$db->query(
+			"UPDATE messages SET message = REPLACE(message, " . ToSQL($bracket_ref, "text") . ", '') WHERE message_id = " . ToSQL($message_id, "integer")
+		);
+
+		echo json_encode(array(
+			"success" => true,
+			"message_id" => $message_id,
+			"file_name" => $file_name
+		));
 		exit;
 	}
 
