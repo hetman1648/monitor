@@ -1137,7 +1137,7 @@ if ($db->next_record()) {
                     </thead>
                     <tbody id="tasksTableBody">
                         <?php foreach ($tasks as $task): ?>
-                        <tr class="clickable-row draggable-row <?php echo $task['is_overdue'] ? 'overdue' : ''; ?> <?php echo $task['is_today'] ? 'today' : ''; ?>" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES); ?>">
+                        <tr class="clickable-row draggable-row <?php echo $task['is_overdue'] ? 'overdue' : ''; ?> <?php echo $task['is_today'] ? 'today' : ''; ?>" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?>">
                             <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="<?php echo $task['task_id']; ?>"></td>
                             <td class="drag-handle col-drag" onclick="event.stopPropagation();">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1148,7 +1148,7 @@ if ($db->next_record()) {
                             </td>
                             <td class="col-project"><strong><?php if ($task['project_id']): ?><a href="view_project_tasks.php?project_id=<?php echo $task['project_id']; ?>" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='#667eea'" onmouseout="this.style.color='inherit'" onclick="event.stopPropagation()"><?php echo htmlspecialchars($task['project_title']); ?></a><?php else: ?><?php echo htmlspecialchars($task['project_title']); ?><?php endif; ?></strong></td>
                             <td>
-                                <?php echo htmlspecialchars($task['task_title']); ?>
+                                <?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?>
                                 <?php if ($task['is_periodic']): ?><span style="color: #718096; font-size: 0.75rem;">(periodic)</span><?php endif; ?>
                             </td>
                             <td class="text-center col-priority">
@@ -1235,9 +1235,9 @@ if ($db->next_record()) {
                             if ($task['is_overdue']) $card_class .= ' overdue';
                             $status_class = isset($status_classes[$task['status_id']]) ? 'status-' . $status_classes[$task['status_id']] : 'status-new';
                         ?>
-                        <div class="<?php echo $card_class; ?>" draggable="true" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES); ?>" data-status-id="<?php echo $task['status_id']; ?>">
+                        <div class="<?php echo $card_class; ?>" draggable="true" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?>" data-status-id="<?php echo $task['status_id']; ?>">
                             <div class="kanban-card-title">
-                                <a href="edit_task.php?task_id=<?php echo $task['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($task['task_title']); ?></a>
+                                <a href="edit_task.php?task_id=<?php echo $task['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?></a>
                             </div>
                             <div class="kanban-card-meta">
                                 <?php if ($task['actual_hours'] && $task['actual_hours'] !== '0'): ?>
@@ -1320,9 +1320,9 @@ if ($db->next_record()) {
                             if ($task['is_overdue']) $card_class .= ' overdue';
                             $s_class = isset($status_classes[$task['status_id']]) ? 'status-' . $status_classes[$task['status_id']] : 'status-new';
                         ?>
-                        <div class="<?php echo $card_class; ?>" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES); ?>" data-status-id="<?php echo $task['status_id']; ?>">
+                        <div class="<?php echo $card_class; ?>" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?>" data-status-id="<?php echo $task['status_id']; ?>">
                             <div class="kanban-card-title">
-                                <a href="edit_task.php?task_id=<?php echo $task['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($task['task_title']); ?></a>
+                                <a href="edit_task.php?task_id=<?php echo $task['task_id']; ?>" onclick="event.stopPropagation()"><?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?></a>
                             </div>
                             <div class="kanban-card-meta">
                                 <?php if ($task['actual_hours'] && $task['actual_hours'] !== '0'): ?>

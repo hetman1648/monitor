@@ -1334,22 +1334,38 @@ function start_task($task_id, $completion, $return_page = "index.php")
 		$task_user_id = $db->f("responsible_user_id");
 
 		if ($task_user_id && $task_user_id==GetSessionParam("UserID")) {
-			//-- first STOP started tasks
-			$sql  = " SELECT t.task_id FROM tasks t WHERE t.task_status_id =1 AND t.is_wish =0 AND t.is_closed =0 ";
-			$sql .= " AND t.responsible_user_id=".ToSQL($task_user_id, "integer", false);
+			// Collect ALL currently-running tasks for this user first. We can't iterate
+			// the cursor while calling stop_task() because stop_task() reuses the global
+			// $db and would clobber the cursor mid-loop. Exclude the task we're about to
+			// start so we don't accidentally stop-then-start the same row.
+			$sql  = " SELECT t.task_id FROM tasks t WHERE t.task_status_id = 1 AND t.is_wish = 0 AND t.is_closed = 0 ";
+			$sql .= " AND t.responsible_user_id = ".ToSQL($task_user_id, "integer", false);
+			$sql .= " AND t.task_id <> ".ToSQL($task_id, "integer", false);
 			$db->query($sql);
-			if($db->next_record()) {
-				stop_task($db->f("task_id"), $completion, false);
+			$running_task_ids = array();
+			while ($db->next_record()) {
+				$running_task_ids[] = (int)$db->f("task_id");
+			}
+			foreach ($running_task_ids as $running_id) {
+				stop_task($running_id, $completion, false);
 			}
 
+			// Defensive guard against the start/start race condition: if two clicks
+			// arrived simultaneously and both passed the check above, demote any
+			// leftover in-progress row for this user to "waiting" so we can never
+			// end up with two task_status_id=1 rows for the same person.
+			$sql  = " UPDATE tasks SET task_status_id = 8 ";
+			$sql .= " WHERE task_status_id = 1 AND is_wish = 0 AND is_closed = 0 ";
+			$sql .= " AND responsible_user_id = ".ToSQL($task_user_id, "integer", false);
+			$sql .= " AND task_id <> ".ToSQL($task_id, "integer", false);
+			$db->query($sql);
+
 			//-- now START specified task
-			
 			$sql = "UPDATE tasks SET is_closed=0, task_status_id = 1, responsible_user_id=999, started_time = NOW(), modified_date = NOW() WHERE task_id = ".ToSQL($task_id, "integer");
 	   		$db->query($sql);
 	   		$sql = "UPDATE tasks SET responsible_user_id=" . $task_user_id . " WHERE task_id =".ToSQL($task_id, "integer");
 	   		$db->query($sql);
-   		
-			//$sql = "UPDATE tasks SET task_status_id = 1, started_time = NOW() WHERE task_id = ".ToSQL($task_id, "integer");
+
    			$task_started = true;
 		}
 	}
