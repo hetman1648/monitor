@@ -848,7 +848,7 @@ for ($y = date("Y"); $y >= 2004; $y--) {
                 <span class="card-title">Holiday Allowance Summary</span>
             </div>
             <div class="scroll-table">
-                <table class="data-table">
+                <table class="data-table" id="holidayAllowanceTable">
                     <thead>
                         <tr>
                             <th>Employee</th>
@@ -863,16 +863,16 @@ for ($y = date("Y"); $y >= 2004; $y--) {
                     </thead>
                     <tbody>
                         <?php foreach ($holiday_summary as $hs): ?>
-                        <?php 
+                        <?php
                             $url_params = "show_user_id=" . $hs['user_id'];
                             if ($year_selected) $url_params .= "&year_selected=$year_selected";
                             else $url_params .= "&year_selected=$today_year";
                             if ($filter_start_date) $url_params .= "&start_date=$filter_start_date";
                             if ($filter_end_date) $url_params .= "&end_date=$filter_end_date";
                         ?>
-                        <tr>
+                        <tr data-user-id="<?php echo (int)$hs['user_id']; ?>" data-user-name="<?php echo htmlspecialchars($hs['name'], ENT_QUOTES); ?>">
                             <td><a href="view_vacations.php?<?php echo $url_params; ?>"><?php echo htmlspecialchars($hs['name']); ?></a></td>
-                            <td class="text-right"><?php echo $hs['total']; ?></td>
+                            <td class="text-right allowance-total"><?php echo $hs['total']; ?></td>
                             <td class="text-right"><?php echo $hs['used']; ?></td>
                             <td class="text-right"><strong class="stats-value highlight"><?php echo $hs['available']; ?></strong></td>
                             <td class="text-right"><?php echo $hs['total_year']; ?></td>
@@ -1012,6 +1012,232 @@ for ($y = date("Y"); $y >= 2004; $y--) {
         document.querySelector('input[name="iduser"]').value = '';
     }
     </script>
+
+    <?php if ((int)$user_id === 3): ?>
+    <style>
+        #allowanceCtxMenu {
+            position: fixed;
+            z-index: 10000;
+            min-width: 180px;
+            background: #fff;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+            padding: 4px 0;
+            font-size: 14px;
+            display: none;
+        }
+        #allowanceCtxMenu .ctx-item {
+            padding: 8px 14px;
+            cursor: pointer;
+            color: #222;
+            white-space: nowrap;
+        }
+        #allowanceCtxMenu .ctx-item:hover { background: #f1f5f9; }
+        #allowanceCtxMenu .ctx-header {
+            padding: 6px 14px;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 4px;
+        }
+        #holDlgOverlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 10001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #holDlg {
+            background: #fff;
+            border-radius: 6px;
+            min-width: 340px;
+            max-width: 92vw;
+            padding: 20px 22px 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            font-size: 14px;
+        }
+        #holDlg h3 { margin: 0 0 12px; font-size: 16px; }
+        #holDlg label { display: block; font-weight: 600; margin: 10px 0 4px; color: #333; }
+        #holDlg input[type=number], #holDlg input[type=text] {
+            width: 100%; box-sizing: border-box;
+            padding: 7px 9px; border: 1px solid #c8c8c8; border-radius: 4px;
+            font-size: 14px;
+        }
+        #holDlg .hol-actions {
+            margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end;
+        }
+        #holDlg button {
+            padding: 7px 14px; border-radius: 4px; border: 1px solid transparent;
+            cursor: pointer; font-size: 14px;
+        }
+        #holDlgCancel { background: #f1f1f1; color: #333; border-color: #d0d0d0; }
+        #holDlgOk { background: #2563eb; color: #fff; }
+        #holDlgOk.danger { background: #dc2626; }
+        #holDlgErr { color: #b91c1c; min-height: 18px; margin-top: 6px; font-size: 13px; }
+        #holidayAllowanceTable tbody tr { cursor: context-menu; }
+    </style>
+
+    <div id="allowanceCtxMenu" role="menu">
+        <div class="ctx-header" id="ctxHeader"></div>
+        <div class="ctx-item" data-act="add">＋ Add holidays…</div>
+        <div class="ctx-item" data-act="remove">－ Remove holidays…</div>
+    </div>
+
+    <div id="holDlgOverlay" role="dialog" aria-modal="true">
+        <div id="holDlg">
+            <h3 id="holDlgTitle">Adjust holidays</h3>
+            <div id="holDlgSubtitle" style="color:#666; font-size:13px;"></div>
+            <label for="holDlgDays">Days</label>
+            <input type="number" id="holDlgDays" step="0.5" min="0" autocomplete="off" />
+            <label for="holDlgNotes">Notes (optional)</label>
+            <input type="text" id="holDlgNotes" maxlength="200" autocomplete="off" />
+            <div id="holDlgErr"></div>
+            <div class="hol-actions">
+                <button type="button" id="holDlgCancel">Cancel</button>
+                <button type="button" id="holDlgOk">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var table = document.getElementById('holidayAllowanceTable');
+        if (!table) return;
+        var menu = document.getElementById('allowanceCtxMenu');
+        var ctxHeader = document.getElementById('ctxHeader');
+        var overlay = document.getElementById('holDlgOverlay');
+        var dlgTitle = document.getElementById('holDlgTitle');
+        var dlgSubtitle = document.getElementById('holDlgSubtitle');
+        var dlgDays = document.getElementById('holDlgDays');
+        var dlgNotes = document.getElementById('holDlgNotes');
+        var dlgErr = document.getElementById('holDlgErr');
+        var btnOk = document.getElementById('holDlgOk');
+        var btnCancel = document.getElementById('holDlgCancel');
+
+        var target = null; // { userId, userName, row, mode }
+
+        function hideMenu() { menu.style.display = 'none'; }
+        function showMenu(x, y, row) {
+            var uid = row.getAttribute('data-user-id');
+            var uname = row.getAttribute('data-user-name') || ('User ' + uid);
+            ctxHeader.textContent = uname;
+            target = { userId: uid, userName: uname, row: row };
+            menu.style.display = 'block';
+            // Clamp to viewport
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var rect = menu.getBoundingClientRect();
+            if (x + rect.width > vw - 4) x = vw - rect.width - 4;
+            if (y + rect.height > vh - 4) y = vh - rect.height - 4;
+            menu.style.left = Math.max(4, x) + 'px';
+            menu.style.top = Math.max(4, y) + 'px';
+        }
+
+        function openDialog(mode) {
+            if (!target) return;
+            target.mode = mode;
+            dlgTitle.textContent = (mode === 'add' ? 'Add holidays for ' : 'Remove holidays from ') + target.userName;
+            dlgSubtitle.textContent = mode === 'add'
+                ? 'How many days to ADD to the allowance?'
+                : 'How many days to REMOVE from the allowance?';
+            dlgDays.value = '';
+            dlgNotes.value = '';
+            dlgErr.textContent = '';
+            btnOk.classList.toggle('danger', mode === 'remove');
+            btnOk.textContent = mode === 'add' ? 'Add' : 'Remove';
+            overlay.style.display = 'flex';
+            setTimeout(function () { dlgDays.focus(); }, 30);
+        }
+        function closeDialog() { overlay.style.display = 'none'; }
+
+        function submit() {
+            var raw = (dlgDays.value || '').trim();
+            var days = parseFloat(raw);
+            if (!raw || isNaN(days) || days <= 0) {
+                dlgErr.textContent = 'Enter a positive number of days.';
+                return;
+            }
+            var signed = target.mode === 'remove' ? -days : days;
+            var notes = (dlgNotes.value || '').trim();
+
+            btnOk.disabled = true;
+            btnCancel.disabled = true;
+            dlgErr.textContent = '';
+
+            var body = new URLSearchParams();
+            body.set('action', 'adjust_user_holidays');
+            body.set('user_id', target.userId);
+            body.set('days', String(signed));
+            if (notes) body.set('notes', notes);
+
+            fetch('ajax_responder.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            }).then(function (r) {
+                return r.json().catch(function () { return { success: false, error: 'Bad response (HTTP ' + r.status + ')' }; });
+            }).then(function (data) {
+                btnOk.disabled = false;
+                btnCancel.disabled = false;
+                if (!data || !data.success) {
+                    dlgErr.textContent = (data && data.error) ? data.error : 'Request failed.';
+                    return;
+                }
+                // Update the Total Allowance cell in place
+                var cell = target.row.querySelector('.allowance-total');
+                if (cell && typeof data.new_total !== 'undefined') {
+                    cell.textContent = data.new_total;
+                }
+                closeDialog();
+                // Reload after a brief moment so all derived columns (Remaining etc.) refresh.
+                setTimeout(function () { window.location.reload(); }, 250);
+            }).catch(function (err) {
+                btnOk.disabled = false;
+                btnCancel.disabled = false;
+                dlgErr.textContent = 'Network error: ' + err;
+            });
+        }
+
+        table.addEventListener('contextmenu', function (e) {
+            var row = e.target.closest('tbody tr[data-user-id]');
+            if (!row) return;
+            e.preventDefault();
+            showMenu(e.clientX, e.clientY, row);
+        });
+
+        menu.addEventListener('click', function (e) {
+            var item = e.target.closest('.ctx-item');
+            if (!item) return;
+            var act = item.getAttribute('data-act');
+            hideMenu();
+            if (act === 'add' || act === 'remove') openDialog(act);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!menu.contains(e.target)) hideMenu();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { hideMenu(); closeDialog(); }
+        });
+        window.addEventListener('scroll', hideMenu, true);
+        window.addEventListener('resize', hideMenu);
+
+        btnCancel.addEventListener('click', closeDialog);
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) closeDialog();
+        });
+        btnOk.addEventListener('click', submit);
+        dlgDays.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); submit(); }
+        });
+        dlgNotes.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); submit(); }
+        });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>
 <?php

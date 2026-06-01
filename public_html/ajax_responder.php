@@ -89,6 +89,195 @@
 		case "delete_holiday":
 			ajax_delete_holiday();
 		break;
+		case "adjust_user_holidays":
+			ajax_adjust_user_holidays();
+		break;
+	}
+
+	function ajax_adjust_user_holidays() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+
+		// Only user_id = 3 may adjust other users' allowances.
+		$session_user_id = (int) GetSessionParam("UserID");
+		if ($session_user_id !== 3) {
+			http_response_code(403);
+			echo json_encode(array('success' => false, 'error' => 'Forbidden'));
+			exit;
+		}
+
+		$target_user_id = (int) GetParam("user_id");
+		$days = GetParam("days");
+		$notes_in = trim((string) GetParam("notes"));
+
+		if ($target_user_id <= 0) {
+			echo json_encode(array('success' => false, 'error' => 'Invalid user_id'));
+			exit;
+		}
+		if ($days === '' || $days === null || !is_numeric($days)) {
+			echo json_encode(array('success' => false, 'error' => 'Invalid days'));
+			exit;
+		}
+		$days = (float) $days;
+		if ($days == 0) {
+			echo json_encode(array('success' => false, 'error' => 'Days must be non-zero'));
+			exit;
+		}
+
+		$is_add = $days > 0;
+		$action_label = $is_add ? 'Added' : 'Removed';
+		$auto_note = $action_label . ' by admin (user 3)';
+		$notes = $notes_in !== '' ? ($auto_note . ': ' . $notes_in) : $auto_note;
+		$date_added = date('Y-m-d');
+
+		$sql = "INSERT INTO holidays (user_id, days_number, date_added, notes, manager_added_id) VALUES ("
+			. ToSQL($target_user_id, "integer") . ", "
+			. ToSQL($days, "float") . ", "
+			. ToSQL($date_added, "date") . ", "
+			. ToSQL($notes, "string") . ", "
+			. ToSQL($session_user_id, "integer") . ")";
+		$db->query($sql);
+
+		// Look up employee details + new total for email + response.
+		$employee_name = '';
+		$employee_email = '';
+		$db->query("SELECT first_name, last_name, email FROM users WHERE user_id = " . ToSQL($target_user_id, "integer"));
+		if ($db->next_record()) {
+			$employee_name = trim($db->f("first_name") . ' ' . $db->f("last_name"));
+			$employee_email = trim($db->f("email"));
+		}
+
+		$new_total = 0;
+		$db->query("SELECT SUM(days_number) AS total_holidays FROM holidays WHERE user_id=" . ToSQL($target_user_id, "integer"));
+		if ($db->next_record()) {
+			$new_total = (float) $db->f("total_holidays");
+		}
+
+		// Remaining = floor(total allocated) - used (matches the column shown on view_vacations.php)
+		$used_holidays = 0;
+		$db->query("SELECT SUM(total_days) AS used_holidays FROM days_off WHERE reason_id = 1 AND is_paid = 0 AND user_id = " . ToSQL($target_user_id, "integer"));
+		if ($db->next_record()) {
+			$used_holidays = (float) $db->f("used_holidays");
+		}
+		$remaining = floor($new_total) - $used_holidays;
+
+		// Manager (you) for CC
+		$manager_email = '';
+		$db->query("SELECT email FROM users WHERE user_id = 3");
+		if ($db->next_record()) {
+			$manager_email = trim($db->f("email"));
+		}
+
+		$mailed = false;
+		if ($employee_email && filter_var($employee_email, FILTER_VALIDATE_EMAIL)) {
+			$abs_days = abs($days);
+			// Format days as integer when whole, else trim trailing zeros.
+			if ($abs_days == floor($abs_days)) {
+				$days_text = ((int) $abs_days) === 1 ? '1 day' : ((int) $abs_days) . ' days';
+			} else {
+				$days_text = rtrim(rtrim(number_format($abs_days, 2, '.', ''), '0'), '.') . ' days';
+			}
+			$remaining_fmt = ($remaining == floor($remaining))
+				? (string) ((int) $remaining)
+				: rtrim(rtrim(number_format($remaining, 2, '.', ''), '0'), '.');
+
+			if ($is_add) {
+				$subject = "Good news \xE2\x80\x93 holiday days added to your allowance";
+				$gradient = "linear-gradient(135deg, #48bb78 0%, #38a169 100%)";
+				$emoji = "&#127881;"; // 🎉
+				$headline = "You've got more holidays!";
+				$sub = "Days have just been added to your allowance";
+				$body_lead = "Good news \xE2\x80\x93 <strong>" . htmlspecialchars($days_text) . "</strong> have been added to your holiday allowance. Enjoy!";
+				$label = "Added";
+			} else {
+				$subject = "Update to your holiday allowance";
+				$gradient = "linear-gradient(135deg, #ed8936 0%, #dd6b20 100%)";
+				$emoji = "&#128221;"; // 📝
+				$headline = "Holiday allowance updated";
+				$sub = "Days have been removed from your allowance";
+				$body_lead = "Just a heads up \xE2\x80\x93 <strong>" . htmlspecialchars($days_text) . "</strong> have been removed from your holiday allowance.";
+				$label = "Removed";
+			}
+
+			$notes_block = '';
+			if ($notes_in !== '') {
+				$notes_block = '
+                <tr>
+                  <td style="padding: 0 24px 20px;">
+                    <p style="margin: 0 0 6px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color:#718096; font-weight: 600;">Note</p>
+                    <p style="margin: 0; font-size: 0.95rem; color:#4a5568;">' . htmlspecialchars($notes_in) . '</p>
+                  </td>
+                </tr>';
+			}
+
+			$message = '<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>' . htmlspecialchars($subject) . '</title>
+</head>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, \'Helvetica Neue\', Arial, sans-serif; background:#f5f7fa; color:#1a202c;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f7fa;">
+    <tr>
+      <td style="padding: 32px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; margin:0 auto; background:#fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow:hidden;">
+          <tr>
+            <td style="background: ' . $gradient . '; padding: 28px 32px; text-align:center;">
+              <span style="font-size: 48px;">' . $emoji . '</span>
+              <h1 style="margin: 12px 0 0; font-size: 1.5rem; font-weight: 700; color:#fff; letter-spacing: -0.02em;">' . htmlspecialchars($headline) . '</h1>
+              <p style="margin: 6px 0 0; font-size: 1rem; color: rgba(255,255,255,0.95);">' . htmlspecialchars($sub) . '</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px 32px 8px;">
+              <p style="margin: 0 0 16px; font-size: 1.05rem; line-height: 1.5; color:#2d3748;">Hi ' . htmlspecialchars($employee_name) . ',</p>
+              <p style="margin: 0 0 20px; font-size: 1.05rem; line-height: 1.6; color:#4a5568;">' . $body_lead . '</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding: 20px 24px;">
+                    <p style="margin: 0 0 6px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color:#718096; font-weight: 600;">' . $label . '</p>
+                    <p style="margin: 0 0 12px; font-size: 1.1rem; font-weight: 600; color:#2d3748;">' . htmlspecialchars($days_text) . '</p>
+                    <p style="margin: 0; font-size: 0.95rem; color:#4a5568;">Days remaining: <strong>' . htmlspecialchars($remaining_fmt) . '</strong></p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>' . $notes_block . '
+          <tr>
+            <td style="padding: 0 32px 28px;">
+              <p style="margin: 16px 0 0; font-size: 1rem; line-height: 1.6; color:#4a5568;">' . ($is_add ? 'Enjoy the extra time off &#127807;' : 'If this doesn\'t look right, give the office a shout.') . '</p>
+              <p style="margin: 20px 0 0; font-size: 0.95rem; color:#718096;">Best regards,<br><strong>Sayu Monitor</strong></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>';
+
+			$headers  = "MIME-Version: 1.0\r\n";
+			$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+			$headers .= "From: Sayu Monitor <monitor@sayu.co.uk>\r\n";
+			if ($manager_email && strcasecmp($manager_email, $employee_email) !== 0) {
+				$headers .= "Cc: " . $manager_email . "\r\n";
+			}
+			$headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+
+			$mailed = @mail($employee_email, $subject, $message, $headers);
+		}
+
+		echo json_encode(array(
+			'success' => true,
+			'user_id' => $target_user_id,
+			'days_added' => $days,
+			'new_total' => $new_total,
+			'remaining' => $remaining,
+			'emailed' => (bool) $mailed
+		));
+		exit;
 	}
 		
 	function ajax_search_domains() {
