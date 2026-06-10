@@ -195,6 +195,23 @@ $pageTitle = $isEdit ? htmlspecialchars($client['client_name']) : 'New Client';
             padding: 32px 24px;
         }
 
+        .client-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .client-layout.has-sites {
+            max-width: none;
+        }
+
+        @media (min-width: 1100px) {
+            .client-layout.has-sites {
+                grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+            }
+        }
+
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -282,7 +299,7 @@ $pageTitle = $isEdit ? htmlspecialchars($client['client_name']) : 'New Client';
             border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.06);
             padding: 24px;
-            margin-bottom: 20px;
+            margin-bottom: 0;
         }
         
         .error-message {
@@ -633,7 +650,7 @@ $user_name = GetSessionParam("UserName");
 include("./includes/modern_header.php"); 
 ?>
 
-<div class="client-container">
+<div class="client-container"<?php echo $isEdit ? ' style="max-width: 1500px;"' : ''; ?>>
     <div class="page-header">
         <div>
             <h1 class="page-title"><?php echo $isEdit ? 'Edit Client' : 'New Client'; ?></h1>
@@ -644,6 +661,7 @@ include("./includes/modern_header.php");
         </div>
     </div>
     
+    <div class="client-layout<?php echo $isEdit ? ' has-sites' : ''; ?>">
     <form class="client-form" action="create_client.php" method="GET">
         <input type="hidden" name="client_type" value="<?php echo $client_type ?: 1; ?>">
         <input type="hidden" name="client_id" value="<?php echo $client_id; ?>">
@@ -853,6 +871,7 @@ include("./includes/modern_header.php");
         <?php endif; ?>
     </div>
     <?php endif; ?>
+    </div>
 </div>
 
 <div class="toast" id="toast">Copied to clipboard!</div>
