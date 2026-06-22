@@ -1,0 +1,108 @@
+#divRepositoryPath  {
+    		font-size:10px;
+    	}
+      #userModalBody {
+        width:920px;
+      }
+      #userModal {
+        width:970px;
+        margin: 0 0 0 -460px;
+      }
+      .taskBusy {
+        background-color: #149bdf;
+        width:25px;
+      }
+      .taskHoliday {
+        background-color: #ededed;
+        width: 25px;
+      }
+      .taskUserHoliday {
+        background-color: #dedede;
+        width:25px;
+      }
+      .taskRow {
+        width: 330px;
+      }
+      .taskNotAllocated {
+        opacity: 0.5;
+      }
+      .projectBusy {
+        background-color: blue;
+      }
+      .taskEstimate:hover, .taskStatus:hover {
+        cursor:pointer;
+        opacity: 0.8;
+      }
+      .projectCell {
+        color:#3a87ad;
+      }
+      .userCell:hover {
+        cursor: pointer;
+      }
+      .projectCell:hover {
+        cursor: pointer;
+      }
+      .icon-minus-sign, .icon-arrow-right {
+        opacity: 0.4;
+      }
+      .lnkClose {
+        display: none;
+      }
+      .lnkDependancy{
+        display: none;
+      }
+      .form-horizontal .control-label {
+        text-align: left;
+      }
+      #frmDependent {
+        height: 250px;
+      }
+      #addNote {
+        padding:0;
+        margin-bottom: 0;
+        height: 24px;
+        resize:none;
+      }
+      #divProjects {
+      	clear:both;
+      }
+
+      #btnSaveNote {
+      	display:inline;
+      	vertical-align:bottom;
+      }
+      #notesMsg {
+      	display:none;
+      }
+      #btnEditProject, #btnCloseProject {
+        float: left;
+      }
+
+      #tableHeader th {
+        overflow: hidden;
+        padding-left: 0px;
+        padding-right: 0px;
+      }
+      #tableHeader .calendarCell {
+        text-align: center;
+      }
+      #tableBody td {
+        padding-left: 0px;
+        padding-right: 0px; 
+      }
+      .taskUsual {
+        width:25px;
+        border:solid 1px #ededed;
+
+      }
+      .dependancyCell {
+      	width:35px;
+        border-right:solid 1px #ededed;
+      }
+      
+      #divTable {
+	      overflow:scroll;
+	      overflow-x:hidden;
+	      height:600px;
+	  }
+   

@@ -1,0 +1,25 @@
+Morning Tony
+I've done a mockup for projects report - the idea is that it would replace the 
+spreadsheet we use on weekly meetings.
+https://www.viart.com.ua/monitor/svn/projects.php
+
+It will display all clients active projects we've got at the moment along with tasks
+assigned. To make full use of it we should ask everybody to use Monitor tasks - 
+for example when we start working with client Gavin should create all tasks at once - Design, HTML coding, Data import, etc
+
+
+The report will display the whole picture of what's happening with projects + it would be
+dynamic: e.g. you could change project/tasks statuses stright from the report or reassign task to other person.
+
+I think along with predefined projects statuses we could add a text field that 
+would allow the user assigned to the project describe the project status 
+e.g. project is ON HOLD - and Gavin would put a small note "client is on holiday,call him 12 Sep" 
+
+I've added a new column "Dependancy" that would allow to specify that one task is dependant on completition of another one. E.g. we can't build filters before data transfer.
+
+To extend the functionality of this report I could add "+" icons for quick tasks/projects
+addition - so they could be added without leaving the form. That could be useful when
+you need to create several tasks at once
+
+thanks
+Artem

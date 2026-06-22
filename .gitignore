@@ -16,7 +16,6 @@ public_html/templates/backup/
 
 # Old VCS metadata
 public_html/templates/CVS/
-public_html/svn/
 .cvs/
 .svn/
 

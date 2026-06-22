@@ -1,0 +1,66 @@
+================================================================================
+Monitor get_file_diff.php runs svn diff LOCALLY first when a working copy exists at:
+  /home/vhosts/{repository}
+  or /mnt/drive2/webclients/{repository}
+No remote gateway is required on the same host.
+
+Use the PHP below only if you still proxy diffs through a separate SVN gateway host.
+
+================================================================================
+Deploy on web1 only: save the PHP block below as:
+  /path/to/svn/web1_filediff.php
+so it is reachable as:
+  https://web1.sayu.co.uk/svn/web1_filediff.php
+
+Monitor's get_file_diff.php calls this URL first, then falls back to
+index.php?action=filediff (if you add that case instead).
+
+You MUST hook in the same username/password validation as your existing
+svn/index.php uses for action=checkout, before running svn diff.
+================================================================================
+
+<?php
+date_default_timezone_set('Europe/London');
+
+$username = isset($_GET['username']) ? $_GET['username'] : '';
+$password = isset($_GET['password']) ? $_GET['password'] : '';
+$repository = isset($_GET['repository']) ? $_GET['repository'] : '';
+$file = isset($_GET['file']) ? str_replace('\\', '/', $_GET['file']) : '';
+
+header('Content-Type: text/plain; charset=UTF-8');
+
+if ($username === '' || $password === '' || $repository === '' || $file === '') {
+	echo "ERROR: Missing parameters.\n";
+	exit;
+}
+
+$repository = basename($repository);
+$file = ltrim($file, '/');
+if ($file === '' || strpos($file, '..') !== false) {
+	echo "ERROR: Invalid file path.\n";
+	exit;
+}
+
+$wc = '/mnt/drive2/webclients/' . $repository;
+if (!is_dir($wc)) {
+	echo "ERROR: Unknown repository.\n";
+	exit;
+}
+
+// TODO: if (!your_gateway_validate($username, $password)) { echo "ERROR: Auth failed.\n"; exit; }
+
+putenv('LANG=C.UTF-8');
+$old = getcwd();
+if (!@chdir($wc)) {
+	echo "ERROR: Cannot enter working copy.\n";
+	exit;
+}
+
+$arg = escapeshellarg($file);
+$out = shell_exec('svn diff --non-interactive ' . $arg . ' 2>&1');
+chdir($old);
+if ($out === null || trim($out) === '') {
+	echo "No differences for this file in the working copy.\n";
+} else {
+	echo $out;
+}
