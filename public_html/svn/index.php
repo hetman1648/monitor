@@ -1585,6 +1585,8 @@ $(function(){
       else { renderGroupTrigger(); renderTable(); renderApplyBar(); }
     })();
     if(bk0) syncBackups(bk0);
+    // Autofocus the finder with its value pre-selected, so the first keystroke replaces it.
+    if(!bk0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
   });
 
   // group dropdown
