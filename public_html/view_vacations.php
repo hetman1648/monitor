@@ -56,7 +56,8 @@ if ($year_selected) {
     $search .= " AND DATE_FORMAT(d.start_date, '%Y') = '" . $year_selected . "'";
 }
 if ($filter_start_date) {
-    $search .= " AND d.start_date >= '" . $filter_start_date . "'";
+    // Show requests that are upcoming OR currently in progress (started but not yet ended)
+    $search .= " AND (d.start_date >= '" . $filter_start_date . "' OR d.end_date >= '" . $filter_start_date . "')";
 }
 if ($filter_end_date) {
     $search .= " AND d.start_date <= '" . $filter_end_date . "'";

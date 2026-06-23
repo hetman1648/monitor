@@ -523,7 +523,9 @@ $sql = "SELECT CONCAT(u.first_name, ' ', u.last_name) AS user_name, u.user_id, u
         COUNT(t.task_id) AS opened_tasks,
         IF(MIN(t.task_status_id) = 1, 1, 0) AS is_online,
         r.reason_name,
-        IF(dof.end_date, dof.end_date, 0) AS end_date
+        IF(dof.end_date, dof.end_date, 0) AS end_date,
+        dof.start_date AS start_date,
+        dof.total_days AS total_days
         FROM users u
         LEFT JOIN tasks t ON (t.responsible_user_id = u.user_id AND t.is_closed = 0 AND t.is_wish = 0)
         LEFT JOIN days_off dof ON (dof.user_id = u.user_id AND dof.start_date <= DATE(NOW()) AND dof.is_paid = 0 AND dof.end_date >= DATE(NOW()))
@@ -536,17 +538,33 @@ while ($db->next_record()) {
     $user_id = $db->f("user_id");
     $status = 'offline';
     $status_text = '';
-    
+    $away_tooltip = '';
+
     if ($db->f("is_online")) {
         $status = 'online';
         $status_text = 'online';
     } elseif ($db->f("end_date")) {
         $status = 'away';
         $status_text = $db->f("reason_name");
+
+        // Build hover tooltip showing how long the holiday is
+        $h_start = $db->f("start_date");
+        $h_end = $db->f("end_date");
+        $reason = $db->f("reason_name") ? $db->f("reason_name") : 'Away';
+        $tooltip_parts = array($reason . ': ' . date("j M", strtotime($h_start)) . ' – ' . date("j M Y", strtotime($h_end)));
+        $total_days = (float)$db->f("total_days");
+        if ($total_days > 0) {
+            $tooltip_parts[] = rtrim(rtrim(number_format($total_days, 1), '0'), '.') . ' day' . ($total_days == 1 ? '' : 's');
+        }
+        $days_left = floor((strtotime($h_end) - strtotime(date("Y-m-d"))) / 86400) + 1;
+        if ($days_left > 0) {
+            $tooltip_parts[] = $days_left . ' day' . ($days_left == 1 ? '' : 's') . ' left';
+        }
+        $away_tooltip = implode(' • ', $tooltip_parts);
     }
-    
+
     $active_task = isset($active_tasks[$user_id]) ? $active_tasks[$user_id] : '';
-    
+
     $team_members[] = array(
         'user_id' => $user_id,
         'user_name' => $db->f("user_name"),
@@ -554,6 +572,7 @@ while ($db->next_record()) {
         'opened_tasks' => $db->f("opened_tasks"),
         'status' => $status,
         'status_text' => $status_text,
+        'away_tooltip' => $away_tooltip,
         'active_task' => $active_task
     );
 }
@@ -2851,7 +2870,7 @@ while ($db->next_record()) {
                             </div>
                             <div class="team-block-body">
                                 <?php foreach ($ukraine_team as $member): ?>
-                                <a href="report_people.php?report_user_id=<?php echo $member['user_id']; ?>" class="team-row <?php echo $member['status']; ?>">
+                                <a href="report_people.php?report_user_id=<?php echo $member['user_id']; ?>" class="team-row <?php echo $member['status']; ?>"<?php if (!empty($member['away_tooltip'])): ?> title="<?php echo htmlspecialchars($member['away_tooltip']); ?>"<?php endif; ?>>
                                     <span class="team-name"><?php echo htmlspecialchars($member['user_name']); ?></span>
                                     <span class="team-tasks">(<?php echo $member['opened_tasks']; ?>)</span>
                                 </a>
@@ -2866,7 +2885,7 @@ while ($db->next_record()) {
                             </div>
                             <div class="team-block-body">
                                 <?php foreach ($uk_team as $member): ?>
-                                <a href="report_people.php?report_user_id=<?php echo $member['user_id']; ?>" class="team-row <?php echo $member['status']; ?>">
+                                <a href="report_people.php?report_user_id=<?php echo $member['user_id']; ?>" class="team-row <?php echo $member['status']; ?>"<?php if (!empty($member['away_tooltip'])): ?> title="<?php echo htmlspecialchars($member['away_tooltip']); ?>"<?php endif; ?>>
                                     <span class="team-name"><?php echo htmlspecialchars($member['user_name']); ?></span>
                                     <span class="team-tasks">(<?php echo $member['opened_tasks']; ?>)</span>
                                 </a>
