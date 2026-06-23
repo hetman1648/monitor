@@ -644,7 +644,7 @@ function scopeToHash(scope){
 }
 function hashToScope(h){
   h = decodeURIComponent((h||'').replace(/^#/,''));
-  h = h.split('~bk=')[0]; // ignore the backups overlay marker when resolving scope
+  h = h.split('~')[0]; // ignore overlay markers (~bk= / ~info=) when resolving scope
   if(h==='') return '';
   if(h==='all') return '__all';
   if(h.indexOf('d-')===0){ var r=h.slice(2); return REPOS.indexOf(r)!==-1 ? '__one:'+r : ''; }
@@ -656,13 +656,27 @@ function hashBackups(h){
   h = (h||'').replace(/^#/,'');
   var i = h.indexOf('~bk=');
   if(i < 0) return '';
-  var r = decodeURIComponent(h.slice(i + 4));
+  var r = decodeURIComponent(h.slice(i + 4).split('~')[0]);
   return REPOS.indexOf(r) !== -1 ? r : '';
 }
-// Open/close the Backups modal to match a target repo (from the hash). Avoids reload loops.
-function syncBackups(repo){
-  if(repo){ if(BK_OPEN_REPO !== repo) openBackups(repo); }
-  else { if(BK_OPEN_REPO) closeModal(); }
+// The info modal the hash says is open (e.g. "...~info=log:watches.co.uk") -> {kind,repo} or null.
+function hashInfo(h){
+  h = (h||'').replace(/^#/,'');
+  var i = h.indexOf('~info=');
+  if(i < 0) return null;
+  var v = decodeURIComponent(h.slice(i + 6).split('~')[0]);
+  var c = v.indexOf(':');
+  if(c < 0) return null;
+  var kind = v.slice(0, c), repo = v.slice(c + 1);
+  if(['history','log','critical','cron'].indexOf(kind) === -1) return null;
+  if(REPOS.indexOf(repo) === -1) return null;
+  return { kind: kind, repo: repo };
+}
+// Reconcile the open overlay modal (backups / info) with target markers. Avoids reload loops.
+function reconcileOverlay(bk, info){
+  if(bk){ if(BK_OPEN_REPO !== bk) openBackups(bk); }
+  else if(info){ if(!INFO_OPEN || INFO_OPEN.kind !== info.kind || INFO_OPEN.repo !== info.repo) openInfo(info.kind, info.repo); }
+  else { if(BK_OPEN_REPO || INFO_OPEN) closeModal(); }
 }
 var SVN_PATH_PREFIX = 'svn://web1.sayu.co.uk/mnt/drive2/webclients/';
 
@@ -1080,7 +1094,7 @@ function openActionsPop(repo, anchor){
 
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } BK_OPEN_REPO=null; var h=(location.hash||'').replace(/^#/,''); if(h.indexOf('~bk=')>=0){ location.hash = h.split('~bk=')[0]; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
+function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } BK_OPEN_REPO=null; INFO_OPEN=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
 
 // Styled confirm dialog (replaces window.confirm); layers above any open modal.
 var UICONFIRM_CB = null;
@@ -1447,6 +1461,10 @@ function renderHistory(data, repo){
 
 function openInfo(kind, repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
+  INFO_OPEN = { kind: kind, repo: repo }; BK_OPEN_REPO = null;
+  // Reflect the open info modal in the URL so a refresh reopens it.
+  var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
+  if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
   var titles = { history:['History','Recent commits & deploys'], log:['Error log','Last 50 errors from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'] };
   var t = titles[kind];
   modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':'file'),21)+'</div>'
@@ -1488,7 +1506,7 @@ function openDevTools(repo){
 // Backups modal: list the available DB backups for a site.
 function openBackups(repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
-  BK_OPEN_REPO = repo;
+  BK_OPEN_REPO = repo; INFO_OPEN = null;
   // Reflect the open backups view in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~bk=' + encodeURIComponent(repo);
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
@@ -1526,7 +1544,7 @@ function bkBytes(n){ n=+n||0; if(n>=1048576) return (n/1048576).toFixed(1)+' MB'
 function bkDur(s){ s=Math.round(+s||0); if(s>=60){ var m=Math.floor(s/60); return m+'m '+(s%60)+'s'; } return s+'s'; }
 
 var BK = {repo:'', testdb:''};
-var BK_JOB=null, BK_POLL=null, BK_OPEN_REPO=null;
+var BK_JOB=null, BK_POLL=null, BK_OPEN_REPO=null, INFO_OPEN=null;
 function bkStopPoll(){ if(BK_POLL){ clearInterval(BK_POLL); BK_POLL=null; } }
 function renderBackups(d){
   if(!d || !d.ok){ $('#bkCount').text(''); $('#bkTarget').text(''); $('#bkList').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not load backups.')+'</div>'); return; }
@@ -1575,21 +1593,23 @@ $(function(){
   renderFilterChips();
   renderRecents();
 
-  // Back/forward & manual hash edits -> switch scope and/or backups overlay.
+  // Back/forward & manual hash edits -> switch scope and/or overlay (backups / info).
   $(window).on('hashchange', function(){
     var bk = hashBackups(location.hash);
+    var info = hashInfo(location.hash);
     var sc = hashToScope(location.hash);
     if(sc && String(sc)!==String(STATE.activeGroup)){
       if(sc==='__all') pickScope('__all', {});
       else if(sc.indexOf('__one:')===0) openSingle(sc.slice(6));
       else pickScope(sc, {});
     }
-    syncBackups(bk);
+    reconcileOverlay(bk, info);
   });
 
   loadGroups(function(){
-    // Capture the backups overlay from the hash before scope-restore rewrites it.
+    // Capture the overlay markers from the hash before scope-restore rewrites it.
     var bk0 = hashBackups(location.hash);
+    var info0 = hashInfo(location.hash);
     (function restoreScope(){
       // 1) Restore scope from the URL hash if present and valid.
       var hsc = hashToScope(location.hash);
@@ -1609,9 +1629,9 @@ $(function(){
       if(initial){ openSingle(initial); }
       else { renderGroupTrigger(); renderTable(); renderApplyBar(); }
     })();
-    if(bk0) syncBackups(bk0);
+    if(bk0 || info0) reconcileOverlay(bk0, info0);
     // Autofocus the finder with its value pre-selected, so the first keystroke replaces it.
-    if(!bk0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
+    if(!bk0 && !info0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
   });
 
   // group dropdown
