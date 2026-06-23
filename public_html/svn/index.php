@@ -1332,8 +1332,11 @@ function logExtractPhp(line){
     if(!m) return;
     var body=m[2].replace(/'\s*$/,'').trim();
     var fm=body.match(/^([\s\S]*?) in (\/\S+?) on line (\d+)/);
-    if(fm) out.push({sev:m[1], text:fm[1].trim(), file:fm[2], line:fm[3]});
-    else out.push({sev:m[1], text:body, file:'', line:''});
+    if(fm){ out.push({sev:m[1], text:fm[1].trim(), file:fm[2], line:fm[3]}); return; }
+    // Uncaught Error / exception form: "... in /path/file.php:300"
+    var fc=body.match(/^([\s\S]*?) in (\/[^\s:]+):(\d+)/);
+    if(fc){ out.push({sev:m[1], text:fc[1].trim(), file:fc[2], line:fc[3]}); return; }
+    out.push({sev:m[1], text:body, file:'', line:''});
   });
   return out;
 }

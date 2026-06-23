@@ -105,6 +105,24 @@ function svn_host_cron_user($repo) {
 	return isset($u[$repo]) ? $u[$repo] : '';
 }
 
+/**
+ * Given an absolute file path (as seen in an error log), find which mapped site it belongs
+ * to by matching the working-copy dir prefix. Returns array(host, repo, rel) or null.
+ * The repo name in the path disambiguates hosts that share a base dir (e.g. /mnt/drive2/vhosts).
+ */
+function svn_host_for_path($path) {
+	$path = (string) $path;
+	if ($path === '' || strpos($path, "\0") !== false || strpos($path, '..') !== false) return null;
+	foreach (svn_site_host_map() as $repo => $key) {
+		$wc = svn_host_wc_dir($repo);
+		if ($wc === '') continue;
+		if (strpos($path, $wc . '/') === 0) {
+			return array('host' => svn_host_for($repo), 'repo' => $repo, 'rel' => substr($path, strlen($wc) + 1));
+		}
+	}
+	return null;
+}
+
 /** SSH command prefix for a resolved host config (uses the monitor user's key). */
 function svn_host_ssh($host) {
 	$key   = "/mnt/drive2/vhosts/monitor.sayu.co.uk/.ssh/id_ed25519";
