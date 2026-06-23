@@ -485,6 +485,7 @@ html.dark-mode{
 #svnApp .bk-prog-stat{ font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
 #svnApp .bk-stop{ color:var(--err); border-color:var(--err); flex:none; }
 #svnApp .bk-stop:hover{ background:var(--err-bg); }
+#svnApp .dc-log{ max-height:240px; overflow:auto; background:var(--raise); border:1px solid var(--line); border-radius:var(--r-md); padding:10px 12px; font-family:var(--mono,monospace); font-size:12px; line-height:1.5; color:var(--ink-soft); white-space:pre-wrap; word-break:break-word; }
 </style>
 </head>
 <body>
@@ -502,6 +503,7 @@ html.dark-mode{
         <button class="btn" id="btnLog" data-info="log">Error Log</button>
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
         <button class="btn" id="btnBackups">Backups</button>
+        <button class="btn" id="btnDevCopy">Dev copy</button>
       </div>
     </div>
 
@@ -1089,6 +1091,7 @@ function openActionsPop(repo, anchor){
     ['critical','Critical errors', icon('alert',16)],
     ['cron','Cron jobs', icon('calendar',16)],
     ['backups','Backups', icon('database',16)],
+    ['devcopy','Dev copy', icon('copy',16)],
     ['devtools','Dev tools', icon('tools',16)]
   ];
   var html = '<div class="pop-backdrop" data-close-pop="1"></div><div class="pop" style="top:'+top+'px;right:'+right+'px">';
@@ -1102,7 +1105,7 @@ function openActionsPop(repo, anchor){
 
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } BK_OPEN_REPO=null; INFO_OPEN=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
+function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } BK_OPEN_REPO=null; INFO_OPEN=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
 
 // Styled confirm dialog (replaces window.confirm); layers above any open modal.
 var UICONFIRM_CB = null;
@@ -1556,6 +1559,46 @@ function openDevTools(repo){
     catch(e){ $('#dlDBSize').text('N/A'); $('#dlImgSize').text('N/A'); }
   });
 }
+// Dev copy: set up a full working copy of a site on the dev server (slayer) under the
+// developer's own account — files (svn checkout), database (from nightly backup) and images.
+var DC_JOB=null, DC_POLL=null;
+function dcStopPoll(){ if(DC_POLL){ clearInterval(DC_POLL); DC_POLL=null; } }
+function openDevCopy(repo){
+  if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
+  dcStopPoll(); DC_JOB=null;
+  modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('copy',21)+'</div>'
+    + '<div style="min-width:0"><h3>Dev copy</h3><p>Set up a dev copy on slayer under your account · <span class="mono">'+esc(repo)+'</span></p></div>'
+    + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body">'
+    + '<p style="color:var(--muted);font-size:13px;margin:0 0 14px">Creates <span class="mono">~/projects/'+esc(repo)+'</span> on slayer, served at your <span class="mono">…sayuconnect.com</span> subdomain, with a <span class="mono">&lt;you&gt;_'+esc(repo.split(".")[0])+'</span> database.</p>'
+    + '<div class="checkbox-group"><input type="checkbox" id="dcFiles" checked><label for="dcFiles">Copy files (svn checkout)</label></div>'
+    + '<div class="checkbox-group"><input type="checkbox" id="dcDB" checked><label for="dcDB">Copy database (latest nightly backup)</label></div>'
+    + '<div class="checkbox-group"><input type="checkbox" id="dcImg" checked><label for="dcImg">Copy images</label></div>'
+    + '<div class="checkbox-group"><input type="checkbox" id="dcPhp8"><label for="dcPhp8">PHP 8 site (use ab8.sayuconnect.com)</label></div>'
+    + '<div id="dcProg" style="display:none;margin-top:14px"><div class="dc-log" id="dcLog"></div></div>'
+    + '<div class="alert" id="dcAlert"></div></div>'
+    + '<div class="modal-foot"><div class="mf-grow" id="dcFoot"></div>'
+    + '<button type="button" class="btn ghost" id="dcStopBtn" style="display:none">Stop</button>'
+    + '<button class="btn solid" id="dcStart" data-repo="'+esc(repo)+'">Start dev copy</button></div></div>');
+}
+function dcFinish(d){
+  dcStopPoll();
+  var st=(d&&d.state)||'error';
+  $('#dcStopBtn').hide(); $('#dcStart').prop('disabled',false).show().text('Start dev copy');
+  var $a=$('#dcAlert').removeClass('alert-success alert-error');
+  if(st==='done'){ $a.addClass('alert-success').html((d&&d.url)?('Done. <a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.url)+'</a>'):'Dev copy complete.').addClass('show'); }
+  else if(st==='stopped'){ $a.addClass('alert-error').text('Dev copy cancelled.').addClass('show'); }
+  else { $a.addClass('alert-error').text((d&&d.message)||'Dev copy failed.').addClass('show'); }
+  DC_JOB=null;
+}
+function dcPoll(){
+  if(!DC_JOB) return;
+  $.post('dev_copy_status.php', {job:DC_JOB}, function(d){
+    if(!d || !d.ok || !DC_JOB) return;
+    if(d.log!=null){ var $l=$('#dcLog'); $l.text(d.log); $l.scrollTop($l[0].scrollHeight); }
+    if(d.state!=='running') dcFinish(d);
+  }, 'json');
+}
 // Backups modal: list the available DB backups for a site.
 function openBackups(repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
@@ -1762,7 +1805,7 @@ $(function(){
   // popover actions
   $(document).on('click', '[data-toggle-group]', function(e){ e.stopPropagation(); var gid=$(this).attr('data-toggle-group'), repo=$(this).attr('data-repo'); var g=groupById(gid); var inG=g&&g.siteIds.indexOf(repo)!==-1; groupsAction({action: inG?'remove_site':'add_site', id:gid, repository:repo}, function(){ openAddGroupPop(repo, document.querySelector('[data-addgroup="'+cssEsc(repo)+'"]')||document.body); }); });
   $(document).on('click', '[data-newgroup-repo]', function(e){ e.stopPropagation(); var repo=$(this).attr('data-newgroup-repo'); closeAllPopovers(); openSaveGroup([repo]); });
-  $(document).on('click', '[data-siteaction]', function(e){ e.stopPropagation(); var a=$(this).attr('data-siteaction'), repo=$(this).attr('data-repo'); closeAllPopovers(); if(a==='devtools') openDevTools(repo); else if(a==='backups') openBackups(repo); else openInfo(a, repo); });
+  $(document).on('click', '[data-siteaction]', function(e){ e.stopPropagation(); var a=$(this).attr('data-siteaction'), repo=$(this).attr('data-repo'); closeAllPopovers(); if(a==='devtools') openDevTools(repo); else if(a==='backups') openBackups(repo); else if(a==='devcopy') openDevCopy(repo); else openInfo(a, repo); });
 
   // diff
   $(document).on('click', '.vdiff', function(){ openDiff($(this).attr('data-diff-repo'), $(this).attr('data-diff-file')); });
@@ -1833,6 +1876,7 @@ $(function(){
   // global head buttons
   $('#btnHistory,#btnLog,#btnCron').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
   $('#btnBackups').on('click', function(){ openBackups(focusedRepoForGlobal()); });
+  $('#btnDevCopy').on('click', function(){ openDevCopy(focusedRepoForGlobal()); });
 
   // restore a backup into the per-site test DB (background job + live progress)
   function bkFinish(d){
@@ -1920,6 +1964,34 @@ $(function(){
       $a.addClass(xml.substring(0,4)==='-ERR'?'alert-error':'alert-success').html(esc(xml)).addClass('show');
       $(self).prop('disabled',false).text('Start download');
     });
+  });
+
+  // dev copy (background job on slayer)
+  $(document).on('click', '#dcStart', function(){
+    if(DC_JOB) return;
+    var repo=$(this).attr('data-repo');
+    var files=$('#dcFiles').is(':checked'), db=$('#dcDB').is(':checked'), img=$('#dcImg').is(':checked'), php8=$('#dcPhp8').is(':checked');
+    if(!files && !db && !img){ $('#dcAlert').addClass('alert-error show').text('Pick at least one of files / database / images.'); return; }
+    $('#dcAlert').removeClass('show alert-success alert-error');
+    $(this).prop('disabled',true).html('<span class="spin"></span> Starting…');
+    $('#dcProg').show(); $('#dcLog').text('Starting…');
+    $.post('dev_copy.php', {repository:repo, files:files?1:0, db:db?1:0, images:img?1:0, php8:php8?1:0}, function(d){
+      if(!d || !d.ok){
+        $('#dcStart').prop('disabled',false).text('Start dev copy');
+        $('#dcAlert').addClass('alert-error show').text((d&&d.error)||'Could not start dev copy.');
+        $('#dcProg').hide(); return;
+      }
+      DC_JOB=d.job; $('#dcStart').hide(); $('#dcStopBtn').show();
+      if(d.target){ $('#dcFoot').html('<span class="mono" style="font-size:12px">'+esc(d.target)+'</span>'); }
+      dcPoll(); DC_POLL=setInterval(dcPoll, 1500);
+    }, 'json').fail(function(){
+      $('#dcStart').prop('disabled',false).text('Start dev copy');
+      $('#dcAlert').addClass('alert-error show').text('Could not start dev copy.'); $('#dcProg').hide();
+    });
+  });
+  $(document).on('click', '#dcStopBtn', function(){
+    if(!DC_JOB) return; $(this).prop('disabled',true).text('Stopping…');
+    $.post('dev_copy_stop.php', {job:DC_JOB}, function(){}, 'json');
   });
 
   // close handlers
