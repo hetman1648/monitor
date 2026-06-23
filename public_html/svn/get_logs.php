@@ -9,10 +9,32 @@
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+include ("./svn_hosts.php");
 
 $repository = GetParam("repository");
 $last_50    = GetParam("last_50_errors");
 if (!strlen($repository)) die("Please specify SVN repository");
+
+// Sites hosted off web1 keep their error log on their own server — read it over SSH.
+$host = svn_host_for($repository);
+if ($host) {
+	$log = svn_host_log_path($repository);
+	if ($log === '') { echo "Error log location not configured for this site yet."; exit; }
+	$ssh = svn_host_ssh($host);
+	// last 50: tail the log; critical: pull fatal/critical lines. tema uses sudo on these hosts.
+	if ($last_50) {
+		$remote = "sudo tail -n 50 " . escapeshellarg($log);
+		$empty  = "The error log is empty.";
+	} else {
+		$remote = "sudo grep -aiE 'fatal|critical|emerg|PHP (Fatal|Parse)' " . escapeshellarg($log) . " | tail -n 50";
+		$empty  = "No critical errors found.";
+	}
+	$out = array(); $rc = 0;
+	exec($ssh . " " . escapeshellarg($remote) . " 2>/dev/null", $out, $rc);
+	$text = trim(implode("\n", $out));
+	echo $text !== '' ? $text : $empty;
+	exit;
+}
 
 $path = "https://web1.sayu.co.uk/svn/";
 $action    = $last_50 ? 'shlasterr' : 'shcriterr';

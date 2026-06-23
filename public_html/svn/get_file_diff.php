@@ -19,6 +19,7 @@ $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
 include_once ("./svn_repo_support.php");
+include_once ("./svn_hosts.php");
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -39,6 +40,22 @@ if (strpos($repository, '..') !== false || preg_match('#[/\\\\\x00]#', $reposito
 }
 
 putenv('LANG=C.UTF-8');
+
+// Sites hosted off web1: the live working copy (and its deployed BASE revision) is on the
+// site's own server. We still read repo HEAD from the LOCAL FSFS repo via file:// below
+// (no svnserve auth); here we only fetch the deployed BASE revision from the remote WC over
+// SSH (`svn info` is local on that host — no server contact), then the file:// diff runs as
+// usual (base_rev -> HEAD = the incoming change an update would bring).
+$remote_base_rev = '';
+$diff_host = svn_host_for($repository);
+if ($diff_host) {
+	$wcr = svn_host_wc_dir($repository);
+	if ($wcr !== '') {
+		$out = array();
+		exec(svn_host_ssh($diff_host) . ' ' . escapeshellarg('svn info --non-interactive ' . escapeshellarg($wcr)) . ' 2>/dev/null', $out);
+		foreach ($out as $l) { if (preg_match('/^Revision:\s*(\d+)/', $l, $m)) { $remote_base_rev = $m[1]; break; } }
+	}
+}
 
 function svn_diff_run($cmd) {
 	$out = shell_exec($cmd . ' 2>&1');
@@ -77,6 +94,9 @@ if ($wc !== '') {
 		if (preg_match('/^Repository Root:\s*(\S+)/m', $info, $mm)) $repo_root = trim($mm[1]);
 	}
 }
+// For sites hosted off web1 there is no local WC; the deployed BASE revision came from the
+// remote WC over SSH above. Use it so the file:// diff shows the real incoming change.
+if ($remote_base_rev !== '') $base_rev = $remote_base_rev;
 
 // --- 2) local FSFS repo path readable via file:// (no svnserve auth) ---
 function svn_diff_local_repo_path($repo_root, $repository) {
