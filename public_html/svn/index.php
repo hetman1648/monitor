@@ -285,6 +285,12 @@ html.dark-mode{
 
 /* modal */
 #svnApp .scrim{ position:fixed; inset:0; background:rgba(8,12,18,.66); backdrop-filter:blur(4px); z-index:60; display:flex; align-items:center; justify-content:center; padding:24px; }
+#svnApp .scrim2{ z-index:70; }
+#svnApp .confirm-modal{ width:min(440px,100%); }
+#svnApp .confirm-body{ font-size:14px; color:var(--ink-soft); line-height:1.55; }
+#svnApp .confirm-body .mono{ color:var(--ink); }
+#svnApp .btn.ui-confirm-danger{ background:var(--err); color:#fff; }
+#svnApp .btn.ui-confirm-danger:hover{ filter:brightness(1.08); }
 #svnApp .modal{ width:min(560px,100%); max-height:86vh; display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line-strong); border-radius:18px; box-shadow:var(--shadow); overflow:hidden; }
 #svnApp .modal.wide{ width:min(820px,100%); }
 #svnApp .modal-head{ padding:20px 22px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:14px; }
@@ -441,6 +447,36 @@ html.dark-mode{
 #svnApp .alert.show{ display:block; }
 #svnApp .alert-success{ background:var(--ok-bg); color:#9fe0bd; }
 #svnApp .alert-error{ background:var(--err-bg); color:#f0a9b8; }
+#svnApp .bk-head{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:6px; }
+#svnApp .bk-head svg{ color:var(--muted); }
+#svnApp .bk-count{ margin-left:2px; font-size:11px; font-weight:600; color:var(--acc-solid); background:rgba(93,111,214,.14); border-radius:9px; padding:1px 7px; }
+#svnApp .bk-target{ font-size:12px; color:var(--muted); margin-bottom:11px; }
+#svnApp .bk-copy{ background:var(--hover); border:1px solid var(--line); padding:1px 7px; border-radius:6px; cursor:pointer; white-space:nowrap; transition:.12s; }
+#svnApp .bk-copy svg{ vertical-align:-1px; opacity:.7; }
+#svnApp .bk-copy:hover{ background:var(--hover-2); border-color:var(--acc-solid); color:var(--acc-solid); }
+#svnApp .bk-copy:hover svg{ opacity:1; }
+#svnApp .bk-copied{ background:var(--ok-bg); border-color:transparent; color:#9fe0bd; }
+#svnApp .bk-rows{ max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:var(--r-md); background:var(--raise); }
+#svnApp .bk-row{ padding:8px 12px; border-bottom:1px solid var(--line); font-size:13px; }
+#svnApp .bk-row:last-child{ border-bottom:0; }
+#svnApp .bk-row--latest{ background:rgba(93,111,214,.07); }
+#svnApp .bk-line{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#svnApp .bk-file{ color:var(--ink); flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .bk-meta{ display:flex; align-items:center; gap:10px; flex:none; }
+#svnApp .bk-size{ font-size:11.5px; color:var(--muted-2); white-space:nowrap; font-variant-numeric:tabular-nums; }
+#svnApp .bk-date{ font-size:11.5px; color:var(--muted-2); white-space:nowrap; }
+#svnApp .bk-row--latest .bk-date{ color:var(--acc-solid); font-weight:600; }
+#svnApp .bk-restore[disabled]{ opacity:.55; cursor:default; }
+#svnApp .bk-note{ margin-top:8px; font-size:12px; border-radius:8px; padding:6px 9px; }
+#svnApp .bk-note--ok{ background:var(--ok-bg); color:#9fe0bd; }
+#svnApp .bk-note--err{ background:var(--err-bg); color:#f0a9b8; word-break:break-word; }
+#svnApp .bk-prog{ margin-top:9px; }
+#svnApp .bk-bar{ height:7px; border-radius:5px; background:var(--hover); overflow:hidden; }
+#svnApp .bk-bar-fill{ height:100%; width:0; border-radius:5px; background:linear-gradient(90deg,var(--acc-a),var(--acc-b)); transition:width .45s ease; }
+#svnApp .bk-prog-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:7px; }
+#svnApp .bk-prog-stat{ font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+#svnApp .bk-stop{ color:var(--err); border-color:var(--err); flex:none; }
+#svnApp .bk-stop:hover{ background:var(--err-bg); }
 </style>
 </head>
 <body>
@@ -457,6 +493,7 @@ html.dark-mode{
         <button class="btn" id="btnHistory" data-info="history">History</button>
         <button class="btn" id="btnLog" data-info="log">Error Log</button>
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
+        <button class="btn" id="btnBackups">Backups</button>
       </div>
     </div>
 
@@ -532,6 +569,8 @@ html.dark-mode{
 
   <!-- modal host -->
   <div id="modalHost"></div>
+  <!-- confirm host (layers above modalHost) -->
+  <div id="confirmHost"></div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -566,7 +605,8 @@ var ICONS = {
   branch:'M6 4v12M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 0v3a4 4 0 0 1-4 4H8',
   tools:'M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6L5 19.7l6-6a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3Z',
   pencil:'M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3ZM13.5 6.5l3 3',
-  login:'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3'
+  login:'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3',
+  database:'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3ZM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3'
 };
 function icon(name, s, w, style){
   s = s || 18; w = w || 1.8; style = style || '';
@@ -601,11 +641,25 @@ function scopeToHash(scope){
 }
 function hashToScope(h){
   h = decodeURIComponent((h||'').replace(/^#/,''));
+  h = h.split('~bk=')[0]; // ignore the backups overlay marker when resolving scope
   if(h==='') return '';
   if(h==='all') return '__all';
   if(h.indexOf('d-')===0){ var r=h.slice(2); return REPOS.indexOf(r)!==-1 ? '__one:'+r : ''; }
   if(h.indexOf('g-')===0){ var id=h.slice(2); return (/^\d+$/.test(id) && groupById(id)) ? id : ''; }
   return '';
+}
+// The repo whose Backups modal the hash says is open (e.g. "...~bk=watches.co.uk"), or ''.
+function hashBackups(h){
+  h = (h||'').replace(/^#/,'');
+  var i = h.indexOf('~bk=');
+  if(i < 0) return '';
+  var r = decodeURIComponent(h.slice(i + 4));
+  return REPOS.indexOf(r) !== -1 ? r : '';
+}
+// Open/close the Backups modal to match a target repo (from the hash). Avoids reload loops.
+function syncBackups(repo){
+  if(repo){ if(BK_OPEN_REPO !== repo) openBackups(repo); }
+  else { if(BK_OPEN_REPO) closeModal(); }
 }
 var SVN_PATH_PREFIX = 'svn://web1.sayu.co.uk/mnt/drive2/webclients/';
 
@@ -646,6 +700,16 @@ function activeScopeName(){
 
 // ---------------- scan queue ----------------
 var scanQueue = [], scanning = 0, SCAN_CONCURRENCY = 4, autoSelectUpdates = false;
+// Set when the user picks "Review & update" from the finder: once this repo finishes
+// scanning, jump straight into the update-review modal (if it has pending changes).
+var pendingReviewRepo = null;
+function maybeOpenPendingReview(repo){
+  if(pendingReviewRepo !== repo) return;
+  var s = STATE.sites[repo];
+  if(!s || s.scanState==='scanning' || s.scanState==='queued') return; // still working
+  pendingReviewRepo = null;
+  if(s.scanState==='done' && s.status==='update'){ STATE.sel[repo]=true; renderApplyBar(); openConfirmUpdate(); }
+}
 function enqueueScan(repos, force){
   repos.forEach(function(r){
     var s = ensureSite(r);
@@ -673,10 +737,12 @@ function pumpScan(){
           site.status='error'; site.errorMsg=(data&&data.error)||'Scan failed'; site.scanState='error';
         }
         renderTable(); renderApplyBar(); renderScanBar();
+        if(pendingReviewRepo) maybeOpenPendingReview(pendingReviewRepo);
         pumpScan();
       }, 'json').fail(function(){
         scanning--; site.status='error'; site.errorMsg='Request failed'; site.scanState='error';
         renderTable(); renderApplyBar(); renderScanBar();
+        if(pendingReviewRepo) maybeOpenPendingReview(pendingReviewRepo);
         pumpScan();
       });
     })(r, s);
@@ -785,7 +851,7 @@ function renderFinderMatch(){
   var html = '<div class="quick-path"><span style="color:var(--muted-2);font-weight:700">Path</span>'
     + '<span class="mono" style="font-size:12px">'+esc(path)+'</span>'
     + '<button class="copy-btn" id="finderCopy" data-copy="'+esc(path)+'" title="Copy">'+icon('copy',14)+'</button></div>'
-    + '<button class="btn grad" id="finderOpen" data-repo="'+esc(match)+'">'+icon('refresh',16)+' Open '+esc(match)+' in list</button>';
+    + '<button class="btn grad" id="finderReview" data-repo="'+esc(match)+'">'+icon('refresh',16)+' Review &amp; update</button>';
   $m.html(html).show();
 }
 
@@ -980,6 +1046,7 @@ function openActionsPop(repo, anchor){
     ['log','Error log', icon('file',16)],
     ['critical','Critical errors', icon('alert',16)],
     ['cron','Cron jobs', icon('calendar',16)],
+    ['backups','Backups', icon('database',16)],
     ['devtools','Dev tools', icon('tools',16)]
   ];
   var html = '<div class="pop-backdrop" data-close-pop="1"></div><div class="pop" style="top:'+top+'px;right:'+right+'px">';
@@ -993,7 +1060,26 @@ function openActionsPop(repo, anchor){
 
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ $('#modalHost').empty(); }
+function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } BK_OPEN_REPO=null; var h=(location.hash||'').replace(/^#/,''); if(h.indexOf('~bk=')>=0){ location.hash = h.split('~bk=')[0]; } $('#modalHost').empty(); }
+
+// Styled confirm dialog (replaces window.confirm); layers above any open modal.
+var UICONFIRM_CB = null;
+function uiConfirm(opts, onYes){
+  opts = opts || {};
+  UICONFIRM_CB = (typeof onYes === 'function') ? onYes : null;
+  var yesCls = opts.danger ? 'btn solid ui-confirm-danger' : 'btn grad';
+  var body = opts.bodyHtml ? opts.bodyHtml : esc(opts.body || '');
+  $('#confirmHost').html('<div class="scrim scrim2" data-confirm-scrim="1"><div class="modal confirm-modal">'
+    + '<div class="modal-head"><div class="mh-ico">'+icon(opts.icon || 'alert', 21)+'</div>'
+    + '<div style="min-width:0"><h3>'+esc(opts.title || 'Are you sure?')+'</h3></div>'
+    + '<button class="mh-x" data-close-confirm="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body confirm-body">'+body+'</div>'
+    + '<div class="modal-foot"><div class="mf-grow">'+esc(opts.foot || '')+'</div>'
+    + '<button class="btn ghost" data-close-confirm="1">'+esc(opts.cancelLabel || 'Cancel')+'</button>'
+    + '<button class="'+yesCls+'" id="uiConfirmYes">'+esc(opts.confirmLabel || 'Confirm')+'</button></div></div></div>');
+}
+function closeConfirm(){ UICONFIRM_CB = null; $('#confirmHost').empty(); }
+function confirmOpen(){ return $('#confirmHost').children().length > 0; }
 
 function openConfirmUpdate(){
   var upd = selUpdatable();
@@ -1374,6 +1460,71 @@ function openDevTools(repo){
     catch(e){ $('#dlDBSize').text('N/A'); $('#dlImgSize').text('N/A'); }
   });
 }
+// Backups modal: list the available DB backups for a site.
+function openBackups(repo){
+  if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
+  BK_OPEN_REPO = repo;
+  // Reflect the open backups view in the URL so a refresh reopens it.
+  var nh = scopeToHash(STATE.activeGroup) + '~bk=' + encodeURIComponent(repo);
+  if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
+  modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('database',21)+'</div>'
+    + '<div style="min-width:0"><h3>Backups</h3><p>Available database backups · <span class="mono">'+esc(repo)+'</span></p></div>'
+    + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body"><div class="bk-head">'+icon('database',15)+'<span>Available DB backups</span><span class="bk-count" id="bkCount"></span></div>'
+    + '<div class="bk-target" id="bkTarget"></div>'
+    + '<div id="bkList"><span class="spin"></span> Loading backups…</div></div>'
+    + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-modal="1">Close</button></div></div>');
+  $.post('get_db_backups.php', {repository:repo}, function(d){ renderBackups(d); }, 'json')
+    .fail(function(){ $('#bkCount').text(''); $('#bkList').html('<div class="svn-modal-message svn-modal-message--warn">Could not load backups.</div>'); });
+}
+// Render the list of available DB backups.
+function backupAgo(dateStr){
+  if(!dateStr) return '';
+  var p = dateStr.split('-'); if(p.length!==3) return '';
+  var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var days = Math.round((today - d)/86400000);
+  if(days<=0) return 'today';
+  if(days===1) return 'yesterday';
+  if(days<7) return days+' days ago';
+  if(days<14) return '1 week ago';
+  return Math.floor(days/7)+' weeks ago';
+}
+function bkCopyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t); return; }
+  var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+function bkBytes(n){ n=+n||0; if(n>=1048576) return (n/1048576).toFixed(1)+' MB'; if(n>=1024) return (n/1024).toFixed(0)+' KB'; return n+' B'; }
+function bkDur(s){ s=Math.round(+s||0); if(s>=60){ var m=Math.floor(s/60); return m+'m '+(s%60)+'s'; } return s+'s'; }
+
+var BK = {repo:'', testdb:''};
+var BK_JOB=null, BK_POLL=null, BK_OPEN_REPO=null;
+function bkStopPoll(){ if(BK_POLL){ clearInterval(BK_POLL); BK_POLL=null; } }
+function renderBackups(d){
+  if(!d || !d.ok){ $('#bkCount').text(''); $('#bkTarget').text(''); $('#bkList').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not load backups.')+'</div>'); return; }
+  var list = d.backups||[];
+  BK = {repo:d.repository||'', testdb:d.testdb||''};
+  $('#bkCount').text(list.length ? list.length : '');
+  if(BK.testdb){ $('#bkTarget').html('Restore unpacks into test DB <span class="bk-copy mono" data-copy="'+esc(BK.testdb)+'" title="Click to copy">'+esc(BK.testdb)+' '+icon('copy',11)+'</span> — dropped &amp; recreated each time.'); }
+  if(!list.length){ $('#bkList').html('<div class="svn-modal-message">No backups available for this site.</div>'); return; }
+  var html = list.map(function(b, i){
+    var ago = backupAgo(b.date);
+    return '<div class="bk-row'+(i===0?' bk-row--latest':'')+'">'
+      + '<div class="bk-line">'
+      +   '<span class="bk-file mono">'+esc(b.file)+'</span>'
+      +   '<span class="bk-meta">'
+      +     (b.size ? '<span class="bk-size">'+esc(bkBytes(b.size))+'</span>' : '')
+      +     (b.date ? '<span class="bk-date" title="'+esc(b.date)+'">'+(i===0?'latest · ':'')+esc(ago||b.date)+'</span>' : '')
+      +     '<button type="button" class="btn tiny bk-restore" data-file="'+esc(b.file)+'">Restore</button>'
+      +   '</span>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+  $('#bkList').html('<div class="bk-rows">'+html+'</div>');
+}
 
 function focusedRepoForGlobal(){
   var sel = selRepos();
@@ -1399,39 +1550,47 @@ $(function(){
   renderFilterChips();
   renderRecents();
 
-  // Back/forward & manual hash edits -> switch scope.
+  // Back/forward & manual hash edits -> switch scope and/or backups overlay.
   $(window).on('hashchange', function(){
+    var bk = hashBackups(location.hash);
     var sc = hashToScope(location.hash);
-    if(!sc || String(sc)===String(STATE.activeGroup)) return;
-    if(sc==='__all') pickScope('__all', {});
-    else if(sc.indexOf('__one:')===0) openSingle(sc.slice(6));
-    else pickScope(sc, {});
+    if(sc && String(sc)!==String(STATE.activeGroup)){
+      if(sc==='__all') pickScope('__all', {});
+      else if(sc.indexOf('__one:')===0) openSingle(sc.slice(6));
+      else pickScope(sc, {});
+    }
+    syncBackups(bk);
   });
 
   loadGroups(function(){
-    // 1) Restore scope from the URL hash if present and valid.
-    var hsc = hashToScope(location.hash);
-    if(hsc==='__all'){ pickScope('__all', {}); return; }
-    if(hsc.indexOf('__one:')===0){ openSingle(hsc.slice(6)); return; }
-    if(hsc && /^\d+$/.test(hsc)){ pickScope(hsc, {}); return; }
-    // 2) Otherwise restore the last-used scope (group / single site / all sites) from localStorage.
-    var saved = getSavedScope();
-    if(saved==='__all'){ pickScope('__all', {}); return; }
-    if(saved.indexOf('__one:')===0){ var sr=saved.slice(6); if(REPOS.indexOf(sr)!==-1){ openSingle(sr); return; } }
-    if(saved && /^\d+$/.test(saved) && groupById(saved)){ pickScope(saved, {}); return; }
-    // Fallback: auto-open the most recent site, else the remembered repo from the finder box.
-    var initial = '';
-    var rec = getRecents();
-    if(rec.length && REPOS.indexOf(rec[0])!==-1) initial = rec[0];
-    if(!initial){ var fv=$('#finderInput').val().trim(); if(fv && REPOS.indexOf(fv)!==-1) initial = fv; }
-    if(initial){ openSingle(initial); }
-    else { renderGroupTrigger(); renderTable(); renderApplyBar(); }
+    // Capture the backups overlay from the hash before scope-restore rewrites it.
+    var bk0 = hashBackups(location.hash);
+    (function restoreScope(){
+      // 1) Restore scope from the URL hash if present and valid.
+      var hsc = hashToScope(location.hash);
+      if(hsc==='__all'){ pickScope('__all', {}); return; }
+      if(hsc.indexOf('__one:')===0){ openSingle(hsc.slice(6)); return; }
+      if(hsc && /^\d+$/.test(hsc)){ pickScope(hsc, {}); return; }
+      // 2) Otherwise restore the last-used scope (group / single site / all sites) from localStorage.
+      var saved = getSavedScope();
+      if(saved==='__all'){ pickScope('__all', {}); return; }
+      if(saved.indexOf('__one:')===0){ var sr=saved.slice(6); if(REPOS.indexOf(sr)!==-1){ openSingle(sr); return; } }
+      if(saved && /^\d+$/.test(saved) && groupById(saved)){ pickScope(saved, {}); return; }
+      // Fallback: auto-open the most recent site, else the remembered repo from the finder box.
+      var initial = '';
+      var rec = getRecents();
+      if(rec.length && REPOS.indexOf(rec[0])!==-1) initial = rec[0];
+      if(!initial){ var fv=$('#finderInput').val().trim(); if(fv && REPOS.indexOf(fv)!==-1) initial = fv; }
+      if(initial){ openSingle(initial); }
+      else { renderGroupTrigger(); renderTable(); renderApplyBar(); }
+    })();
+    if(bk0) syncBackups(bk0);
   });
 
   // group dropdown
   $('#grpTrigger').on('click', function(e){ e.stopPropagation(); if($('#grpDd .grp-dd-menu').length){ closeGroupMenu(); } else { openGroupMenu(); } });
   $(document).on('click', '[data-pick-group]', function(e){ e.stopPropagation(); var id=$(this).attr('data-pick-group'); closeGroupMenu(); pickScope(id, {}); });
-  $(document).on('click', '[data-del-group]', function(e){ e.stopPropagation(); var id=$(this).attr('data-del-group'); if(confirm('Delete this group? Sites are not affected.')){ groupsAction({action:'delete', id:id}, function(){ if(String(STATE.activeGroup)===String(id)){ pickScope('__all',{}); } openGroupMenu(); }); } });
+  $(document).on('click', '[data-del-group]', function(e){ e.stopPropagation(); var id=$(this).attr('data-del-group'); uiConfirm({icon:'folder', title:'Delete this group?', body:'Sites are not affected — only the saved group is removed.', confirmLabel:'Delete', danger:true}, function(){ groupsAction({action:'delete', id:id}, function(){ if(String(STATE.activeGroup)===String(id)){ pickScope('__all',{}); } openGroupMenu(); }); }); });
   $(document).on('click', '#grpNewBtn', function(e){ e.stopPropagation(); closeGroupMenu(); openSaveGroup(); });
 
   // finder
@@ -1444,9 +1603,31 @@ $(function(){
       else $dd.removeClass('show');
     } else $dd.removeClass('show');
   });
-  $(document).on('click', '[data-finder-pick]', function(){ var v=$(this).attr('data-finder-pick'); $('#finderInput').val(v); $('#finderDd').removeClass('show'); renderFinderMatch(); });
-  $('#finderInput').on('keypress', function(e){ if(e.which===13){ e.preventDefault(); $('#finderDd').removeClass('show'); var v=$(this).val().trim(); if(v){ openSingle(v); } } });
-  $(document).on('click', '#finderOpen', function(){ openSingle($(this).attr('data-repo')); });
+  $(document).on('click', '[data-finder-pick]', function(){ var v=$(this).attr('data-finder-pick'); $('#finderDd').removeClass('show'); if(v){ openSingle(v); } });
+  // Mouse hover takes over the keyboard highlight so the two never show at once.
+  $(document).on('mouseenter', '#finderDd .finder-opt', function(){ $('#finderDd .finder-opt').removeClass('active'); $(this).addClass('active'); });
+  $('#finderInput').on('keydown', function(e){
+    var $dd=$('#finderDd'), open=$dd.hasClass('show'), $opts=$dd.find('.finder-opt');
+    if((e.which===40||e.which===38) && open && $opts.length){ // arrow down / up
+      e.preventDefault();
+      var idx=$opts.index($opts.filter('.active'));
+      if(e.which===40) idx=(idx+1)%$opts.length; else idx=(idx<=0?$opts.length-1:idx-1);
+      $opts.removeClass('active').eq(idx).addClass('active');
+      var el=$opts.get(idx); if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest'});
+      return;
+    }
+    if(e.which===13){ // enter: open highlighted match, else whatever is typed
+      e.preventDefault();
+      var $act=$opts.filter('.active');
+      var v=($act.length ? $act.attr('data-finder-pick') : $(this).val().trim());
+      $dd.removeClass('show');
+      if(v){ openSingle(v); }
+      return;
+    }
+    if(e.which===27 && open){ e.preventDefault(); $dd.removeClass('show'); return; } // esc closes dropdown
+  });
+  $(document).on('click', '#finderReview', function(){ var r=$(this).attr('data-repo'); $('#finderDd').removeClass('show'); reviewSingle(r); });
+  function reviewSingle(repo){ pendingReviewRepo=repo; openSingle(repo); var s=STATE.sites[repo]; if(s && (s.scanState==='done'||s.scanState==='error')) maybeOpenPendingReview(repo); }
   $(document).on('click', '#finderCopy', function(){ var $b=$(this); copyText($b.attr('data-copy'), function(){ $b.html(icon('check',14)); setTimeout(function(){ $b.html(icon('copy',14)); },1200); }); });
   $(document).on('click', '[data-recent]', function(){ openSingle($(this).attr('data-recent')); });
   function openSingle(repo){ $('#finderInput').val(repo); renderFinderMatch(); saveRecent(repo); pickScope('__one:'+repo, {}); }
@@ -1481,7 +1662,7 @@ $(function(){
   // popover actions
   $(document).on('click', '[data-toggle-group]', function(e){ e.stopPropagation(); var gid=$(this).attr('data-toggle-group'), repo=$(this).attr('data-repo'); var g=groupById(gid); var inG=g&&g.siteIds.indexOf(repo)!==-1; groupsAction({action: inG?'remove_site':'add_site', id:gid, repository:repo}, function(){ openAddGroupPop(repo, document.querySelector('[data-addgroup="'+cssEsc(repo)+'"]')||document.body); }); });
   $(document).on('click', '[data-newgroup-repo]', function(e){ e.stopPropagation(); var repo=$(this).attr('data-newgroup-repo'); closeAllPopovers(); openSaveGroup([repo]); });
-  $(document).on('click', '[data-siteaction]', function(e){ e.stopPropagation(); var a=$(this).attr('data-siteaction'), repo=$(this).attr('data-repo'); closeAllPopovers(); if(a==='devtools') openDevTools(repo); else openInfo(a, repo); });
+  $(document).on('click', '[data-siteaction]', function(e){ e.stopPropagation(); var a=$(this).attr('data-siteaction'), repo=$(this).attr('data-repo'); closeAllPopovers(); if(a==='devtools') openDevTools(repo); else if(a==='backups') openBackups(repo); else openInfo(a, repo); });
 
   // diff
   $(document).on('click', '.vdiff', function(){ openDiff($(this).attr('data-diff-repo'), $(this).attr('data-diff-file')); });
@@ -1507,8 +1688,8 @@ $(function(){
   });
   $(document).on('click', '.cron-del-row', function(){
     var i=+$(this).attr('data-ci'); if(!CRON||!CRON.lines[i]) return;
-    if(!confirm('Delete this cron job?\n\n'+CRON.lines[i].expr+' '+CRON.lines[i].cmd)) return;
-    CRON.lines.splice(i,1); cronCommit();
+    uiConfirm({icon:'calendar', title:'Delete this cron job?', bodyHtml:'<span class="mono">'+esc(CRON.lines[i].expr+' '+CRON.lines[i].cmd)+'</span>', confirmLabel:'Delete', danger:true},
+      function(){ if(CRON&&CRON.lines[i]){ CRON.lines.splice(i,1); cronCommit(); } });
   });
   $(document).on('click', '#cronAddBtn', function(){
     var expr=$('#cronAddExpr').val().trim(), cmd=$('#cronAddCmd').val().trim(), $h=$('#cronAddHint');
@@ -1545,6 +1726,84 @@ $(function(){
 
   // global head buttons
   $('#btnHistory,#btnLog,#btnCron').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
+  $('#btnBackups').on('click', function(){ openBackups(focusedRepoForGlobal()); });
+
+  // restore a backup into the per-site test DB (background job + live progress)
+  function bkFinish(d){
+    bkStopPoll();
+    if(!BK_JOB) return;
+    var $row=BK_JOB.$row, $btn=BK_JOB.$btn, st=(d&&d.state)||'error';
+    $row.find('.bk-prog').remove();
+    var cls = st==='done' ? 'bk-note--ok' : 'bk-note--err';
+    var msg = esc((d&&d.message) || (st==='done'?'Restore complete.':st==='stopped'?'Restore cancelled.':'Restore failed.'));
+    $row.append('<div class="bk-note '+cls+'">'+msg+'</div>');
+    BK_JOB=null;
+    if($btn) $btn.text('Restore');
+    $('.bk-restore').prop('disabled',false).text('Restore').show();
+  }
+  function bkPoll(){
+    if(!BK_JOB) return;
+    $.post('restore_db_status.php', {job:BK_JOB.job}, function(d){
+      if(!d || !d.ok || !BK_JOB) return;
+      BK_JOB.$row.find('.bk-bar-fill').css('width', (d.percent||0)+'%');
+      if(d.state==='running'){
+        var p=[ (d.percent||0)+'%' ];
+        if(d.total) p.push(bkBytes(d.done)+' / '+bkBytes(d.total));
+        if(d.rate)  p.push(bkBytes(d.rate)+'/s');
+        if(d.eta)   p.push('~'+bkDur(d.eta)+' left');
+        BK_JOB.$row.find('.bk-prog-stat').text(p.join('  ·  '));
+      } else {
+        bkFinish(d);
+      }
+    }, 'json');
+  }
+  function bkStartRestore($btn, file, repo){
+    var $row=$btn.closest('.bk-row'); $row.find('.bk-note').remove();
+    $('.bk-restore').prop('disabled',true); $btn.html('<span class="spin"></span> Starting…');
+    $.post('restore_db_backup.php', {repository:repo, file:file}, function(d){
+      if(!d || !d.ok){
+        $('.bk-restore').prop('disabled',false); $btn.text('Restore');
+        $row.append('<div class="bk-note bk-note--err">'+esc((d&&d.error)||'Could not start restore.')+'</div>');
+        return;
+      }
+      $btn.hide();
+      $row.append('<div class="bk-prog"><div class="bk-bar"><div class="bk-bar-fill"></div></div>'
+        + '<div class="bk-prog-foot"><span class="bk-prog-stat">Starting…</span>'
+        + '<button type="button" class="btn tiny bk-stop">Stop</button></div></div>');
+      BK_JOB={ job:d.job, total:d.total, $row:$row, $btn:$btn };
+      bkPoll();
+      BK_POLL=setInterval(bkPoll, 1000);
+    }, 'json').fail(function(){
+      $('.bk-restore').prop('disabled',false); $btn.text('Restore');
+      $row.append('<div class="bk-note bk-note--err">Could not start restore.</div>');
+    });
+  }
+  $(document).on('click', '.bk-restore', function(){
+    var $btn=$(this), file=$btn.attr('data-file'), repo=BK.repo, testdb=BK.testdb;
+    if(!repo || !file) return;
+    if(BK_JOB){ uiConfirm({icon:'database', title:'Restore already running', body:'A restore is already in progress. Wait for it to finish, or stop it first.', confirmLabel:'OK', cancelLabel:'Dismiss'}); return; }
+    uiConfirm({
+      icon:'database',
+      title:'Restore this backup?',
+      bodyHtml:'Unpack <span class="mono">'+esc(file)+'</span> into the test database <span class="mono">'+esc(testdb)+'</span>.'
+        + '<br><br>This <b>drops and recreates</b> <span class="mono">'+esc(testdb)+'</span> — anything currently in it is lost. The live site is not affected.',
+      confirmLabel:'Restore',
+      danger:true,
+      foot:'Imports into a test DB only.'
+    }, function(){ bkStartRestore($btn, file, repo); });
+  });
+  $(document).on('click', '.bk-stop', function(){
+    if(!BK_JOB) return;
+    $(this).prop('disabled',true).text('Stopping…');
+    $.post('restore_db_stop.php', {job:BK_JOB.job}, function(){}, 'json'); // poller settles on 'stopped'
+  });
+  // click the test-DB chip to copy its name
+  $(document).on('click', '.bk-copy', function(){
+    var $b=$(this); bkCopyText($b.attr('data-copy'));
+    if($b.data('busy')) return;
+    var html=$b.html(); $b.data('busy',1).addClass('bk-copied').html('Copied '+icon('check',12));
+    setTimeout(function(){ $b.html(html).removeClass('bk-copied').removeData('busy'); }, 1200);
+  });
 
   // dev tools download
   $(document).on('click', '#dlStart', function(){
@@ -1561,12 +1820,16 @@ $(function(){
   $(document).on('click', '[data-close-pop]', function(){ closeAllPopovers(); });
   $(document).on('click', '[data-close-modal]', function(){ closeModal(); });
   $(document).on('click', '[data-scrim]', function(e){ if(e.target===this) closeModal(); });
+  // styled confirm dialog
+  $(document).on('click', '[data-close-confirm]', function(){ closeConfirm(); });
+  $(document).on('click', '[data-confirm-scrim]', function(e){ if(e.target===this) closeConfirm(); });
+  $(document).on('click', '#uiConfirmYes', function(){ var cb=UICONFIRM_CB; closeConfirm(); if(cb) cb(); });
   $(document).on('click', function(e){
     if(!$(e.target).closest('#finderInput,#finderDd').length) $('#finderDd').removeClass('show');
     if(!$(e.target).closest('#grpDd').length) closeGroupMenu();
     if(!$(e.target).closest('.pop,.site-btn').length) closeAllPopovers();
   });
-  $(document).on('keydown', function(e){ if(e.key==='Escape'){ closeAllPopovers(); closeModal(); } });
+  $(document).on('keydown', function(e){ if(e.key==='Escape'){ if(confirmOpen()){ closeConfirm(); return; } closeAllPopovers(); closeModal(); } });
 });
 
 function copyText(text, done){

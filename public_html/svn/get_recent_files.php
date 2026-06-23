@@ -67,51 +67,38 @@ function svn_parse_update_line($row) {
 			return null;
 		}
 	}
+	// Consume leading metadata tokens (status letter / "*" out-of-date / revision); the rest
+	// is the path. A file added in the repo but not in the live working copy shows as just
+	// "* path" (no status letter, no revision), so don't require 3+ tokens — see
+	// svn_status_parse_line() in svn_repo_support.php.
 	$parts = explode(' ', $row);
 	$n = count($parts);
-	if ($n < 3) {
+	if ($n < 2) {
 		return null;
 	}
-
-	// Find path: first segment containing '/'; else last segment if it looks like a filename
-	$path_start = false;
-	for ($i = 0; $i < $n; $i++) {
-		if (strpos($parts[$i], '/') !== false) {
-			$path_start = $i;
-			break;
-		}
+	$meta_letters = 'ACDIMRXL?!~';
+	$status_letter = '';
+	$out_of_date = false;
+	$rev = '-';
+	$i = 0;
+	for (; $i < $n; $i++) {
+		$tok = $parts[$i];
+		if ($tok === '*') { $out_of_date = true; continue; }
+		if (ctype_digit($tok)) { $rev = $tok; continue; }
+		if (strlen($tok) === 1 && strpos($meta_letters, strtoupper($tok)) !== false) { $status_letter = strtoupper($tok); continue; }
+		break;
 	}
-	if ($path_start === false) {
-		$last = $parts[$n - 1];
-		if (preg_match('/\.[a-z0-9]{1,8}$/i', $last)) {
-			$path_start = $n - 1;
-		}
-	}
-	if ($path_start === false || $path_start < 2) {
+	if ($i >= $n) {
 		return null;
 	}
-
-	$fullpath = implode(' ', array_slice($parts, $path_start));
+	$fullpath = implode(' ', array_slice($parts, $i));
 	$path_ok = (strpos($fullpath, '/') !== false) || preg_match('/\.[a-z0-9]{1,8}$/i', $fullpath);
 	if (!$path_ok) {
 		return null;
 	}
-
-	$before = array_slice($parts, 0, $path_start);
-	// SVN: status (column 1), then rev(s) / author; revision for display = last * or numeric before path
-	$svn_first_letters = 'ACDMR?!L*~';
-	$status_raw = $before[0];
-	$c0 = strtoupper(substr(trim($status_raw), 0, 1));
-	if (strpos($svn_first_letters, $c0) === false && isset($before[1])) {
-		$status_raw = $before[1];
-	}
-	$status = strlen($status_raw) > 1 ? substr(trim($status_raw), 0, 1) : $status_raw;
-	$rev = '-';
-	for ($j = count($before) - 1; $j >= 1; $j--) {
-		if ($before[$j] === '*' || ctype_digit($before[$j])) {
-			$rev = $before[$j];
-			break;
-		}
+	$status = $status_letter !== '' ? $status_letter : ($out_of_date ? '*' : '');
+	if ($status === '') {
+		return null;
 	}
 	return array($status, $rev, $fullpath);
 }
