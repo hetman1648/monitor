@@ -286,6 +286,7 @@ html.dark-mode{
 /* modal */
 #svnApp .scrim{ position:fixed; inset:0; background:rgba(8,12,18,.66); backdrop-filter:blur(4px); z-index:60; display:flex; align-items:center; justify-content:center; padding:24px; }
 #svnApp .scrim2{ z-index:70; }
+#svnApp .scrim3{ z-index:80; }
 #svnApp .confirm-modal{ width:min(440px,100%); }
 #svnApp .confirm-body{ font-size:14px; color:var(--ink-soft); line-height:1.55; }
 #svnApp .confirm-body .mono{ color:var(--ink); }
@@ -571,6 +572,8 @@ html.dark-mode{
   <div id="modalHost"></div>
   <!-- confirm host (layers above modalHost) -->
   <div id="confirmHost"></div>
+  <!-- source-view host (layers above modalHost so closing it returns to the log) -->
+  <div id="sourceHost"></div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1077,7 +1080,7 @@ function openActionsPop(repo, anchor){
 
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } BK_OPEN_REPO=null; var h=(location.hash||'').replace(/^#/,''); if(h.indexOf('~bk=')>=0){ location.hash = h.split('~bk=')[0]; } $('#modalHost').empty(); }
+function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } BK_OPEN_REPO=null; var h=(location.hash||'').replace(/^#/,''); if(h.indexOf('~bk=')>=0){ location.hash = h.split('~bk=')[0]; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
 
 // Styled confirm dialog (replaces window.confirm); layers above any open modal.
 var UICONFIRM_CB = null;
@@ -1385,13 +1388,15 @@ function renderLog(){
   $('#infoBody').html(html);
 }
 
+function closeSource(){ $('#sourceHost').empty(); }
 function openSource(file, line){
   line = line||0;
-  modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('file',21)+'</div>'
+  // Rendered in its own host layered above the log modal, so closing it returns to the log.
+  $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('file',21)+'</div>'
     + '<div style="min-width:0"><h3 style="word-break:break-all">'+esc(file.split('/').pop())+(line?'  :'+line:'')+'</h3><p class="mono" style="font-size:12px">'+esc(file)+'</p></div>'
-    + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
+    + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body"><div id="srcBody"><span class="spin"></span> Loading…</div></div>'
-    + '<div class="modal-foot"><div class="mf-grow" id="srcFoot"></div><button class="btn solid" data-close-modal="1">Close</button></div></div>');
+    + '<div class="modal-foot"><div class="mf-grow" id="srcFoot"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
   $.post('view_source.php', {file:file, line:line}, function(d){
     if(d&&d.ok){
       var rows=String(d.content).split('\n'), start=d.start||1, target=d.line||0, html='<div class="codewrap" id="codewrap">';
@@ -1846,12 +1851,15 @@ $(function(){
   $(document).on('click', '[data-close-confirm]', function(){ closeConfirm(); });
   $(document).on('click', '[data-confirm-scrim]', function(e){ if(e.target===this) closeConfirm(); });
   $(document).on('click', '#uiConfirmYes', function(){ var cb=UICONFIRM_CB; closeConfirm(); if(cb) cb(); });
+  // source viewer (layered above the log modal)
+  $(document).on('click', '[data-close-source]', function(){ closeSource(); });
+  $(document).on('click', '[data-source-scrim]', function(e){ if(e.target===this) closeSource(); });
   $(document).on('click', function(e){
     if(!$(e.target).closest('#finderInput,#finderDd').length) $('#finderDd').removeClass('show');
     if(!$(e.target).closest('#grpDd').length) closeGroupMenu();
     if(!$(e.target).closest('.pop,.site-btn').length) closeAllPopovers();
   });
-  $(document).on('keydown', function(e){ if(e.key==='Escape'){ if(confirmOpen()){ closeConfirm(); return; } closeAllPopovers(); closeModal(); } });
+  $(document).on('keydown', function(e){ if(e.key==='Escape'){ if($('#sourceHost').children().length){ closeSource(); return; } if(confirmOpen()){ closeConfirm(); return; } closeAllPopovers(); closeModal(); } });
 });
 
 function copyText(text, done){
