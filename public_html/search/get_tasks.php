@@ -110,9 +110,9 @@ $search_display = htmlspecialchars(implode(', ', $search_terms));
 
 if (!sizeof($tasks)) {
 ?>
-<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 20px; color: #856404;">
-    <strong>No Results Found</strong>
-    <p style="margin: 6px 0 0; font-size: 0.9rem;">No tasks matched your search<?php if ($search_display) echo ' for <strong>' . $search_display . '</strong>'; ?>.</p>
+<div style="background: var(--warn-bg, #fff3cd); border: 1px solid rgba(191,132,32,.35); border-radius: var(--r-lg, 12px); padding: 20px; color: var(--ink-soft, #856404);">
+    <strong style="display:block; font-size:15px; color: var(--ink, #2d3748); margin-bottom:6px;">No Results Found</strong>
+    <p style="margin: 0; font-size: 14px;">No tasks matched your search<?php if ($search_display) echo ' for <strong style="color:var(--ink, #2d3748)">' . $search_display . '</strong>'; ?>.</p>
 </div>
 <?php
     exit;
@@ -129,16 +129,16 @@ if (!sizeof($tasks)) {
     }
     .results-info {
         font-size: 0.9rem;
-        color: #4a5568;
+        color: var(--muted, #4a5568);
     }
     .results-info strong {
-        color: #2d3748;
+        color: var(--ink, #2d3748);
     }
     .results-count {
         display: inline-flex;
         align-items: center;
-        background: #eef2ff;
-        color: #667eea;
+        background: rgba(93,111,214,.14);
+        color: var(--acc-solid, #667eea);
         font-weight: 600;
         font-size: 0.8rem;
         padding: 2px 8px;
@@ -152,44 +152,44 @@ if (!sizeof($tasks)) {
     }
     .sort-controls label {
         font-size: 0.8rem;
-        color: #718096;
+        color: var(--muted, #718096);
         font-weight: 500;
         white-space: nowrap;
     }
     .sort-select {
         padding: 6px 10px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--line-strong, #e2e8f0);
         border-radius: 6px;
         font-size: 0.82rem;
         font-family: inherit;
-        background: #fff;
-        color: #2d3748;
+        background: var(--raise, #fff);
+        color: var(--ink, #2d3748);
         cursor: pointer;
     }
     .sort-select:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 2px rgba(102,126,234,0.15);
+        border-color: var(--acc-solid, #667eea);
+        box-shadow: 0 0 0 2px rgba(93,111,214,0.2);
     }
     .sort-dir-btn {
         display: inline-flex;
         align-items: center;
         gap: 4px;
         padding: 6px 10px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--line-strong, #e2e8f0);
         border-radius: 6px;
         font-size: 0.8rem;
         font-family: inherit;
-        background: #fff;
-        color: #4a5568;
+        background: var(--raise, #fff);
+        color: var(--ink-soft, #4a5568);
         cursor: pointer;
         transition: all 0.15s;
         white-space: nowrap;
     }
     .sort-dir-btn:hover {
-        border-color: #667eea;
-        color: #667eea;
-        background: #f7f8ff;
+        border-color: var(--acc-solid, #667eea);
+        color: var(--acc-solid, #667eea);
+        background: var(--hover-2, #f7f8ff);
     }
     .sort-dir-btn svg {
         flex-shrink: 0;

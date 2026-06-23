@@ -15,91 +15,127 @@ $user_name = GetSessionParam("UserName");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Tasks - Sayu Monitor</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700;800;900&display=swap"/>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Shared design system — matches the SVN Updater (svn/index.php) */
+        :root{
+          --bg:#eef1f6; --bg-2:#e6ebf2; --panel:#ffffff; --card:#ffffff; --card-2:#f6f8fb;
+          --raise:#f1f4f9; --raise-2:#e7ecf3; --line:rgba(15,23,42,.10); --line-strong:rgba(15,23,42,.16);
+          --ink:#1f2733; --ink-soft:#3b4452; --muted:#64748b; --muted-2:#94a3b8;
+          --acc-a:#5566d6; --acc-b:#9a6fa6; --acc-solid:#5d6fd6;
+          --ok:#2f9e6b; --ok-bg:rgba(47,158,107,.14); --warn:#bf8420; --warn-bg:rgba(191,132,32,.16);
+          --err:#cf4f6b; --err-bg:rgba(207,79,107,.14); --info:#2f86b8;
+          --fill:rgba(15,23,42,.03); --fill-2:rgba(15,23,42,.05);
+          --hover:rgba(15,23,42,.05); --hover-2:rgba(15,23,42,.08); --row-tint:rgba(15,23,42,.025);
+          --r-lg:16px; --r-md:11px; --r-sm:8px;
+          --shadow:0 18px 50px rgba(20,30,50,.16); --shadow-sm:0 2px 8px rgba(20,30,50,.08);
         }
+        html.dark-mode{
+          --bg:#16202e; --bg-2:#1a2636; --panel:#16202d; --card:#141d29; --card-2:#1a2433;
+          --raise:#1f2a3a; --raise-2:#283649; --line:rgba(255,255,255,.07); --line-strong:rgba(255,255,255,.12);
+          --ink:#eef2f7; --ink-soft:#c4ccd8; --muted:#8b97a8; --muted-2:#5f6c7e;
+          --acc-a:#4f63cf; --acc-b:#9a6fa6; --acc-solid:#5d6fd6;
+          --ok:#44b27c; --ok-bg:rgba(68,178,124,.14); --warn:#e0a93b; --warn-bg:rgba(224,169,59,.14);
+          --err:#e2657f; --err-bg:rgba(226,101,127,.14); --info:#58a9d6;
+          --fill:rgba(255,255,255,.03); --fill-2:rgba(255,255,255,.06);
+          --hover:rgba(255,255,255,.06); --hover-2:rgba(255,255,255,.09); --row-tint:rgba(255,255,255,.03);
+          --shadow:0 18px 50px rgba(0,0,0,.40); --shadow-sm:0 2px 8px rgba(0,0,0,.25);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
 
         body {
             font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            background:
+               radial-gradient(1200px 540px at 78% -8%, rgba(108,92,200,.10), transparent 60%),
+               radial-gradient(1000px 520px at 6% 0%, rgba(40,90,150,.10), transparent 55%),
+               var(--bg);
             min-height: 100vh;
-            color: #1a202c;
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
-            padding: 30px 24px;
+            padding: 34px 24px 30px;
         }
 
         .results-container {
-            max-width: 100%;
-            padding: 0 20px 30px;
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
         }
 
         .page-header {
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 8px;
+            font-family: 'Hanken Grotesk', system-ui, sans-serif;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1.2px;
+            color: var(--ink);
+            margin-bottom: 6px;
         }
 
         .page-header p {
-            color: #718096;
-            font-size: 0.95rem;
+            color: var(--muted);
+            font-size: 16px;
         }
 
         .search-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 26px;
             margin-bottom: 24px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .form-group label {
             display: block;
-            font-weight: 500;
-            color: #4a5568;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--muted-2);
+            margin-bottom: 9px;
         }
 
         .form-group input[type="text"] {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            padding: 11px 14px;
+            background: var(--raise);
+            border: 1px solid var(--line-strong);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--ink);
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .form-group input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--acc-solid);
+            box-shadow: 0 0 0 3px rgba(93,111,214,.18);
         }
 
         .form-group input[type="text"]::placeholder {
-            color: #a0aec0;
+            color: var(--muted-2);
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 18px;
         }
 
         @media (max-width: 600px) {
@@ -109,39 +145,39 @@ $user_name = GetSessionParam("UserName");
         }
 
         .btn {
-            padding: 14px 24px;
+            padding: 12px 18px;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(100deg, var(--acc-a), var(--acc-b));
+            color: #fff;
             width: 100%;
             justify-content: center;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            filter: brightness(1.07);
         }
 
         .btn-primary:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
+            filter: none;
         }
 
         .progress-bar {
             display: none;
-            margin-top: 20px;
+            margin-top: 18px;
         }
 
         .progress-bar.active {
@@ -150,14 +186,14 @@ $user_name = GetSessionParam("UserName");
 
         .progress-track {
             height: 6px;
-            background: #e2e8f0;
+            background: var(--raise-2);
             border-radius: 3px;
             overflow: hidden;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(100deg, var(--acc-a), var(--acc-b));
             border-radius: 3px;
             animation: progress-animation 1.5s ease-in-out infinite;
         }
@@ -170,8 +206,8 @@ $user_name = GetSessionParam("UserName");
 
         .progress-text {
             text-align: center;
-            color: #718096;
-            font-size: 0.9rem;
+            color: var(--muted);
+            font-size: 13px;
             margin-top: 10px;
         }
 
@@ -181,31 +217,33 @@ $user_name = GetSessionParam("UserName");
         }
 
         .tt-hint {
-            color: #a0aec0 !important;
+            color: var(--muted-2) !important;
         }
 
         .tt-dropdown-menu {
             width: 100%;
-            margin-top: 4px;
-            padding: 8px 0;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            max-height: 300px;
+            margin-top: 6px;
+            padding: 6px;
+            background: var(--card-2);
+            border: 1px solid var(--line-strong);
+            border-radius: 11px;
+            box-shadow: var(--shadow);
+            max-height: 320px;
             overflow-y: auto;
         }
 
         .tt-suggestion {
-            padding: 10px 16px;
+            padding: 9px 12px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.95rem;
+            font-size: 14px;
+            color: var(--ink-soft);
         }
 
         .tt-suggestion:hover,
         .tt-suggestion.tt-is-under-cursor {
-            background: #667eea;
-            color: white;
+            background: var(--acc-solid);
+            color: #fff;
         }
 
         .tt-suggestion p {
@@ -216,10 +254,11 @@ $user_name = GetSessionParam("UserName");
         #divTasks table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--r-lg);
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-sm);
             table-layout: fixed;
         }
 
@@ -235,22 +274,23 @@ $user_name = GetSessionParam("UserName");
         #divTasks col.col-closed   { width: 64px; }
 
         #divTasks th {
-            background: #f8f9fa;
-            padding: 10px 14px;
+            background: var(--fill);
+            padding: 12px 14px;
             text-align: left;
-            font-weight: 600;
-            font-size: 0.73rem;
-            color: #4a5568;
+            font-weight: 800;
+            font-size: 11px;
+            color: var(--muted-2);
             text-transform: uppercase;
-            letter-spacing: 0.4px;
-            border-bottom: 2px solid #e2e8f0;
+            letter-spacing: 0.7px;
+            border-bottom: 1px solid var(--line);
             white-space: nowrap;
         }
 
         #divTasks td {
-            padding: 9px 14px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 0.83rem;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--line);
+            font-size: 13.5px;
+            color: var(--ink-soft);
             white-space: nowrap;
         }
 
@@ -280,12 +320,13 @@ $user_name = GetSessionParam("UserName");
         }
 
         #divTasks tbody tr:hover td {
-            background: #eef2ff;
+            background: var(--hover);
         }
 
         #divTasks a {
-            color: #667eea;
+            color: var(--info);
             text-decoration: none;
+            font-weight: 600;
         }
 
         #divTasks a:hover {
@@ -295,9 +336,10 @@ $user_name = GetSessionParam("UserName");
         /* Responsive */
         @media (max-width: 768px) {
             .container { padding: 16px 12px; }
-            .results-container { padding: 0 10px 20px; }
+            .results-container { padding: 0 10px 30px; }
             .search-card { padding: 20px; }
-            #divTasks th, #divTasks td { padding: 5px 8px; font-size: 0.75rem; }
+            .page-header h1 { font-size: 28px; }
+            #divTasks th, #divTasks td { padding: 6px 8px; font-size: 12px; }
             #divTasks col.col-pct, #divTasks col.col-hrs, #divTasks col.col-closed { width: 0; }
             #divTasks th:nth-child(6), #divTasks td:nth-child(6),
             #divTasks th:nth-child(7), #divTasks td:nth-child(7),
@@ -308,61 +350,6 @@ $user_name = GetSessionParam("UserName");
             #divTasks th:nth-child(4), #divTasks td:nth-child(4),
             #divTasks th:nth-child(8), #divTasks td:nth-child(8) { display: none; }
         }
-
-        /* Dark mode */
-        html.dark-mode body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-        }
-        html.dark-mode .page-header h1 { color: #e2e8f0; }
-        html.dark-mode .page-header p { color: #94a3b8; }
-        html.dark-mode .search-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        html.dark-mode .form-group label { color: #94a3b8; }
-        html.dark-mode .form-group input[type="text"] {
-            background: #0f172a;
-            border-color: #334155;
-            color: #e2e8f0;
-        }
-        html.dark-mode .form-group input[type="text"]:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
-        }
-        html.dark-mode .form-group input[type="text"]::placeholder { color: #64748b; }
-        html.dark-mode .progress-track { background: #334155; }
-        html.dark-mode .progress-text { color: #94a3b8; }
-        html.dark-mode .tt-dropdown-menu {
-            background: #1e293b;
-            border-color: #334155;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-        }
-        html.dark-mode .tt-suggestion { color: #e2e8f0; }
-        html.dark-mode .tt-suggestion:hover,
-        html.dark-mode .tt-suggestion.tt-is-under-cursor {
-            background: #334155;
-            color: #e2e8f0;
-        }
-        html.dark-mode .tt-hint { color: #64748b !important; }
-        html.dark-mode #divTasks table {
-            background: #1e293b;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        html.dark-mode #divTasks th {
-            background: #0f172a;
-            border-color: #334155;
-            color: #94a3b8;
-        }
-        html.dark-mode #divTasks td {
-            border-color: #334155;
-            color: #cbd5e1;
-        }
-        html.dark-mode #divTasks tbody tr:hover td { background: #334155; }
-        html.dark-mode #divTasks a { color: #818cf8; }
-        html.dark-mode #divTasks a:hover { color: #a5b4fc; }
     </style>
 </head>
 <body>
