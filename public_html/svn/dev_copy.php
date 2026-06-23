@@ -52,22 +52,24 @@ if ($login === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $login)) {
 	dc_fail("Your Developer Settings are incomplete — set your SVN login (the slayer user) in your profile first.");
 }
 
-// Derived names.
-$slug = strtolower(preg_replace('/[^a-z0-9]+/i', '_', explode('.', $repository, 2)[0]));
-$slug = trim($slug, '_');
-$dbname = $login . '_' . $slug;                 // e.g. artem_watches
-if (!preg_match('/^[A-Za-z0-9_]+$/', $dbname)) dc_fail("Could not derive a safe database name.");
+// Files and the dev URL use the domain; the DB name uses the backup's slug — i.e. the dump
+// filename prefix (e.g. cgolfer-2026-06-23.dump.bz2 -> artem_cgolfer), which is how the
+// existing dev databases are named.
 $proj = "/home/staff/" . $login . "/projects/" . $repository;
 $devurl = $subdomain !== '' ? ('https://' . $subdomain . ($php8 ? '8' : '') . '.sayuconnect.com/' . $repository) : '';
 
-// Latest nightly DB backup file for this repo (from the gateway listing).
-$dumpfile = '';
+$dumpfile = ''; $dbname = '';
 if ($want_db) {
 	$list = svn_list_db_backups($svn_path, $svn_login, $svn_password, $repository);
 	if ($list["ok"] && count($list["backups"])) { $dumpfile = $list["backups"][0]["file"]; }
 	if ($dumpfile === '' || !preg_match('/^[A-Za-z0-9._-]+\.(dump|sql)(\.(bz2|gz))?$/', $dumpfile)) {
 		dc_fail("No nightly DB backup found for " . $repository . " to copy.");
 	}
+	$slug = strtolower(preg_replace('/-\d{4}-\d{2}-\d{2}.*$/', '', $dumpfile)); // strip -DATE.dump.bz2
+	$slug = trim(preg_replace('/[^a-z0-9_]+/', '_', $slug), '_');
+	if ($slug === '') dc_fail("Could not derive the database name from the backup file.");
+	$dbname = $login . '_' . $slug;                 // e.g. artem_cgolfer
+	if (!preg_match('/^[A-Za-z0-9_]+$/', $dbname)) dc_fail("Could not derive a safe database name.");
 }
 
 // ---- build the job ----
@@ -104,13 +106,15 @@ if ($want_files) {
 	$run .= $SLAYER . " " . escapeshellarg($co) . " || { echo '!! files step failed'; ok=0; }\n";
 }
 if ($want_db) {
-	$create = "mysql -e " . escapeshellarg("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+	// Dev DBs are granted per-name; a new one must be created AND granted to the dev, which
+	// needs root — done via sudo (devs have passwordless sudo on slayer). Import via sudo too.
+	$create = "sudo mysql -e " . escapeshellarg("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON `$dbname`.* TO '" . $login . "'@'localhost';");
 	$decomp = (substr($dumpfile, -3) === '.gz') ? 'gunzip' : 'bunzip2';
 	$run .= "echo '>> Database: " . $dbname . " <- " . $dumpfile . "'\n";
 	$run .= $SLAYER . " " . escapeshellarg($create) . " || { echo '!! create db failed'; ok=0; }\n";
 	$run .= $BACKUP . " " . escapeshellarg("cat /backup/dbs/daily/" . $dumpfile)
 		. " | " . $decomp . " | sed -E 's/DEFINER=`[^`]+`@`[^`]+` ?//g' | "
-		. $SLAYER . " " . escapeshellarg("mysql --one-database " . $dbname) . " || { echo '!! db import failed'; ok=0; }\n";
+		. $SLAYER . " " . escapeshellarg("sudo mysql --one-database " . $dbname) . " || { echo '!! db import failed'; ok=0; }\n";
 }
 if ($want_images) {
 	$img_url = "https://dsid.sayuconnect.com/index.php?project=" . rawurlencode($repository)
