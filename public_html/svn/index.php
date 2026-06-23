@@ -851,8 +851,24 @@ function renderFinderMatch(){
   var html = '<div class="quick-path"><span style="color:var(--muted-2);font-weight:700">Path</span>'
     + '<span class="mono" style="font-size:12px">'+esc(path)+'</span>'
     + '<button class="copy-btn" id="finderCopy" data-copy="'+esc(path)+'" title="Copy">'+icon('copy',14)+'</button></div>'
-    + '<button class="btn grad" id="finderReview" data-repo="'+esc(match)+'">'+icon('refresh',16)+' Review &amp; update</button>';
+    + reviewBtnHtml(match);
   $m.html(html).show();
+}
+// The big "Review & update" button reflects the matched site's scan state — same gating
+// idea as the apply-bar button: disabled (with a spinner) while changes load, enabled
+// only once there are updates to apply.
+function reviewBtnHtml(repo){
+  var s = STATE.sites[repo], st = s ? s.scanState : 'idle';
+  var attrs = 'class="btn grad" id="finderReview" data-repo="'+esc(repo)+'"';
+  if(st==='queued' || st==='scanning') return '<button '+attrs+' disabled><span class="spin"></span> Loading changes…</button>';
+  if(s && st==='done' && s.status==='update')  return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update'+(s.behind?' ('+s.behind+')':'')+'</button>';
+  if(s && st==='done' && s.status==='current') return '<button '+attrs+' disabled>'+icon('check',16)+' Up to date</button>';
+  if(s && st==='error')                        return '<button '+attrs+' disabled>'+icon('alert',16)+' Scan failed</button>';
+  return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update</button>'; // idle/not scanned: kicks off the scan
+}
+function refreshFinderReview(){
+  var $b = $('#finderReview'); if(!$b.length) return;
+  $b.replaceWith(reviewBtnHtml($b.attr('data-repo')));
 }
 
 // ---------------- main render ----------------
@@ -1006,6 +1022,7 @@ function renderApplyBar(){
   }
   $('#abUpdate').prop('disabled', upd.length===0).html(icon('refresh',16)+' Review &amp; update'+(upd.length?' ('+upd.length+')':''));
   $('#applyBar').toggleClass('show', sel.length>0);
+  refreshFinderReview();
 }
 function syncSelAll(){
   var vis = visibleRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.scanState==='done'&&s.status==='update'; });
