@@ -387,7 +387,14 @@ html.dark-mode{
 #svnApp .log-msg{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 #svnApp .log-text{ font-size:13.5px; color:var(--ink); font-weight:600; }
 #svnApp .log-loc{ font-size:12px; color:var(--muted); margin-top:4px; word-break:break-all; }
+#svnApp .log-url{ display:inline-flex; align-items:center; gap:5px; max-width:100%; margin-top:4px; font-size:11.5px; color:var(--info); text-decoration:none; }
+#svnApp .log-url span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .log-url svg{ flex:none; opacity:.8; }
+#svnApp a.log-url:hover span{ text-decoration:underline; }
 #svnApp .log-meta{ flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+#svnApp .log-copy{ color:var(--muted-2); width:26px; height:26px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+#svnApp .log-copy:hover{ background:var(--hover); color:var(--ink); }
+#svnApp .log-copied{ color:#9fe0bd; background:var(--ok-bg); }
 #svnApp .log-count{ font-size:12px; font-weight:800; color:var(--ink-soft); background:var(--fill-2); border-radius:20px; padding:2px 9px; }
 #svnApp .log-when{ font-size:11.5px; color:var(--muted-2); white-space:nowrap; }
 #svnApp .logsev{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:4px 9px; border-radius:20px; white-space:nowrap; }
@@ -609,7 +616,8 @@ var ICONS = {
   tools:'M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6L5 19.7l6-6a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3Z',
   pencil:'M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3ZM13.5 6.5l3 3',
   login:'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3',
-  database:'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3ZM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3'
+  database:'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3ZM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  link:'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5'
 };
 function icon(name, s, w, style){
   s = s || 18; w = w || 1.8; style = style || '';
@@ -1357,6 +1365,47 @@ function logExtractPhp(line){
   });
   return out;
 }
+// The page/URL where the error occurred, parsed from the log line (nginx request:/host:, apache referer:).
+function logExtractUrl(line){
+  var rq = line.match(/request: "(?:[A-Z]+\s+)?([^" ]+?)(?:\s+HTTP[^"]*)?"/);
+  if(rq){
+    var p = rq[1];
+    var hm = line.match(/(?:host|server):\s*"?([a-z0-9.\-]+)/i);
+    if(p.charAt(0)==='/' && hm) return 'https://'+hm[1]+p;
+    return p;
+  }
+  var ref = line.match(/referer:\s*(\S+)/i);
+  if(ref){ var u=ref[1].replace(/[,'"]+$/,''); if(/^https?:\/\//.test(u)) return u; }
+  return '';
+}
+function logUrlShort(u){ var m=String(u).match(/^https?:\/\/[^\/]+(\/.*)?$/); return (m && m[1]) ? m[1] : u; }
+// The page/script that was executing, from a PHP stack trace (the frame before "{main}").
+function logExtractScript(line){
+  var s=String(line).replace(/\\n/g,'\n');
+  var m=s.match(/#\d+\s+(\/\S+?)\((\d+)\):[^\n]*\n#\d+\s+\{main\}/);
+  if(!m) m=s.match(/#\d+\s+(\/\S+?)\((\d+)\):/); // fallback: first frame
+  return m ? {file:m[1], line:m[2]} : null;
+}
+function logUrlHtml(url){
+  if(!url) return '';
+  var clickable = /^https?:\/\//.test(url);
+  var inner = icon('link',12)+'<span>'+esc(logUrlShort(url))+'</span>';
+  return clickable
+    ? '<a class="log-url" href="'+esc(url)+'" target="_blank" rel="noopener" title="'+esc(url)+'">'+inner+'</a>'
+    : '<span class="log-url" title="'+esc(url)+'">'+inner+'</span>';
+}
+function logCopyText(g){
+  var s = g.sev ? (g.sev+': '+(g.text||'')) : (g.text||'');
+  if(g.file) s += ' in '+g.file+(g.line?':'+g.line:'');
+  if(g.via && (!g.file || g.via.file!==g.file)) s += '\nPage: '+g.via.file+':'+g.via.line;
+  if(g.url)  s += '\nURL: '+g.url;
+  if(g.last) s += '\nLast: '+g.last;
+  if(g.count>1) s += '\nCount: '+g.count;
+  return s;
+}
+function logCopyHtml(g){
+  return '<button class="log-copy" data-copy="'+esc(logCopyText(g))+'" title="Copy error">'+icon('copy',13)+'</button>';
+}
 function logHead(uniq,total){
   return '<div class="cron-head">'
     + (LOG.mode==='raw' ? '<span class="ct">Raw log</span>' : '<span class="ct">'+uniq+' unique · '+total+' total</span>')
@@ -1374,17 +1423,19 @@ function renderLog(){
   var groups={}, order=[], generic={}, gorder=[], total=0;
   lines.forEach(function(line){
     var when=logApacheTime((line.match(/^\[([^\]]+)\]/)||[])[1]||'');
+    var url=logExtractUrl(line);
+    var via=logExtractScript(line);
     var msgs=logExtractPhp(line);
     if(msgs.length){
       msgs.forEach(function(m){ total++;
         var key=m.sev+'|'+m.text+'|'+m.file+'|'+m.line;
-        if(!groups[key]){ groups[key]={sev:m.sev,text:m.text,file:m.file,line:m.line,count:0,last:when}; order.push(key); }
-        groups[key].count++; if(when) groups[key].last=when;
+        if(!groups[key]){ groups[key]={sev:m.sev,text:m.text,file:m.file,line:m.line,count:0,last:when,url:url,via:via}; order.push(key); }
+        groups[key].count++; if(when) groups[key].last=when; if(url) groups[key].url=url; if(via) groups[key].via=via;
       });
     } else {
       var rest=line.replace(/^(\[[^\]]*\]\s*)+/,'').trim() || line.trim(); total++;
-      if(!generic[rest]){ generic[rest]={text:rest,count:0,last:when}; gorder.push(rest); }
-      generic[rest].count++; if(when) generic[rest].last=when;
+      if(!generic[rest]){ generic[rest]={text:rest,count:0,last:when,url:url}; gorder.push(rest); }
+      generic[rest].count++; if(when) generic[rest].last=when; if(url) generic[rest].url=url;
     }
   });
   order.sort(function(a,b){ var w=logSevWeight(groups[b].sev)-logSevWeight(groups[a].sev); return w!==0?w:groups[b].count-groups[a].count; });
@@ -1392,11 +1443,13 @@ function renderLog(){
   order.forEach(function(k){ var g=groups[k];
     html+='<div class="log-item"><div class="log-main"><div class="log-msg"><span class="logsev '+logSevClass(g.sev)+'">'+esc(g.sev)+'</span><span class="log-text">'+esc(g.text)+'</span></div>'
       + (g.file?'<button class="log-loc log-open mono" data-file="'+esc(g.file)+'" data-line="'+esc(g.line||'')+'" title="Open '+esc(g.file)+(g.line?' at line '+esc(g.line):'')+'">'+icon('file',12)+esc(logBase(g.file))+(g.line?':'+esc(g.line):'')+'</button>':'')
-      + '</div><div class="log-meta">'+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
+      + (g.via && (!g.file || g.via.file!==g.file) ? '<button class="log-loc log-open mono" data-file="'+esc(g.via.file)+'" data-line="'+esc(g.via.line)+'" title="Open page '+esc(g.via.file)+' at line '+esc(g.via.line)+'">'+icon('file',12)+'page: '+esc(logBase(g.via.file))+':'+esc(g.via.line)+'</button>' : '')
+      + logUrlHtml(g.url)
+      + '</div><div class="log-meta">'+logCopyHtml(g)+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
   });
   gorder.forEach(function(k){ var g=generic[k];
-    html+='<div class="log-item"><div class="log-main"><div class="log-text mono" style="font-weight:500;white-space:pre-wrap;word-break:break-word">'+esc(g.text)+'</div></div>'
-      + '<div class="log-meta">'+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
+    html+='<div class="log-item"><div class="log-main"><div class="log-text mono" style="font-weight:500;white-space:pre-wrap;word-break:break-word">'+esc(g.text)+'</div>'+logUrlHtml(g.url)+'</div>'
+      + '<div class="log-meta">'+logCopyHtml(g)+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
   });
   html+='</div>';
   $('#infoBody').html(html);
@@ -1750,6 +1803,12 @@ $(function(){
   $(document).on('click', '#logToggle', function(){ LOG.mode = LOG.mode==='raw'?'grouped':'raw'; renderLog(); });
   // open referenced source file at the reported line
   $(document).on('click', '.log-open', function(){ openSource($(this).attr('data-file'), parseInt($(this).attr('data-line'),10)||0); });
+  $(document).on('click', '.log-copy', function(){
+    var $b=$(this); bkCopyText($b.attr('data-copy'));
+    if($b.data('busy')) return;
+    var h=$b.html(); $b.data('busy',1).addClass('log-copied').html(icon('check',13));
+    setTimeout(function(){ $b.html(h).removeClass('log-copied').removeData('busy'); }, 1100);
+  });
 
   // history: expand changed files / view revision diff / open file
   $(document).on('click', '.hist-files-toggle', function(){
