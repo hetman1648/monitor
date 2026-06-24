@@ -104,6 +104,22 @@ if ($want_files) {
 		. " --password " . escapeshellarg($pass) . " " . escapeshellarg($svn_url) . " " . $proj_q . "; fi";
 	$run .= "echo '>> Files: svn checkout/update ~/projects/" . $repository . "'\n";
 	$run .= $SLAYER . " " . escapeshellarg($co) . " || { echo '!! files step failed'; ok=0; }\n";
+
+	// Wire up Apache so the copy is served at the dev URL: add (idempotently) an
+	//   Alias /<repo>/ -> ~/projects/<repo>/public_html/
+	// to the dev's sayuconnect vhost (found by ServerName/ServerAlias, robust to ab vs ab8
+	// conf-naming), then config-test and reload. Needs sudo (devs have it on slayer).
+	$host = $subdomain !== '' ? ($subdomain . ($php8 ? '8' : '') . '.sayuconnect.com') : '';
+	if ($host !== '') {
+		$webcmd = 'host=' . escapeshellarg($host) . '; repo=' . escapeshellarg($repository) . '; login=' . escapeshellarg($login) . '; '
+			. 'hre=$(printf "%s" "$host" | sed "s/[.]/\\\\./g"); '
+			. 'conf=$(sudo grep -lE "ServerName[[:space:]]+${hre}|ServerAlias[^#]*${hre}" /etc/apache2/sites-available/*-ssl.conf 2>/dev/null | head -1); '
+			. 'if [ -z "$conf" ]; then echo "!! no vhost found for $host"; exit 1; fi; '
+			. 'if ! sudo grep -qF " /${repo}/ " "$conf"; then sudo sed -i "s#^</VirtualHost>#\tAlias /${repo}/ /home/staff/${login}/projects/${repo}/public_html/\n</VirtualHost>#" "$conf"; fi; '
+			. 'sudo apache2ctl configtest && sudo systemctl reload apache2 && echo "served at https://${host}/${repo}/"';
+		$run .= "echo '>> Web: configure " . $host . " alias for " . $repository . "'\n";
+		$run .= $SLAYER . " " . escapeshellarg($webcmd) . " || { echo '!! web config failed'; ok=0; }\n";
+	}
 }
 if ($want_db) {
 	// Create+grant the per-dev DB and import on slayer over SSH so mysql runs against the
