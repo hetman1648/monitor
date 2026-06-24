@@ -486,6 +486,22 @@ html.dark-mode{
 #svnApp .bk-stop{ color:var(--err); border-color:var(--err); flex:none; }
 #svnApp .bk-stop:hover{ background:var(--err-bg); }
 #svnApp .dc-log{ max-height:240px; overflow:auto; background:var(--raise); border:1px solid var(--line); border-radius:var(--r-md); padding:10px 12px; font-family:var(--mono,monospace); font-size:12px; line-height:1.5; color:var(--ink-soft); white-space:pre-wrap; word-break:break-word; }
+#svnApp .ddb-crumb{ font-size:13px; margin-bottom:12px; }
+#svnApp .ddb-cr{ color:var(--acc-solid); text-decoration:none; } #svnApp .ddb-cr:hover{ text-decoration:underline; }
+#svnApp .ddb-cr-sep{ color:var(--muted-2); margin:0 7px; } #svnApp .ddb-cr-cur{ color:var(--ink); font-weight:700; }
+#svnApp .ddb-filter{ width:100%; box-sizing:border-box; padding:8px 11px; margin-bottom:10px; border:1px solid var(--line-strong); border-radius:8px; background:var(--raise); color:var(--ink); font-size:13px; }
+#svnApp .ddb-filter:focus{ outline:none; border-color:var(--acc-solid); }
+#svnApp .ddb-scroll{ max-height:52vh; overflow:auto; border:1px solid var(--line); border-radius:var(--r-md); }
+#svnApp .ddb-table{ width:100%; border-collapse:collapse; font-size:13px; }
+#svnApp .ddb-table th{ position:sticky; top:0; background:var(--fill); text-align:left; font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; z-index:1; }
+#svnApp .ddb-table td{ padding:8px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft); }
+#svnApp .ddb-num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+#svnApp .ddb-row{ cursor:pointer; } #svnApp .ddb-row:hover td{ background:var(--hover); color:var(--ink); }
+#svnApp .ddb-null{ color:var(--muted-2); font-style:italic; }
+#svnApp .ddb-rows{ max-height:48vh; }
+#svnApp .ddb-data td{ white-space:nowrap; max-width:340px; overflow:hidden; text-overflow:ellipsis; }
+#svnApp .ddb-pager{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+#svnApp .ddb-pageinfo{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
@@ -504,6 +520,7 @@ html.dark-mode{
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
         <button class="btn" id="btnBackups">Backups</button>
         <button class="btn" id="btnDevCopy">Dev copy</button>
+        <button class="btn" id="btnDevDbs">Dev DBs</button>
       </div>
     </div>
 
@@ -1599,6 +1616,70 @@ function dcPoll(){
     if(d.state!=='running') dcFinish(d);
   }, 'json');
 }
+
+// ---- Dev DBs browser (read-only, over the sayu-slayer tunnel) ----
+function ddbBytes(n){ n=+n||0; if(n>=1073741824) return (n/1073741824).toFixed(1)+' GB'; if(n>=1048576) return (n/1048576).toFixed(1)+' MB'; if(n>=1024) return (n/1024).toFixed(0)+' KB'; return n+' B'; }
+function openDevDbs(){
+  modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('database',21)+'</div>'
+    + '<div style="min-width:0"><h3>Dev DBs</h3><p>Browse the dev databases on slayer (read-only)</p></div>'
+    + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body"><div id="ddbBody"><span class="spin"></span> Loading…</div></div>'
+    + '<div class="modal-foot"><div class="mf-grow" id="ddbFoot"></div><button class="btn solid" data-close-modal="1">Close</button></div></div>');
+  ddbLoadDbs();
+}
+function ddbCrumb(parts){
+  return '<div class="ddb-crumb">'+parts.map(function(p,i){
+    var last=i===parts.length-1;
+    return last ? '<span class="ddb-cr-cur">'+esc(p.label)+'</span>'
+      : '<a href="#" class="ddb-cr" data-ddb-nav="'+esc(p.nav)+'" data-db="'+esc(p.db||'')+'">'+esc(p.label)+'</a><span class="ddb-cr-sep">/</span>';
+  }).join('')+'</div>';
+}
+function ddbLoadDbs(){
+  $('#ddbFoot').text('');
+  $.post('dev_db.php', {action:'dbs'}, function(d){
+    if(!d||!d.ok){ $('#ddbBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not load databases.')+'</div>'); return; }
+    var rows=d.dbs.map(function(x){
+      return '<tr class="ddb-row" data-ddb-open="db" data-db="'+esc(x.name)+'"><td class="mono">'+esc(x.name)+'</td><td class="ddb-num">'+x.tables+'</td><td class="ddb-num">'+esc(ddbBytes(x.bytes))+'</td></tr>';
+    }).join('');
+    $('#ddbBody').html(ddbCrumb([{label:'Dev DBs'}])
+      + '<input class="ddb-filter" id="ddbFilter" placeholder="Filter databases…" autocomplete="off">'
+      + '<div class="ddb-scroll"><table class="ddb-table"><thead><tr><th>Database</th><th class="ddb-num">Tables</th><th class="ddb-num">Size</th></tr></thead><tbody id="ddbList">'+rows+'</tbody></table></div>');
+    $('#ddbFoot').text(d.dbs.length+' databases');
+    $('#ddbFilter').focus();
+  }, 'json');
+}
+function ddbLoadTables(db){
+  $('#ddbBody').html('<span class="spin"></span> Loading '+esc(db)+'…');
+  $.post('dev_db.php', {action:'tables', db:db}, function(d){
+    if(!d||!d.ok){ $('#ddbBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not load tables.')+'</div>'); return; }
+    var rows=d.tables.map(function(x){
+      return '<tr class="ddb-row" data-ddb-open="table" data-db="'+esc(db)+'" data-table="'+esc(x.name)+'"><td class="mono">'+esc(x.name)+'</td><td class="ddb-num">'+(+x.rows).toLocaleString()+'</td><td class="ddb-num">'+esc(ddbBytes(x.bytes))+'</td><td>'+esc(x.engine||'')+'</td></tr>';
+    }).join('');
+    $('#ddbBody').html(ddbCrumb([{label:'Dev DBs',nav:'dbs'},{label:db}])
+      + '<input class="ddb-filter" id="ddbFilter" placeholder="Filter tables…" autocomplete="off">'
+      + '<div class="ddb-scroll"><table class="ddb-table"><thead><tr><th>Table</th><th class="ddb-num">Rows</th><th class="ddb-num">Size</th><th>Engine</th></tr></thead><tbody id="ddbList">'+(rows||'<tr><td colspan="4" style="color:var(--muted)">No tables.</td></tr>')+'</tbody></table></div>');
+    $('#ddbFoot').text(d.tables.length+' tables in '+db);
+    $('#ddbFilter').focus();
+  }, 'json');
+}
+function ddbLoadRows(db, table, page){
+  $('#ddbBody').html('<span class="spin"></span> Loading '+esc(table)+'…');
+  $.post('dev_db.php', {action:'rows', db:db, table:table, page:page}, function(d){
+    if(!d||!d.ok){ $('#ddbBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not load rows.')+'</div>'); return; }
+    var head='<tr>'+d.columns.map(function(c){ return '<th>'+esc(c)+'</th>'; }).join('')+'</tr>';
+    var body=d.rows.map(function(r){ return '<tr>'+r.map(function(c){ return c===null?'<td class="ddb-null">NULL</td>':'<td>'+esc(c)+'</td>'; }).join('')+'</tr>'; }).join('');
+    if(!d.rows.length) body='<tr><td colspan="'+Math.max(1,d.columns.length)+'" style="color:var(--muted)">No rows on this page.</td></tr>';
+    var from=d.page*d.per, hasNext=d.rows.length===d.per;
+    var pager='<div class="ddb-pager"><button class="btn tiny" id="ddbPrev"'+(d.page<=0?' disabled':'')+'>‹ Prev</button>'
+      + '<span class="ddb-pageinfo">rows '+(d.rows.length?(from+1):0)+'–'+(from+d.rows.length)+(d.approx?' of ~'+(+d.approx).toLocaleString():'')+'</span>'
+      + '<button class="btn tiny" id="ddbNext"'+(hasNext?'':' disabled')+'>Next ›</button></div>';
+    $('#ddbBody').html(ddbCrumb([{label:'Dev DBs',nav:'dbs'},{label:db,nav:'tables',db:db},{label:table}])
+      + pager + '<div class="ddb-scroll ddb-rows"><table class="ddb-table ddb-data"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>');
+    DDB={db:db, table:table, page:d.page};
+    $('#ddbFoot').text(db+'.'+table);
+  }, 'json');
+}
+var DDB={};
 // Backups modal: list the available DB backups for a site.
 function openBackups(repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
@@ -1877,6 +1958,7 @@ $(function(){
   $('#btnHistory,#btnLog,#btnCron').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
   $('#btnBackups').on('click', function(){ openBackups(focusedRepoForGlobal()); });
   $('#btnDevCopy').on('click', function(){ openDevCopy(focusedRepoForGlobal()); });
+  $('#btnDevDbs').on('click', function(){ openDevDbs(); });
 
   // restore a backup into the per-site test DB (background job + live progress)
   function bkFinish(d){
@@ -1992,6 +2074,17 @@ $(function(){
   $(document).on('click', '#dcStopBtn', function(){
     if(!DC_JOB) return; $(this).prop('disabled',true).text('Stopping…');
     $.post('dev_copy_stop.php', {job:DC_JOB}, function(){}, 'json');
+  });
+
+  // dev DBs browser
+  $(document).on('click', '[data-ddb-open=db]', function(){ ddbLoadTables($(this).attr('data-db')); });
+  $(document).on('click', '[data-ddb-open=table]', function(){ ddbLoadRows($(this).attr('data-db'), $(this).attr('data-table'), 0); });
+  $(document).on('click', '[data-ddb-nav]', function(e){ e.preventDefault(); var n=$(this).attr('data-ddb-nav'); if(n==='dbs') ddbLoadDbs(); else if(n==='tables') ddbLoadTables($(this).attr('data-db')); });
+  $(document).on('click', '#ddbPrev', function(){ if(DDB.table && DDB.page>0) ddbLoadRows(DDB.db, DDB.table, DDB.page-1); });
+  $(document).on('click', '#ddbNext', function(){ if(DDB.table) ddbLoadRows(DDB.db, DDB.table, DDB.page+1); });
+  $(document).on('input', '#ddbFilter', function(){
+    var q=$(this).val().toLowerCase();
+    $('#ddbList tr').each(function(){ var t=$(this).find('td:first').text().toLowerCase(); $(this).toggle(t.indexOf(q)!==-1); });
   });
 
   // close handlers
