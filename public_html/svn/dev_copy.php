@@ -106,8 +106,9 @@ if ($want_files) {
 	$run .= $SLAYER . " " . escapeshellarg($co) . " || { echo '!! files step failed'; ok=0; }\n";
 }
 if ($want_db) {
-	// Dev DBs are granted per-name; a new one must be created AND granted to the dev, which
-	// needs root — done via sudo (devs have passwordless sudo on slayer). Import via sudo too.
+	// Create+grant the per-dev DB and import on slayer over SSH so mysql runs against the
+	// LOCAL socket there (fast). The sayu-slayer:3311 tunnel is fine for admin/queries but
+	// far too slow for a bulk import (per-statement round-trips). Devs have passwordless sudo.
 	$create = "sudo mysql -e " . escapeshellarg("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON `$dbname`.* TO '" . $login . "'@'localhost';");
 	$decomp = (substr($dumpfile, -3) === '.gz') ? 'gunzip' : 'bunzip2';
 	$run .= "echo '>> Database: " . $dbname . " <- " . $dumpfile . "'\n";
