@@ -120,6 +120,16 @@ if ($want_files) {
 		$run .= "echo '>> Web: configure " . $host . " alias for " . $repository . "'\n";
 		$run .= $SLAYER . " " . escapeshellarg($webcmd) . " || { echo '!! web config failed'; ok=0; }\n";
 	}
+
+	// Adapt the checked-out site to run under the dev URL: rewrite the framework DB config,
+	// patch the common.php site_url override, and enable the .htaccess DEV friendly-URL block.
+	// Self-guarding & idempotent — no-ops on older ViArt sites that don't have those files.
+	$cfg_tpl = @file_get_contents(dirname(__FILE__) . "/dev_copy_configure.php");
+	if ($cfg_tpl !== false) {
+		$cfg_php = strtr($cfg_tpl, array('__PROJ__' => $proj, '__LOGIN__' => $login, '__DBNAME__' => $dbname));
+		$run .= "echo '>> Config: adapt site to the dev URL'\n";
+		$run .= $SLAYER . " php <<'DEVCFG' || { echo '!! config step failed'; ok=0; }\n" . $cfg_php . "\nDEVCFG\n";
+	}
 }
 if ($want_db) {
 	// Create+grant the per-dev DB and import on slayer over SSH so mysql runs against the
@@ -132,6 +142,14 @@ if ($want_db) {
 	$run .= $BACKUP . " " . escapeshellarg("cat /backup/dbs/daily/" . $dumpfile)
 		. " | " . $decomp . " | sed -E 's/DEFINER=`[^`]+`@`[^`]+` ?//g' | "
 		. $SLAYER . " " . escapeshellarg("sudo mysql --one-database " . $dbname) . " || { echo '!! db import failed'; ok=0; }\n";
+
+	// Point the imported ViArt settings at the dev URL (harmless no-op if no va_global_settings).
+	if ($devurl !== '') {
+		$siteurl = rtrim($devurl, '/') . '/';
+		$usql = "UPDATE va_global_settings SET setting_value='" . $siteurl . "' WHERE setting_name IN ('site_url','secure_url')";
+		$run .= "echo '>> DB urls: site_url/secure_url -> " . $siteurl . "'\n";
+		$run .= $SLAYER . " " . escapeshellarg("sudo mysql " . $dbname . " -e " . escapeshellarg($usql)) . " 2>/dev/null || echo '   (no va_global_settings - skipped)'\n";
+	}
 }
 if ($want_images) {
 	$img_url = "https://dsid.sayuconnect.com/index.php?project=" . rawurlencode($repository)
