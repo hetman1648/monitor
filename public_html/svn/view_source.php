@@ -10,6 +10,7 @@
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+include_once ("./svn_repo_support.php");
 include ("./svn_hosts.php");
 
 header('Content-Type: application/json; charset=utf-8');
@@ -19,6 +20,27 @@ $file = trim((string) GetParam("file"));
 $line = (int) GetParam("line");
 if ($file === '' || strpos($file, "\0") !== false) {
 	vs_json(array('ok' => false, 'error' => 'No file specified.'));
+}
+
+// SVN update list: a repo-relative path (e.g. public_html/runtime/compiled/x.tpl.php) plus the
+// repository. Resolve it to the working copy on the right host (svn_repo_wc_path for web1 sites,
+// svn_host_wc_dir for off-web1 ones) so the existing host-aware reader below works for both.
+$repository = trim((string) GetParam("repository"));
+if ($repository !== '' && $file[0] !== '/') {
+	if (strpos($repository, '..') !== false || preg_match('#[/\\\\\x00]#', $repository)) {
+		vs_json(array('ok' => false, 'error' => 'Invalid repository name.'));
+	}
+	$rel = ltrim(str_replace('\\', '/', $file), '/');
+	if ($rel === '' || strpos($rel, '..') !== false) {
+		vs_json(array('ok' => false, 'error' => 'Invalid file path.'));
+	}
+	if (svn_host_for($repository)) {
+		$base = svn_host_wc_dir($repository);
+	} else {
+		$base = svn_repo_wc_path($repository);
+		if ($base === '') { $base = '/home/vhosts/' . $repository; }
+	}
+	$file = rtrim($base, '/') . '/' . $rel;
 }
 
 $allowed_ext = array('php','phtml','inc','tpl','twig','html','htm','js','jsx','ts','vue','css','scss','less','xml','json','txt','sql','ini','conf','md','sh','yml','yaml');

@@ -249,6 +249,8 @@ html.dark-mode{
 #svnApp .file-row:hover td{ background:var(--hover); }
 #svnApp .file-row .fp-dir{ color:var(--muted); font-size:12.5px; white-space:nowrap; }
 #svnApp .file-row .fp-name{ color:var(--ink); font-weight:600; }
+#svnApp .file-row .file-open{ background:none; border:0; padding:0; margin:0; font:inherit; color:var(--ink); font-weight:600; cursor:pointer; text-align:left; }
+#svnApp .file-row .file-open:hover{ color:var(--info); text-decoration:underline; }
 #svnApp .file-row .rev{ color:var(--muted); font-size:13px; }
 #svnApp .fstat{ display:inline-flex; align-items:center; font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:5px 11px; border-radius:20px; white-space:nowrap; }
 #svnApp .fstat.not-on-server,#svnApp .fstat.to-add{ background:rgba(124,108,214,.2); color:var(--addv); }
@@ -1004,7 +1006,7 @@ function renderTable(){
         rows += '<tr class="file-row">'
           + '<td class="col-chk"></td>'
           + '<td class="fp-dir mono">'+esc(dir)+'</td>'
-          + '<td class="fp-name">'+esc(f.file_name)+'</td>'
+          + '<td class="fp-name"><button class="file-open" data-open-repo="'+esc(r)+'" data-open-file="'+esc(f.rel_path||((f.file_path||'')+f.file_name))+'" title="Open '+esc(f.file_name)+'">'+esc(f.file_name)+'</button></td>'
           + '<td><span class="fstat '+esc(f.status_badge||'default')+'"'+(f.status_tip?' title="'+esc(f.status_tip)+'"':'')+'>'+esc(f.status||'')+'</span></td>'
           + '<td class="rev mono">'+esc(f.version||'')+'</td>'
           + '<td class="col-diff"><button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(f.rel_path||((f.file_path||'')+f.file_name))+'">View diff</button></td>'
@@ -1485,7 +1487,7 @@ function renderLog(){
 }
 
 function closeSource(){ $('#sourceHost').empty(); }
-function openSource(file, line){
+function openSource(file, line, repo){
   line = line||0;
   // Rendered in its own host layered above the log modal, so closing it returns to the log.
   $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('file',21)+'</div>'
@@ -1493,7 +1495,9 @@ function openSource(file, line){
     + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body"><div id="srcBody"><span class="spin"></span> Loading…</div></div>'
     + '<div class="modal-foot"><div class="mf-grow" id="srcFoot"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
-  $.post('view_source.php', {file:file, line:line}, function(d){
+  // From the SVN update list `file` is a repo-relative path (+repo); view_source.php resolves
+  // it to the working copy on the right host. Elsewhere (logs/history) `file` is absolute.
+  $.post('view_source.php', repo ? {repository:repo, file:file, line:line} : {file:file, line:line}, function(d){
     if(d&&d.ok){
       var rows=String(d.content).split('\n'), start=d.start||1, target=d.line||0, html='<div class="codewrap" id="codewrap">';
       rows.forEach(function(t,idx){ var ln=start+idx; html+='<div class="codeline'+(ln===target?' hl':'')+'" data-ln="'+ln+'"><span class="ln">'+ln+'</span><span class="lc">'+esc(t)+'</span></div>'; });
@@ -1899,6 +1903,7 @@ $(function(){
 
   // diff
   $(document).on('click', '.vdiff', function(){ openDiff($(this).attr('data-diff-repo'), $(this).attr('data-diff-file')); });
+  $(document).on('click', '.file-open', function(){ openSource($(this).attr('data-open-file'), 0, $(this).attr('data-open-repo')); });
 
   // copy cron line / all
   $(document).on('click', '.cron-copy, .cron-copy-all', function(){
