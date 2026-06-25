@@ -865,6 +865,11 @@ function pickScope(id, opts){
   if(((location.hash||'').replace(/^#/,'')) !== _nh){ location.hash = _nh; }
   STATE.sel = {};
   STATE.collapsed = {};
+  // A group / all-sites scope is multi-site: clear the single-site finder match so its
+  // stale "Review & update" button (for the previously found site, e.g. the one pre-filled
+  // on load) doesn't linger and update the wrong repo. The bottom apply bar is the review
+  // control for multi-site scopes.
+  if(String(id).indexOf('__one:')!==0){ $('#finderInput').val(''); $('#finderMatch').hide().empty(); }
   renderGroupTrigger();
   var repos = scopedRepos();
   // auto-scan for groups & single site; manual for very large "all sites"
@@ -878,6 +883,10 @@ function pickScope(id, opts){
   }
   autoSelectUpdates = true;
   enqueueScan(repos, false);
+  // enqueueScan only (re)scans idle/error sites, so any group site that was already scanned
+  // (e.g. during a prior "all sites" pass) would never get auto-selected — leaving the apply
+  // bar empty even though it has updates. Select those already-known updatable sites now.
+  repos.forEach(function(r){ var s=STATE.sites[r]; if(s && s.scanState==='done' && s.status==='update') STATE.sel[r]=true; });
   renderTable(); renderApplyBar();
 }
 
