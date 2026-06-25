@@ -251,6 +251,10 @@ html.dark-mode{
 #svnApp .file-row .fp-name{ color:var(--ink); font-weight:600; }
 #svnApp .file-row .file-open{ background:none; border:0; padding:0; margin:0; font:inherit; color:var(--ink); font-weight:600; cursor:pointer; text-align:left; }
 #svnApp .file-row .file-open:hover{ color:var(--info); text-decoration:underline; }
+#svnApp .file-row .file-copy{ background:none; border:0; padding:2px; margin-left:7px; color:var(--muted-2); cursor:pointer; vertical-align:middle; opacity:0; transition:opacity .12s, color .12s; }
+#svnApp .file-row:hover .file-copy{ opacity:1; }
+#svnApp .file-row .file-copy:hover{ color:var(--ink); }
+#svnApp .file-row .file-copy.ok{ color:var(--ok); opacity:1; }
 #svnApp .file-row .rev{ color:var(--muted); font-size:13px; }
 #svnApp .fstat{ display:inline-flex; align-items:center; font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:5px 11px; border-radius:20px; white-space:nowrap; }
 #svnApp .fstat.not-on-server,#svnApp .fstat.to-add{ background:rgba(124,108,214,.2); color:var(--addv); }
@@ -1006,7 +1010,8 @@ function renderTable(){
         rows += '<tr class="file-row">'
           + '<td class="col-chk"></td>'
           + '<td class="fp-dir mono">'+esc(dir)+'</td>'
-          + '<td class="fp-name"><button class="file-open" data-open-repo="'+esc(r)+'" data-open-file="'+esc(f.rel_path||((f.file_path||'')+f.file_name))+'" title="Open '+esc(f.file_name)+'">'+esc(f.file_name)+'</button></td>'
+          + '<td class="fp-name"><button class="file-open" data-open-repo="'+esc(r)+'" data-open-file="'+esc(f.rel_path||((f.file_path||'')+f.file_name))+'" title="Open '+esc(f.file_name)+'">'+esc(f.file_name)+'</button>'
+            + '<button class="file-copy" data-copy="'+esc(dir+f.file_name)+'" title="Copy file path">'+icon('copy',13)+'</button></td>'
           + '<td><span class="fstat '+esc(f.status_badge||'default')+'"'+(f.status_tip?' title="'+esc(f.status_tip)+'"':'')+'>'+esc(f.status||'')+'</span></td>'
           + '<td class="rev mono">'+esc(f.version||'')+'</td>'
           + '<td class="col-diff"><button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(f.rel_path||((f.file_path||'')+f.file_name))+'">View diff</button></td>'
@@ -1904,6 +1909,7 @@ $(function(){
   // diff
   $(document).on('click', '.vdiff', function(){ openDiff($(this).attr('data-diff-repo'), $(this).attr('data-diff-file')); });
   $(document).on('click', '.file-open', function(){ openSource($(this).attr('data-open-file'), 0, $(this).attr('data-open-repo')); });
+  $(document).on('click', '.file-copy', function(){ var $b=$(this); copyText($b.attr('data-copy')||'', function(){ $b.addClass('ok').html(icon('check',13)); setTimeout(function(){ $b.removeClass('ok').html(icon('copy',13)); }, 1200); }); });
 
   // copy cron line / all
   $(document).on('click', '.cron-copy, .cron-copy-all', function(){
