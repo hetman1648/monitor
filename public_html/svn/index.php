@@ -386,8 +386,9 @@ html.dark-mode{
 #svnApp .cron-output-head .co-rc{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap; }
 #svnApp .cron-output-head .co-rc.ok{ background:var(--ok-bg,rgba(74,193,128,.18)); color:var(--ok); }
 #svnApp .cron-output-head .co-rc.bad{ background:var(--err-bg); color:var(--err); }
-#svnApp .cron-output-head .co-x{ color:var(--muted); display:flex; cursor:pointer; }
-#svnApp .cron-output-head .co-x:hover{ color:var(--ink); }
+#svnApp .cron-output-head .co-copy,#svnApp .cron-output-head .co-x{ color:var(--muted); display:flex; cursor:pointer; }
+#svnApp .cron-output-head .co-copy:hover,#svnApp .cron-output-head .co-x:hover{ color:var(--ink); }
+#svnApp .cron-output-head .co-copy.ok{ color:var(--ok); }
 #svnApp .cron-output pre{ margin:0; padding:11px 13px; max-height:340px; overflow:auto; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.55; color:#cdd6e0; white-space:pre-wrap; word-break:break-word; }
 #svnApp .cron-output pre.empty{ color:var(--muted-2); font-style:italic; }
 #svnApp .cron-del-row:hover{ color:var(--err); border-color:rgba(226,101,127,.4); background:var(--err-bg); }
@@ -1404,6 +1405,7 @@ function cronRun(i, $btn){
     + '<span class="co-user">'+icon('terminal',13)+' '+esc(CRON.user)+'</span>'
     + '<span class="co-cmd">'+esc(cmd)+'</span>'
     + '<span class="co-rc" style="display:none"></span>'
+    + '<span class="co-copy" title="Copy output" style="display:none">'+icon('copy',13)+'</span>'
     + '<span class="co-x" title="Close">'+icon('x',14)+'</span></div>'
     + '<pre class="empty"><span class="spin"></span> Running…</pre></div>');
   $row.after($panel);
@@ -1415,7 +1417,7 @@ function cronRun(i, $btn){
     if(d.user) $panel.find('.co-user').html(icon('terminal',13)+' '+esc(d.user));
     var out = (d.output||'');
     if(out.replace(/\s+/g,'')===''){ $pre.addClass('empty').text(d.timedout?'(timed out after 120s — no output)':'(no output)'); }
-    else { $pre.removeClass('empty').text(out); }
+    else { $pre.removeClass('empty').text(out); $panel.find('.co-copy').data('out', out).show(); }
     var rc = d.rc||0;
     $rc.show().removeClass('ok bad').addClass((rc===0&&!d.timedout)?'ok':'bad').text(d.timedout?'timed out':('exit '+rc));
   }, 'json').fail(function(){ $btn.prop('disabled', false); $panel.find('pre').removeClass('empty').text('Request failed.'); });
@@ -1958,6 +1960,7 @@ $(function(){
   // run a cron line now / close its output panel
   $(document).on('click', '.cron-run-row', function(){ cronRun(parseInt($(this).attr('data-ci'),10), $(this)); });
   $(document).on('click', '.cron-output .co-x', function(){ $(this).closest('.cron-output').remove(); });
+  $(document).on('click', '.cron-output .co-copy', function(){ var $b=$(this); copyText($b.data('out')||'', function(){ $b.addClass('ok').html(icon('check',13)); setTimeout(function(){ $b.removeClass('ok').html(icon('copy',13)); }, 1200); }); });
 
   // copy cron line / all
   $(document).on('click', '.cron-copy, .cron-copy-all', function(){
