@@ -99,9 +99,12 @@ $run .= "ok=1\n";
 
 if ($want_files) {
 	// checkout if absent, otherwise update — runs as the dev on slayer using their SVN creds.
-	$co = "if [ -d ~/projects/" . $repository . "/.svn ]; then svn update --non-interactive " . $proj_q
-		. "; else mkdir -p ~/projects && svn checkout --non-interactive --username " . escapeshellarg($login)
-		. " --password " . escapeshellarg($pass) . " " . escapeshellarg($svn_url) . " " . $proj_q . "; fi";
+	// Pass creds to BOTH paths: the server does not cache passwords, so a bare `svn update`
+	// of an existing working copy fails with "Can't get username or password".
+	$svn_auth = "--username " . escapeshellarg($login) . " --password " . escapeshellarg($pass);
+	$co = "if [ -d ~/projects/" . $repository . "/.svn ]; then svn update --non-interactive " . $svn_auth . " " . $proj_q
+		. "; else mkdir -p ~/projects && svn checkout --non-interactive " . $svn_auth
+		. " " . escapeshellarg($svn_url) . " " . $proj_q . "; fi";
 	$run .= "echo '>> Files: svn checkout/update ~/projects/" . $repository . "'\n";
 	$run .= $SLAYER . " " . escapeshellarg($co) . " || { echo '!! files step failed'; ok=0; }\n";
 
