@@ -376,6 +376,20 @@ html.dark-mode{
 #svnApp .cron-row-actions{ display:flex; align-items:center; gap:6px; flex:none; }
 #svnApp .cron-icon-btn{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line-strong); display:flex; align-items:center; justify-content:center; color:var(--muted); }
 #svnApp .cron-icon-btn:hover{ background:var(--hover-2); color:var(--ink); }
+#svnApp .cron-icon-btn.cron-run-row{ color:var(--ok); border-color:var(--ok); }
+#svnApp .cron-icon-btn.cron-run-row:hover{ background:rgba(74,193,128,.14); color:var(--ok); }
+#svnApp .cron-icon-btn.cron-run-row[disabled]{ opacity:.5; cursor:default; }
+#svnApp .cron-output{ margin:-2px 0 2px; background:#0c1116; border:1px solid var(--line-strong); border-radius:10px; overflow:hidden; }
+#svnApp .cron-output-head{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--line); background:var(--fill); font-size:12.5px; }
+#svnApp .cron-output-head .co-user{ font-weight:700; color:var(--ink); }
+#svnApp .cron-output-head .co-cmd{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+#svnApp .cron-output-head .co-rc{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+#svnApp .cron-output-head .co-rc.ok{ background:var(--ok-bg,rgba(74,193,128,.18)); color:var(--ok); }
+#svnApp .cron-output-head .co-rc.bad{ background:var(--err-bg); color:var(--err); }
+#svnApp .cron-output-head .co-x{ color:var(--muted); display:flex; cursor:pointer; }
+#svnApp .cron-output-head .co-x:hover{ color:var(--ink); }
+#svnApp .cron-output pre{ margin:0; padding:11px 13px; max-height:340px; overflow:auto; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.55; color:#cdd6e0; white-space:pre-wrap; word-break:break-word; }
+#svnApp .cron-output pre.empty{ color:var(--muted-2); font-style:italic; }
 #svnApp .cron-del-row:hover{ color:var(--err); border-color:rgba(226,101,127,.4); background:var(--err-bg); }
 #svnApp .cron-item.editing{ align-items:center; }
 #svnApp .cron-edit-fields, #svnApp .cron-add-fields{ display:flex; gap:8px; flex:1; min-width:0; flex-wrap:wrap; align-items:center; }
@@ -642,7 +656,9 @@ var ICONS = {
   pencil:'M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3ZM13.5 6.5l3 3',
   login:'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3',
   database:'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3ZM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
-  link:'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5'
+  link:'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5',
+  play:'M7 5l12 7-12 7z',
+  terminal:'M4 5h16v14H4zM7 9l3 2.5L7 14M12.5 14.5H16'
 };
 function icon(name, s, w, style){
   s = s || 18; w = w || 1.8; style = style || '';
@@ -1342,6 +1358,7 @@ function cronRowHtml(l,i){
     + '<div class="cron-when">'+(human?'<div class="cron-human">'+icon('clock',13)+esc(human)+'</div>':'')+'<div class="cron-expr mono">'+esc(l.expr)+'</div></div>'
     + '<div class="cron-cmd mono">'+esc(l.cmd)+'</div>'
     + '<div class="cron-row-actions">'
+      + '<button class="cron-icon-btn cron-run-row" data-ci="'+i+'" title="Run now (as user '+esc(CRON.user)+')">'+icon('play',13)+'</button>'
       + '<button class="cron-icon-btn cron-copy" data-copy="'+esc(l.expr+' '+l.cmd)+'" title="Copy">'+icon('copy',14)+'</button>'
       + '<button class="cron-icon-btn cron-edit-row" data-ci="'+i+'" title="Edit">'+icon('pencil',14)+'</button>'
       + '<button class="cron-icon-btn cron-del-row" data-ci="'+i+'" title="Delete">'+icon('x',14)+'</button>'
@@ -1375,6 +1392,33 @@ function cronCommit(){
     if(d&&d.ok){ if(d.user) CRON.user=d.user; CRON.lines=cronParse(d.crontab); renderCronEditor(); }
     else { alert((d&&d.error)||'Could not save crontab.'); renderCronEditor(); }
   }, 'json').fail(function(){ $('#infoBody').css('opacity',''); alert('Save request failed.'); });
+}
+// Run a cron line's command now (as the crontab's user) and show the output inline beneath
+// the row. The panel is transient — it's dropped on the next editor re-render.
+function cronRun(i, $btn){
+  var l = CRON && CRON.lines[i]; if(!l || l.type!=='cron') return;
+  var cmd = (l.cmd||'').trim(); if(!cmd) return;
+  var $row = $('.cron-item[data-ci="'+i+'"]'); if(!$row.length) return;
+  $row.next('.cron-output').remove();
+  var $panel = $('<div class="cron-output"><div class="cron-output-head">'
+    + '<span class="co-user">'+icon('terminal',13)+' '+esc(CRON.user)+'</span>'
+    + '<span class="co-cmd">'+esc(cmd)+'</span>'
+    + '<span class="co-rc" style="display:none"></span>'
+    + '<span class="co-x" title="Close">'+icon('x',14)+'</span></div>'
+    + '<pre class="empty"><span class="spin"></span> Running…</pre></div>');
+  $row.after($panel);
+  $btn.prop('disabled', true);
+  $.post('cron_run.php', {action:'run', repository:CRON.repo, command:cmd}, function(d){
+    $btn.prop('disabled', false);
+    var $pre = $panel.find('pre'), $rc = $panel.find('.co-rc');
+    if(!d || !d.ok){ $pre.removeClass('empty').text((d&&d.error)||'Run failed.'); $rc.show().removeClass('ok').addClass('bad').text('error'); return; }
+    if(d.user) $panel.find('.co-user').html(icon('terminal',13)+' '+esc(d.user));
+    var out = (d.output||'');
+    if(out.replace(/\s+/g,'')===''){ $pre.addClass('empty').text(d.timedout?'(timed out after 120s — no output)':'(no output)'); }
+    else { $pre.removeClass('empty').text(out); }
+    var rc = d.rc||0;
+    $rc.show().removeClass('ok bad').addClass((rc===0&&!d.timedout)?'ok':'bad').text(d.timedout?'timed out':('exit '+rc));
+  }, 'json').fail(function(){ $btn.prop('disabled', false); $panel.find('pre').removeClass('empty').text('Request failed.'); });
 }
 
 // ---- error log rendering (grouped) ----
@@ -1910,6 +1954,10 @@ $(function(){
   $(document).on('click', '.vdiff', function(){ openDiff($(this).attr('data-diff-repo'), $(this).attr('data-diff-file')); });
   $(document).on('click', '.file-open', function(){ openSource($(this).attr('data-open-file'), 0, $(this).attr('data-open-repo')); });
   $(document).on('click', '.file-copy', function(){ var $b=$(this); copyText($b.attr('data-copy')||'', function(){ $b.addClass('ok').html(icon('check',13)); setTimeout(function(){ $b.removeClass('ok').html(icon('copy',13)); }, 1200); }); });
+
+  // run a cron line now / close its output panel
+  $(document).on('click', '.cron-run-row', function(){ cronRun(parseInt($(this).attr('data-ci'),10), $(this)); });
+  $(document).on('click', '.cron-output .co-x', function(){ $(this).closest('.cron-output').remove(); });
 
   // copy cron line / all
   $(document).on('click', '.cron-copy, .cron-copy-all', function(){
