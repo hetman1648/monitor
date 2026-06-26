@@ -8,6 +8,7 @@
 
 	Steps:
 	  A) config/database/{staging,development}.php  -> the per-dev DB on slayer  (newer framework)
+	  A2) includes/var_definition.php               -> the per-dev DB on slayer  (older ViArt)
 	  B) includes/common.php dev site_url override  -> real request host over https (fixes assets)
 	  C) public_html/.htaccess                      -> enable the DEV friendly-URL block
 */
@@ -31,6 +32,33 @@ if ($dbname !== '') {
 			if (!is_file($df . '.devbak')) @copy($df, $df . '.devbak');
 			@file_put_contents($df, $dbcfg);
 			$done[] = "db:$env";
+		}
+	}
+}
+
+// A2) older-ViArt DB config (includes/var_definition.php). These sites keep $db_user / $db_password /
+//     $db_host / $db_name as plain vars and only switch $db_name on the dev server (the $is_sayu_dev_server
+//     flag). Append a guarded override that runs LAST (so it wins over the file's own dev-branch
+//     assignment) and points all four at the per-dev DB on slayer: user = the dev login with an empty
+//     password (how slayer's local MySQL grants dev DBs). No-ops on the newer framework (no such file /
+//     no $is_sayu_dev_server) and on any site where we didn't import a DB.
+if ($dbname !== '') {
+	$vf = $proj . '/public_html/includes/var_definition.php';
+	if (is_file($vf)) {
+		$v = file_get_contents($vf);
+		if (strpos($v, '$is_sayu_dev_server') !== false && strpos($v, 'dev copy: per-dev DB') === false) {
+			if (!is_file($vf . '.devbak')) @copy($vf, $vf . '.devbak');
+			$ovr = "\n/* dev copy: per-dev DB */\n"
+				. "if (!empty(\$is_sayu_dev_server)) {\n"
+				. "    \$db_user = " . var_export($login, true) . ";\n"
+				. "    \$db_password = '';\n"
+				. "    \$db_host = 'hosting-db';\n"
+				. "    \$db_name = " . var_export($dbname, true) . ";\n"
+				. "}\n";
+			if (preg_match('/\?>\s*$/', $v)) { $v = preg_replace('/\?>\s*$/', $ovr . "?>\n", $v); }
+			else { $v = rtrim($v, "\n") . "\n" . $ovr; }
+			@file_put_contents($vf, $v);
+			$done[] = 'var_definition:db';
 		}
 	}
 }

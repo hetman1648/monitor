@@ -25,6 +25,27 @@ header("Content-Type: application/json");
 
 function dc_fail($msg, $extra = array()) { echo json_encode(array_merge(array("ok" => false, "error" => $msg), $extra)); exit; }
 
+// Ask the backup server for the sizes of this repo's recent dumps (one SSH round-trip).
+// Used to skip the occasional truncated ~1KB partial nightly dump that would otherwise
+// import an almost-empty database. Returns array(filename => size_bytes) for what it could stat.
+function dc_dump_sizes($files, $ssh_key, $ssh_known) {
+	$files = array_slice(array_values($files), 0, 14);
+	if (!$files) return array();
+	$args = '';
+	foreach ($files as $f) { $args .= ' ' . escapeshellarg('/backup/dbs/daily/' . $f); }
+	$ssh = "ssh -i " . escapeshellarg($ssh_key)
+		. " -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=" . escapeshellarg($ssh_known)
+		. " " . escapeshellarg("tema@backup.sayu.co.uk");
+	$out = array();
+	@exec($ssh . ' ' . escapeshellarg('stat -c "%s|%n"' . $args) . ' 2>/dev/null', $out);
+	$sizes = array();
+	foreach ($out as $ln) {
+		$p = explode('|', trim($ln), 2);
+		if (count($p) === 2 && ctype_digit($p[0])) { $sizes[basename($p[1])] = (int) $p[0]; }
+	}
+	return $sizes;
+}
+
 // ---- dev server (slayer) config ----
 $SLAYER_HOST = "slayer.sayu.co.uk";
 $SLAYER_PORT = "2222";
@@ -58,10 +79,24 @@ if ($login === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $login)) {
 $proj = "/home/staff/" . $login . "/projects/" . $repository;
 $devurl = $subdomain !== '' ? ('https://' . $subdomain . ($php8 ? '8' : '') . '.sayuconnect.com/' . $repository) : '';
 
-$dumpfile = ''; $dbname = '';
+$dumpfile = ''; $dbname = ''; $dump_latest = ''; $dump_downgraded = false;
 if ($want_db) {
 	$list = svn_list_db_backups($svn_path, $svn_login, $svn_password, $repository);
-	if ($list["ok"] && count($list["backups"])) { $dumpfile = $list["backups"][0]["file"]; }
+	if ($list["ok"] && count($list["backups"])) {
+		$dump_latest = $list["backups"][0]["file"];
+		// Pick the newest dump that looks healthy. The source nightly backup is occasionally a
+		// truncated ~1KB partial; importing the very latest blindly can yield an empty DB.
+		$files = array();
+		foreach ($list["backups"] as $b) { $files[] = $b["file"]; }
+		$sizes = dc_dump_sizes($files, $SSH_KEY, $SSH_KNOWN);
+		$MIN_DUMP = 4096; // a real bz2/gz dump is far bigger; broken partials are ~1KB
+		foreach ($list["backups"] as $b) {
+			$sz = isset($sizes[$b["file"]]) ? $sizes[$b["file"]] : -1;
+			if ($sz < 0 || $sz >= $MIN_DUMP) { $dumpfile = $b["file"]; break; } // unknown size -> trust it
+		}
+		if ($dumpfile === '') $dumpfile = $dump_latest; // all looked tiny -> fall back to latest
+		$dump_downgraded = ($dumpfile !== $dump_latest);
+	}
 	if ($dumpfile === '' || !preg_match('/^[A-Za-z0-9._-]+\.(dump|sql)(\.(bz2|gz))?$/', $dumpfile)) {
 		dc_fail("No nightly DB backup found for " . $repository . " to copy.");
 	}
@@ -145,6 +180,9 @@ if ($want_db) {
 	$create = "sudo mysql -e " . escapeshellarg("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON `$dbname`.* TO '" . $login . "'@'localhost';");
 	$decomp = (substr($dumpfile, -3) === '.gz') ? 'gunzip' : 'bunzip2';
 	$run .= "echo '>> Database: " . $dbname . " <- " . $dumpfile . "'\n";
+	if ($dump_downgraded) {
+		$run .= "echo '   (latest dump " . $dump_latest . " looked broken/too small — using newest healthy dump instead)'\n";
+	}
 	$run .= $SLAYER . " " . escapeshellarg($create) . " || { echo '!! create db failed'; ok=0; }\n";
 	$run .= $BACKUP . " " . escapeshellarg("cat /backup/dbs/daily/" . $dumpfile)
 		. " | " . $decomp . " | sed -E 's/DEFINER=`[^`]+`@`[^`]+` ?//g' | "
