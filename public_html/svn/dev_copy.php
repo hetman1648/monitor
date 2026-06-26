@@ -111,14 +111,18 @@ if ($want_files) {
 	// Wire up Apache so the copy is served at the dev URL: add (idempotently) an
 	//   Alias /<repo>/ -> ~/projects/<repo>/public_html/
 	// to the dev's sayuconnect vhost (found by ServerName/ServerAlias, robust to ab vs ab8
-	// conf-naming), then config-test and reload. Needs sudo (devs have it on slayer).
+	// conf-naming), plus a RedirectMatch so the bare /<repo> (no trailing slash) 301s to
+	// /<repo>/ — otherwise the slash-less URL 404s (the Alias only matches with the slash).
+	// Then config-test and reload. Needs sudo (devs have it on slayer).
 	$host = $subdomain !== '' ? ($subdomain . ($php8 ? '8' : '') . '.sayuconnect.com') : '';
 	if ($host !== '') {
 		$webcmd = 'host=' . escapeshellarg($host) . '; repo=' . escapeshellarg($repository) . '; login=' . escapeshellarg($login) . '; '
 			. 'hre=$(printf "%s" "$host" | sed "s/[.]/\\\\./g"); '
+			. 'rre=$(printf "%s" "$repo" | sed "s/[.]/\\\\./g"); '
 			. 'conf=$(sudo grep -lE "ServerName[[:space:]]+${hre}|ServerAlias[^#]*${hre}" /etc/apache2/sites-available/*-ssl.conf 2>/dev/null | head -1); '
 			. 'if [ -z "$conf" ]; then echo "!! no vhost found for $host"; exit 1; fi; '
 			. 'if ! sudo grep -qF " /${repo}/ " "$conf"; then sudo sed -i "s#^</VirtualHost>#\tAlias /${repo}/ /home/staff/${login}/projects/${repo}/public_html/\n</VirtualHost>#" "$conf"; fi; '
+			. 'if ! sudo grep -qF "RedirectMatch 301 ^/${rre}\$ /${repo}/" "$conf"; then sudo sed -i "s#^</VirtualHost>#\tRedirectMatch 301 ^/${rre}\$ /${repo}/\n</VirtualHost>#" "$conf"; fi; '
 			. 'sudo apache2ctl configtest && sudo systemctl reload apache2 && echo "served at https://${host}/${repo}/"';
 		$run .= "echo '>> Web: configure " . $host . " alias for " . $repository . "'\n";
 		$run .= $SLAYER . " " . escapeshellarg($webcmd) . " || { echo '!! web config failed'; ok=0; }\n";
