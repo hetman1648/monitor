@@ -200,7 +200,14 @@ if ($want_images) {
 	$img_url = "https://dsid.sayuconnect.com/index.php?project=" . rawurlencode($repository)
 		. "&user_name=" . rawurlencode($login) . "&password=" . rawurlencode($pass) . "&is_images=1&is_db=0";
 	$run .= "echo '>> Images: requesting copy via dsid daemon'\n";
-	$run .= "curl -s --max-time 600 " . escapeshellarg($img_url) . " || { echo '!! images request failed'; ok=0; }\n";
+	// Don't launch a second dsid run if an rsync for this repo's images is already copying on
+	// slayer — concurrent copies just fight over the same files and slow each other down.
+	$img_needle = "/" . $repository . "/public_html/images";
+	$run .= "if " . $SLAYER . " " . escapeshellarg('ps -eo args 2>/dev/null | grep -F ' . escapeshellarg($img_needle) . ' | grep -i rsync | grep -qv grep') . "; then\n";
+	$run .= "  echo '   images are already copying for this site — skipping (watch progress in the popup)'\n";
+	$run .= "else\n";
+	$run .= "  curl -s --max-time 600 " . escapeshellarg($img_url) . " || { echo '!! images request failed'; ok=0; }\n";
+	$run .= "fi\n";
 	$run .= "echo\n";
 }
 $run .= "echo \"== DONE (ok=\$ok) ==\"\n";

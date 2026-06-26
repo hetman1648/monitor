@@ -507,6 +507,14 @@ html.dark-mode{
 #svnApp .bk-stop{ color:var(--err); border-color:var(--err); flex:none; }
 #svnApp .bk-stop:hover{ background:var(--err-bg); }
 #svnApp .dc-log{ max-height:240px; overflow:auto; background:var(--raise); border:1px solid var(--line); border-radius:var(--r-md); padding:10px 12px; font-family:var(--mono,monospace); font-size:12px; line-height:1.5; color:var(--ink-soft); white-space:pre-wrap; word-break:break-word; }
+#svnApp .dc-img-head{ display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+#svnApp .dc-img-head .dc-img-pct{ font-variant-numeric:tabular-nums; color:var(--info); }
+#svnApp .dc-bar{ height:9px; border-radius:6px; background:var(--hover-2); overflow:hidden; }
+#svnApp .dc-bar-fill{ height:100%; width:0; border-radius:6px; background:linear-gradient(90deg,var(--acc-solid,#4aa3e0),var(--info,#5cc)); transition:width .5s ease; }
+#svnApp .dc-bar-fill.indet{ width:35% !important; animation:dcIndet 1.2s ease-in-out infinite; }
+@keyframes dcIndet{ 0%{margin-left:-35%} 100%{margin-left:100%} }
+#svnApp .dc-img-sub{ margin-top:6px; font-size:11.5px; color:var(--muted-2); }
+#svnApp .dc-img-note{ color:var(--muted-2); font-style:italic; }
 #svnApp .ddb-crumb{ font-size:13px; margin-bottom:12px; }
 #svnApp .ddb-cr{ color:var(--acc-solid); text-decoration:none; } #svnApp .ddb-cr:hover{ text-decoration:underline; }
 #svnApp .ddb-cr-sep{ color:var(--muted-2); margin:0 7px; } #svnApp .ddb-cr-cur{ color:var(--ink); font-weight:700; }
@@ -722,11 +730,20 @@ function hashInfo(h){
   if(REPOS.indexOf(repo) === -1) return null;
   return { kind: kind, repo: repo };
 }
-// Reconcile the open overlay modal (backups / info) with target markers. Avoids reload loops.
-function reconcileOverlay(bk, info){
+// The repo whose Dev copy popup the hash says is open (e.g. "...~dc=watches.co.uk"), or ''.
+function hashDevCopy(h){
+  h = (h||'').replace(/^#/,'');
+  var i = h.indexOf('~dc=');
+  if(i < 0) return '';
+  var r = decodeURIComponent(h.slice(i + 4).split('~')[0]);
+  return REPOS.indexOf(r) !== -1 ? r : '';
+}
+// Reconcile the open overlay modal (backups / info / dev copy) with target markers. Avoids reload loops.
+function reconcileOverlay(bk, info, dc){
   if(bk){ if(BK_OPEN_REPO !== bk) openBackups(bk); }
   else if(info){ if(!INFO_OPEN || INFO_OPEN.kind !== info.kind || INFO_OPEN.repo !== info.repo) openInfo(info.kind, info.repo); }
-  else { if(BK_OPEN_REPO || INFO_OPEN) closeModal(); }
+  else if(dc){ if(DC_OPEN_REPO !== dc) openDevCopy(dc); }
+  else { if(BK_OPEN_REPO || INFO_OPEN || DC_OPEN_REPO) closeModal(); }
 }
 var SVN_PATH_PREFIX = 'svn://web1.sayu.co.uk/mnt/drive2/webclients/';
 
@@ -1155,7 +1172,7 @@ function openActionsPop(repo, anchor){
 
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } BK_OPEN_REPO=null; INFO_OPEN=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
+function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); } BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
 
 // Styled confirm dialog (replaces window.confirm); layers above any open modal.
 var UICONFIRM_CB = null;
@@ -1598,7 +1615,7 @@ function renderHistory(data, repo){
 
 function openInfo(kind, repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
-  INFO_OPEN = { kind: kind, repo: repo }; BK_OPEN_REPO = null;
+  INFO_OPEN = { kind: kind, repo: repo }; BK_OPEN_REPO = null; DC_OPEN_REPO = null; if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); dcStopPoll(); }
   // Reflect the open info modal in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
@@ -1642,11 +1659,59 @@ function openDevTools(repo){
 }
 // Dev copy: set up a full working copy of a site on the dev server (slayer) under the
 // developer's own account — files (svn checkout), database (from nightly backup) and images.
-var DC_JOB=null, DC_POLL=null;
+var DC_JOB=null, DC_POLL=null, DC_OPEN_REPO=null, DC_IMG_POLL=null, DC_IMG_SEEN=false, DC_IMG_GRACE=0;
 function dcStopPoll(){ if(DC_POLL){ clearInterval(DC_POLL); DC_POLL=null; } }
+function dcStopImgPoll(){ if(DC_IMG_POLL){ clearInterval(DC_IMG_POLL); DC_IMG_POLL=null; } }
+function dcBytes(n){ n=+n||0; if(n>=1073741824) return (n/1073741824).toFixed(1)+' GB'; if(n>=1048576) return (n/1048576).toFixed(0)+' MB'; if(n>=1024) return (n/1024).toFixed(0)+' KB'; return n+' B'; }
+// Disable the "Copy images" box (and uncheck it) while a copy is running, so we never kick off a 2nd.
+function dcSetImgRunning(running){
+  var $c=$('#dcImg'); if(!$c.length) return;
+  if(running){ $c.prop('checked',false).prop('disabled',true); $('#dcImgNote').text(' — already copying'); }
+  else { $c.prop('disabled',false); $('#dcImgNote').text(''); }
+}
+// fresh=true when we just kicked off a copy: give dsid a grace window to spawn its rsync before
+// we'd conclude "not running" and stop watching.
+function dcStartImgPoll(repo, fresh){
+  dcStopImgPoll(); DC_IMG_SEEN=false; DC_IMG_GRACE = fresh ? (Date.now()+35000) : 0;
+  dciPoll(repo); DC_IMG_POLL=setInterval(function(){ dciPoll(repo); }, 4000);
+}
+var DC_IMG_BUSY=false;
+function dciPoll(repo){
+  if(DC_OPEN_REPO!==repo){ dcStopImgPoll(); return; }
+  if(DC_IMG_BUSY) return; // a measurement (du on slayer) is still in flight — don't stack
+  DC_IMG_BUSY=true;
+  $.post('dev_copy_images.php', {repository:repo}, function(d){
+    DC_IMG_BUSY=false;
+    if(!d || !d.ok || DC_OPEN_REPO!==repo) return;
+    var $w=$('#dcImgWrap'), pct=(d.pct!=null?d.pct:null);
+    if(d.running){
+      DC_IMG_SEEN=true; $w.show(); dcSetImgRunning(true);
+      $('#dcImgFill').toggleClass('indet', pct==null).css('width', (pct!=null?pct:0)+'%');
+      $('#dcImgPct').text(pct!=null ? pct+'%' : 'copying…');
+      $('#dcImgSub').text(dcBytes(d.dest_bytes>0?d.dest_bytes:0)+(d.src_bytes>0?(' of '+dcBytes(d.src_bytes)):'')+' · copying…');
+    } else {
+      dcSetImgRunning(false);
+      if(DC_IMG_SEEN || (pct!=null && pct>=99 && d.dest_bytes>0)){
+        // finished
+        $w.show(); $('#dcImgFill').removeClass('indet').css('width','100%');
+        $('#dcImgPct').text('100%'); $('#dcImgSub').text('Images copied · '+dcBytes(d.dest_bytes));
+        dcStopImgPoll();
+      } else if(DC_IMG_GRACE && Date.now()<DC_IMG_GRACE){
+        // just started — waiting for the rsync to appear
+        $w.show(); $('#dcImgFill').addClass('indet'); $('#dcImgPct').text('starting…'); $('#dcImgSub').text('Requesting image copy…');
+      } else {
+        $w.hide(); dcStopImgPoll();
+      }
+    }
+  }, 'json').fail(function(){ DC_IMG_BUSY=false; });
+}
 function openDevCopy(repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
-  dcStopPoll(); DC_JOB=null;
+  dcStopPoll(); dcStopImgPoll(); DC_JOB=null;
+  DC_OPEN_REPO = repo; BK_OPEN_REPO = null; INFO_OPEN = null;
+  // Persist the open popup in the URL so it survives a page refresh.
+  var nh = scopeToHash(STATE.activeGroup) + '~dc=' + encodeURIComponent(repo);
+  if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
   modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('copy',21)+'</div>'
     + '<div style="min-width:0"><h3>Dev copy</h3><p>Set up a dev copy on slayer under your account · <span class="mono">'+esc(repo)+'</span></p></div>'
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
@@ -1654,13 +1719,30 @@ function openDevCopy(repo){
     + '<p style="color:var(--muted);font-size:13px;margin:0 0 14px">Creates <span class="mono">~/projects/'+esc(repo)+'</span> on slayer, served at your <span class="mono">…sayuconnect.com</span> subdomain, with a <span class="mono">&lt;you&gt;_'+esc(repo.split(".")[0])+'</span> database.</p>'
     + '<div class="checkbox-group"><input type="checkbox" id="dcFiles" checked><label for="dcFiles">Copy files (svn checkout)</label></div>'
     + '<div class="checkbox-group"><input type="checkbox" id="dcDB" checked><label for="dcDB">Copy database (latest nightly backup)</label></div>'
-    + '<div class="checkbox-group"><input type="checkbox" id="dcImg" checked><label for="dcImg">Copy images</label></div>'
+    + '<div class="checkbox-group"><input type="checkbox" id="dcImg" checked><label for="dcImg">Copy images<span class="dc-img-note" id="dcImgNote"></span></label></div>'
     + '<div class="checkbox-group"><input type="checkbox" id="dcPhp8"><label for="dcPhp8">PHP 8 site (use ab8.sayuconnect.com)</label></div>'
+    + '<div id="dcImgWrap" style="display:none;margin-top:14px"><div class="dc-img-head"><span>'+icon('copy',14)+' Images</span><span class="dc-img-pct" id="dcImgPct"></span></div>'
+    + '<div class="dc-bar"><div class="dc-bar-fill" id="dcImgFill"></div></div><div class="dc-img-sub" id="dcImgSub"></div></div>'
     + '<div id="dcProg" style="display:none;margin-top:14px"><div class="dc-log" id="dcLog"></div></div>'
     + '<div class="alert" id="dcAlert"></div></div>'
     + '<div class="modal-foot"><div class="mf-grow" id="dcFoot"></div>'
     + '<button type="button" class="btn ghost" id="dcStopBtn" style="display:none">Stop</button>'
     + '<button class="btn solid" id="dcStart" data-repo="'+esc(repo)+'">Start dev copy</button></div></div>');
+  dcRestoreState(repo);
+}
+// On open (incl. after a page refresh): resume a still-running dev-copy job and reflect any
+// in-progress image copy (progress bar + the "Copy images" box disabled so we don't start a 2nd).
+function dcRestoreState(repo){
+  $.post('dev_copy_status.php', {repository:repo}, function(d){
+    if(d && d.ok && d.job && d.state==='running' && DC_OPEN_REPO===repo){
+      DC_JOB=d.job; $('#dcProg').show();
+      if(d.log!=null){ var $l=$('#dcLog'); $l.text(d.log); $l.scrollTop($l[0].scrollHeight); }
+      if(d.target){ $('#dcFoot').html('<span class="mono" style="font-size:12px">'+esc(d.target)+'</span>'); }
+      $('#dcStart').hide(); $('#dcStopBtn').show();
+      dcStopPoll(); dcPoll(); DC_POLL=setInterval(dcPoll, 1500);
+    }
+  }, 'json');
+  dcStartImgPoll(repo, false);
 }
 function dcFinish(d){
   dcStopPoll();
@@ -1747,7 +1829,7 @@ var DDB={};
 // Backups modal: list the available DB backups for a site.
 function openBackups(repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
-  BK_OPEN_REPO = repo; INFO_OPEN = null;
+  BK_OPEN_REPO = repo; INFO_OPEN = null; DC_OPEN_REPO = null; if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); dcStopPoll(); }
   // Reflect the open backups view in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~bk=' + encodeURIComponent(repo);
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
@@ -1838,19 +1920,21 @@ $(function(){
   $(window).on('hashchange', function(){
     var bk = hashBackups(location.hash);
     var info = hashInfo(location.hash);
+    var dc = hashDevCopy(location.hash);
     var sc = hashToScope(location.hash);
     if(sc && String(sc)!==String(STATE.activeGroup)){
       if(sc==='__all') pickScope('__all', {});
       else if(sc.indexOf('__one:')===0) openSingle(sc.slice(6));
       else pickScope(sc, {});
     }
-    reconcileOverlay(bk, info);
+    reconcileOverlay(bk, info, dc);
   });
 
   loadGroups(function(){
     // Capture the overlay markers from the hash before scope-restore rewrites it.
     var bk0 = hashBackups(location.hash);
     var info0 = hashInfo(location.hash);
+    var dc0 = hashDevCopy(location.hash);
     (function restoreScope(){
       // 1) Restore scope from the URL hash if present and valid.
       var hsc = hashToScope(location.hash);
@@ -1870,9 +1954,9 @@ $(function(){
       if(initial){ openSingle(initial); }
       else { renderGroupTrigger(); renderTable(); renderApplyBar(); }
     })();
-    if(bk0 || info0) reconcileOverlay(bk0, info0);
+    if(bk0 || info0 || dc0) reconcileOverlay(bk0, info0, dc0);
     // Autofocus the finder with its value pre-selected, so the first keystroke replaces it.
-    if(!bk0 && !info0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
+    if(!bk0 && !info0 && !dc0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
   });
 
   // group dropdown
@@ -2137,6 +2221,7 @@ $(function(){
       DC_JOB=d.job; $('#dcStart').hide(); $('#dcStopBtn').show();
       if(d.target){ $('#dcFoot').html('<span class="mono" style="font-size:12px">'+esc(d.target)+'</span>'); }
       dcPoll(); DC_POLL=setInterval(dcPoll, 1500);
+      if(img){ dcStartImgPoll(repo, true); } // watch the async dsid image copy
     }, 'json').fail(function(){
       $('#dcStart').prop('disabled',false).text('Start dev copy');
       $('#dcAlert').addClass('alert-error show').text('Could not start dev copy.'); $('#dcProg').hide();
