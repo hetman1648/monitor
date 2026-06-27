@@ -7,7 +7,10 @@ date_default_timezone_set("Europe/London");
 
 $user_id = GetSessionParam("UserID");
 if($user_id == "") {
-	header("Location:../login.php");
+	// Pass the originating URL so that after re-login (incl. the silent remember-me auto-login
+	// in login.php) the user is returned here — not bounced to /index.php. The browser carries
+	// the #...~dc=... fragment along the redirects, so the dev-copy popup restores on return.
+	header("Location: ../login.php?querystring=" . ToURL(getenv("QUERY_STRING")) . "&ret_page=" . ToURL(getenv("REQUEST_URI")));
 	exit;
 }
 

@@ -1966,6 +1966,10 @@ $(function(){
   $(document).on('click', '#grpNewBtn', function(e){ e.stopPropagation(); closeGroupMenu(); openSaveGroup(); });
 
   // finder
+  // Clicking (or tabbing) into the finder selects its contents, so the prefilled site name is
+  // replaced by the first keystroke. setTimeout defers past the click that would otherwise
+  // deselect the text right after focus.
+  $('#finderInput').on('focus', function(){ var el=this; setTimeout(function(){ try{ el.select(); }catch(e){} }, 0); });
   $('#finderInput').on('input', function(){
     var val=$(this).val().toLowerCase(), $dd=$('#finderDd');
     renderFinderMatch();
