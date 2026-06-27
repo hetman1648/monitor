@@ -11,6 +11,8 @@
 	  A2) includes/var_definition.php               -> the per-dev DB on slayer  (older ViArt)
 	  B) includes/common.php dev site_url override  -> real request host over https (fixes assets)
 	  C) public_html/.htaccess                      -> enable the DEV friendly-URL block
+	  D) public_html/.htaccess                      -> basic-auth the dev copy (/etc/.htpasswd, "sayu-dev")
+	  E) public_html/robots.txt                     -> Disallow: / (keep dev copies out of search engines)
 */
 
 $proj   = '__PROJ__';
@@ -96,6 +98,33 @@ if (is_file($hf)) {
 			$done[] = '.htaccess:friendly-urls';
 		}
 	}
+}
+
+// D) Basic-auth the dev copy, the way the other dev sites do it: a block at the top of .htaccess
+//    pointing at /etc/.htpasswd with the global "sayu-dev" login. Prepend it (guarded by a marker)
+//    unless an active AuthUserFile is already present, and create .htaccess if the site has none.
+$hf = $proj . '/public_html/.htaccess';
+$ht = is_file($hf) ? (string) file_get_contents($hf) : '';
+$has_active_auth = (bool) preg_match('/^[ \t]*AuthUserFile/mi', $ht);
+if (!$has_active_auth && strpos($ht, 'dev copy: basic auth') === false) {
+	if (is_file($hf) && !is_file($hf . '.devbak')) @copy($hf, $hf . '.devbak');
+	$auth = "# dev copy: basic auth\n"
+		. "AuthName \"Restricted Area\"\n"
+		. "AuthType Basic\n"
+		. "AuthUserFile /etc/.htpasswd\n"
+		. "AuthGroupFile /dev/null\n"
+		. "require user sayu-dev\n\n";
+	@file_put_contents($hf, $auth . $ht);
+	$done[] = '.htaccess:basic-auth';
+}
+
+// E) robots.txt: disallow everything on the dev copy (belt-and-braces with the basic auth above).
+$rf = $proj . '/public_html/robots.txt';
+$disallow = "User-agent: *\nDisallow: /\n";
+if (is_dir(dirname($rf)) && (!is_file($rf) || trim((string) file_get_contents($rf)) !== trim($disallow))) {
+	if (is_file($rf) && !is_file($rf . '.devbak')) @copy($rf, $rf . '.devbak');
+	@file_put_contents($rf, $disallow);
+	$done[] = 'robots.txt:disallow-all';
 }
 
 echo $done ? ('   configured: ' . implode(', ', $done) . "\n") : "   (no framework config needed)\n";
