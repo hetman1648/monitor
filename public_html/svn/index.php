@@ -816,7 +816,10 @@ function pumpScan(){
           site.status=data.status; site.behind=data.behind; site.headRev=data.headRev;
           site.lastBy=data.lastBy; site.lastAt=data.lastAt; site.errorMsg=data.errorMsg||'';
           site.files=data.files||[]; site.clientId=data.clientId||0; site.adminUrl=data.adminUrl||''; site.scanState='done';
-          if(autoSelectUpdates && site.status==='update'){ STATE.sel[repo]=true; }
+          // Only auto-select if the repo is still in the current scope: a scan enqueued under a
+          // previous (multi-site) scope can finish after the user has navigated to a single site,
+          // and selecting it here would inflate the apply-bar count with an off-screen straggler.
+          if(autoSelectUpdates && site.status==='update' && scopedRepos().indexOf(repo)!==-1){ STATE.sel[repo]=true; }
         } else {
           site.status='error'; site.errorMsg=(data&&data.error)||'Scan failed'; site.scanState='error';
         }
@@ -1102,7 +1105,9 @@ function renderCards(){
 }
 
 // ---------------- selection / apply bar ----------------
-function selRepos(){ return Object.keys(STATE.sel).filter(function(r){ return STATE.sel[r]; }); }
+// Selections are scoped to the active group/site: an entry left in STATE.sel for a repo outside
+// the current scope (e.g. a late scan callback) is never counted in the apply bar nor updated.
+function selRepos(){ var sc=scopedRepos(); return Object.keys(STATE.sel).filter(function(r){ return STATE.sel[r] && sc.indexOf(r)!==-1; }); }
 function selUpdatable(){ return selRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.status==='update'; }); }
 function renderApplyBar(){
   var sel = selRepos(), upd = selUpdatable();
