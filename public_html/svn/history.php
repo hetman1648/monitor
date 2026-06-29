@@ -35,10 +35,10 @@ while ($db->next_record()) {
 	$users[(int) $db->f("user_id")] = trim($db->f("first_name") . " " . $db->f("last_name"));
 }
 
-// deploys: latest deploy per revision (+ overall list for fallback)
+// deploys for this repo, plus a list for the no-local-repo fallback view.
 $has_rev = svn_updates_has_revision_columns($db);
-$deploy_by_rev = array();
-$deploy_list = array();
+$deploys = array();      // ascending by time: [ ['at'=>raw,'at_ts'=>int|null,'by'=>name,'rev'=>int|null], ... ]
+$deploy_list = array();  // descending (fallback view)
 $cols = $has_rev ? "date_added,user_id,revision,commit_message" : "date_added,user_id";
 $db->query("SELECT $cols FROM svn_updates WHERE repository=" . ToSQL($repository, "text") . " ORDER BY date_added DESC LIMIT 200");
 while ($db->next_record()) {
@@ -47,12 +47,28 @@ while ($db->next_record()) {
 	$at = $db->f("date_added");
 	$rev = $has_rev ? trim((string) $db->f("revision")) : '';
 	$msg = $has_rev ? trim((string) $db->f("commit_message")) : '';
-	if ($rev !== '' && ctype_digit($rev) && !isset($deploy_by_rev[$rev])) {
-		$deploy_by_rev[$rev] = array('by' => $name, 'at' => $at);
-	}
+	$ts = strtotime((string) $at);
+	$deploys[] = array('at' => $at, 'at_ts' => ($ts === false ? null : $ts), 'by' => $name,
+		'rev' => ($rev !== '' && ctype_digit($rev) ? (int) $rev : null));
 	if (count($deploy_list) < 50) {
 		$deploy_list[] = array('revision' => $rev, 'by' => $name, 'at' => $at, 'message' => $msg);
 	}
+}
+$deploys = array_reverse($deploys); // oldest-first: pick the FIRST deploy that shipped a commit
+
+// The earliest deploy that included a commit. By revision when both are known (deploy revision >=
+// commit revision); otherwise by time (the deploy ran at/after the commit). The time path covers
+// legacy deploy rows recorded before the revision column existed, and any deploy where the gateway
+// didn't report a revision — so history isn't left showing "Not recorded as deployed" for everything.
+function hist_deploy_for_commit($deploys, $commit_rev, $commit_ts) {
+	$crev = is_numeric($commit_rev) ? (int) $commit_rev : null;
+	foreach ($deploys as $d) {
+		$covers = false;
+		if ($d['rev'] !== null && $crev !== null) $covers = ($d['rev'] >= $crev);
+		else if ($d['at_ts'] !== null && $commit_ts !== false && $commit_ts !== null) $covers = ($d['at_ts'] >= $commit_ts);
+		if ($covers) return $d;
+	}
+	return null;
 }
 
 $repo_fs = svn_repo_fs_path($repository);
@@ -62,7 +78,7 @@ if (count($commits)) {
 	$rows = array();
 	foreach ($commits as $c) {
 		$rev = $c['revision'];
-		$dep = isset($deploy_by_rev[$rev]) ? $deploy_by_rev[$rev] : null;
+		$dep = hist_deploy_for_commit($deploys, $rev, strtotime((string) $c['date']));
 		$rows[] = array(
 			'revision'         => $rev,
 			'author'           => $c['author'],
