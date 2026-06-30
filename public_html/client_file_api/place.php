@@ -33,24 +33,8 @@
 	deletes inside the validated subpath; the client database is never touched.
 */
 
-// -------- config --------
-@ini_set('display_errors', '0');
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
-
-if (!defined('CLIENT_FILE_API_TOKEN')) {
-	$env = (function_exists('getenv') && getenv('CLIENT_FILE_API_TOKEN')) ? getenv('CLIENT_FILE_API_TOKEN') : '';
-	// Fallback shared secret (used when the env var isn't set). Keep in sync with Copilot's CLIENT_FILE_API_TOKEN.
-	define('CLIENT_FILE_API_TOKEN', $env !== '' ? $env : '2d38a810458cf1a688c87085f5c346111a98dc8ba9eb2179c91ce61a5d97155b');
-}
-
-// Optional IP allowlist (defence in depth on top of the bearer token). Empty array => skip the check.
-// 78.46.105.205 is Copilot's egress (copilot.sayu.co.uk); the 217.160.107.* / loopback entries let
-// Monitor's own host call the endpoint for testing.
-$CFA_IP_ALLOW = array(
-	'78.46.105.205',
-	'127.0.0.1', '::1',
-	'217.160.107.24', '217.160.107.180', '217.160.107.211', '217.160.107.219',
-);
+// -------- config + shared helpers/auth --------
+require_once dirname(__FILE__) . '/cfa_common.php';
 
 $CFA_FETCH_HOST   = 'copilot.sayu.co.uk';   // the ONLY host we will fetch from
 $CFA_MAX_FILE     = 30 * 1024 * 1024;       // 30 MB per file
@@ -62,54 +46,9 @@ $CFA_EXT_ALLOW    = array(
 	'woff','woff2','ttf','otf','eot','pdf',
 );
 
-// Path to the host map (pure functions, no side effects): svn_host_for(), svn_host_ssh(), …
-require_once dirname(__FILE__) . '/../svn/svn_hosts.php';
-
-// -------- tiny helpers --------
-header('Content-Type: application/json; charset=utf-8');
-
-function cfa_g($a, $k, $d = '') { return (is_array($a) && isset($a[$k])) ? $a[$k] : $d; }
-function cfa_out($arr, $code = 200) {
-	http_response_code($code);
-	echo json_encode($arr);
-	exit;
-}
-function cfa_fail($msg, $code = 400, $extra = array()) {
-	cfa_out(array_merge(array('ok' => false, 'error' => $msg), $extra), $code);
-}
-function cfa_authz_header() {
-	// PHP-FPM frequently hides Authorization; the .htaccess copies it into HTTP_AUTHORIZATION.
-	foreach (array('HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION') as $k) {
-		if (!empty($_SERVER[$k])) return $_SERVER[$k];
-	}
-	if (function_exists('apache_request_headers')) {
-		foreach (apache_request_headers() as $k => $v) {
-			if (strcasecmp($k, 'Authorization') === 0) return $v;
-		}
-	}
-	return '';
-}
-function cfa_rmtree($dir) {
-	if (!is_dir($dir)) { @unlink($dir); return; }
-	foreach (scandir($dir) as $e) {
-		if ($e === '.' || $e === '..') continue;
-		$p = $dir . '/' . $e;
-		is_dir($p) ? cfa_rmtree($p) : @unlink($p);
-	}
-	@rmdir($dir);
-}
-
 // -------- 1) method + auth --------
 if (cfa_g($_SERVER,'REQUEST_METHOD','GET') !== 'POST') cfa_fail('POST only.', 405);
-
-if (!empty($CFA_IP_ALLOW)) {
-	$ip = cfa_g($_SERVER,'REMOTE_ADDR','');
-	if (!in_array($ip, $CFA_IP_ALLOW, true)) cfa_fail('Not allowed.', 403);
-}
-
-$authz = cfa_authz_header();
-$token = (stripos($authz, 'Bearer ') === 0) ? trim(substr($authz, 7)) : '';
-if ($token === '' || !hash_equals(CLIENT_FILE_API_TOKEN, $token)) cfa_fail('Unauthorized.', 401);
+cfa_require_auth();
 
 // -------- 2) parse + validate the request --------
 $raw = file_get_contents('php://input');

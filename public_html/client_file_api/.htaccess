@@ -11,4 +11,5 @@
     RewriteEngine On
     RewriteBase /client_file_api/
     RewriteRule ^place/?$ place.php [L]
+    RewriteRule ^servers/?$ servers.php [L]
 </IfModule>
