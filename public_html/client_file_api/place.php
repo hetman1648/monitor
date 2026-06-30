@@ -1,0 +1,344 @@
+<?php
+/*
+	Client File API — POST /client_file_api/place
+	================================================
+	Lets an external caller (Sayu Copilot) publish static assets (images / js / styles / csv / …)
+	into a client website's web root, on whichever server actually serves that site. Copilot can't
+	resolve "domain -> web root -> which physical server", but Monitor can (svn/svn_hosts.php), so
+	that resolution is the job of this endpoint.
+
+	Contract (what Copilot sends and depends on):
+	    POST {CLIENT_FILE_API_URL}/place
+	    Authorization: Bearer {CLIENT_FILE_API_TOKEN}
+	    {
+	      "domain":  "puregusto.co.uk",
+	      "db_name": "puregusto",                 // accepted, never used (files only)
+	      "subpath": "content-assets/1722",       // relative to the client web root
+	      "mode":    "pull",                       // only "pull" is supported
+	      "purge":   true,                         // wipe the subpath first (idempotent re-publish)
+	      "files":   [ { "name": "x.js", "url": "https://copilot.sayu.co.uk/media/imported/1722/x.js" }, … ]
+	    }
+	Returns:
+	    { "ok": true,
+	      "base_url": "https://www.puregusto.co.uk/content-assets/1722/",   // the REAL public URL (REQUIRED)
+	      "placed": [ {name,bytes,url}… ], "failed": [ {name,error}… ] }
+
+	Placement:
+	  - web1-hosted sites (the default)  -> written locally as the site's unix user via monitor_runas.
+	  - sites mapped in svn/svn_hosts.php -> written on their own server over SSH (monitor's key, tema+sudo).
+
+	Safety (see validation below): bearer token (constant-time) + optional IP allowlist; subpath
+	allowlist content-assets/<digits> only; basename + extension allowlist; fetch host pinned to
+	copilot.sayu.co.uk with no redirects (SSRF guard); per-file and total size caps; purge only ever
+	deletes inside the validated subpath; the client database is never touched.
+*/
+
+// -------- config --------
+@ini_set('display_errors', '0');
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+
+if (!defined('CLIENT_FILE_API_TOKEN')) {
+	$env = (function_exists('getenv') && getenv('CLIENT_FILE_API_TOKEN')) ? getenv('CLIENT_FILE_API_TOKEN') : '';
+	// Fallback shared secret (used when the env var isn't set). Keep in sync with Copilot's CLIENT_FILE_API_TOKEN.
+	define('CLIENT_FILE_API_TOKEN', $env !== '' ? $env : '2d38a810458cf1a688c87085f5c346111a98dc8ba9eb2179c91ce61a5d97155b');
+}
+
+// Optional IP allowlist (defence in depth on top of the bearer token). Empty array => skip the check.
+// 78.46.105.205 is Copilot's egress (copilot.sayu.co.uk); the 217.160.107.* / loopback entries let
+// Monitor's own host call the endpoint for testing.
+$CFA_IP_ALLOW = array(
+	'78.46.105.205',
+	'127.0.0.1', '::1',
+	'217.160.107.24', '217.160.107.180', '217.160.107.211', '217.160.107.219',
+);
+
+$CFA_FETCH_HOST   = 'copilot.sayu.co.uk';   // the ONLY host we will fetch from
+$CFA_MAX_FILE     = 30 * 1024 * 1024;       // 30 MB per file
+$CFA_MAX_TOTAL    = 300 * 1024 * 1024;      // 300 MB per request
+$CFA_MAX_FILES    = 300;
+$CFA_EXT_ALLOW    = array(
+	'css','js','mjs','map','json','geojson','csv','txt','xml',
+	'svg','png','jpg','jpeg','gif','webp','avif','ico','bmp',
+	'woff','woff2','ttf','otf','eot','pdf',
+);
+
+// Path to the host map (pure functions, no side effects): svn_host_for(), svn_host_ssh(), …
+require_once dirname(__FILE__) . '/../svn/svn_hosts.php';
+
+// -------- tiny helpers --------
+header('Content-Type: application/json; charset=utf-8');
+
+function cfa_g($a, $k, $d = '') { return (is_array($a) && isset($a[$k])) ? $a[$k] : $d; }
+function cfa_out($arr, $code = 200) {
+	http_response_code($code);
+	echo json_encode($arr);
+	exit;
+}
+function cfa_fail($msg, $code = 400, $extra = array()) {
+	cfa_out(array_merge(array('ok' => false, 'error' => $msg), $extra), $code);
+}
+function cfa_authz_header() {
+	// PHP-FPM frequently hides Authorization; the .htaccess copies it into HTTP_AUTHORIZATION.
+	foreach (array('HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION') as $k) {
+		if (!empty($_SERVER[$k])) return $_SERVER[$k];
+	}
+	if (function_exists('apache_request_headers')) {
+		foreach (apache_request_headers() as $k => $v) {
+			if (strcasecmp($k, 'Authorization') === 0) return $v;
+		}
+	}
+	return '';
+}
+function cfa_rmtree($dir) {
+	if (!is_dir($dir)) { @unlink($dir); return; }
+	foreach (scandir($dir) as $e) {
+		if ($e === '.' || $e === '..') continue;
+		$p = $dir . '/' . $e;
+		is_dir($p) ? cfa_rmtree($p) : @unlink($p);
+	}
+	@rmdir($dir);
+}
+
+// -------- 1) method + auth --------
+if (cfa_g($_SERVER,'REQUEST_METHOD','GET') !== 'POST') cfa_fail('POST only.', 405);
+
+if (!empty($CFA_IP_ALLOW)) {
+	$ip = cfa_g($_SERVER,'REMOTE_ADDR','');
+	if (!in_array($ip, $CFA_IP_ALLOW, true)) cfa_fail('Not allowed.', 403);
+}
+
+$authz = cfa_authz_header();
+$token = (stripos($authz, 'Bearer ') === 0) ? trim(substr($authz, 7)) : '';
+if ($token === '' || !hash_equals(CLIENT_FILE_API_TOKEN, $token)) cfa_fail('Unauthorized.', 401);
+
+// -------- 2) parse + validate the request --------
+$raw = file_get_contents('php://input');
+if (strlen($raw) > 2 * 1024 * 1024) cfa_fail('Request too large.', 413); // the JSON itself, not the files
+$req = json_decode($raw, true);
+if (!is_array($req)) cfa_fail('Invalid JSON body.');
+
+$domain  = strtolower(trim((string)cfa_g($req,'domain','')));
+$subpath = trim((string)cfa_g($req,'subpath',''));
+$mode    = strtolower(trim((string)cfa_g($req,'mode','pull')));
+$purge   = !empty($req['purge']);
+$files   = cfa_g($req,'files',array());
+
+if ($mode !== 'pull') cfa_fail('Unsupported mode (only "pull").');
+
+// domain: a bare hostname, no path/scheme/traversal.
+if ($domain === '' || strlen($domain) > 253 || !preg_match('/^[a-z0-9.-]+$/', $domain)
+	|| strpos($domain, '..') !== false || $domain[0] === '.' || $domain[0] === '-') {
+	cfa_fail('Invalid domain.');
+}
+
+// subpath: content-assets/<digits> ONLY. No leading slash, no .., no backslashes.
+if (!preg_match('#^content-assets/[0-9]+$#', $subpath)) {
+	cfa_fail('Invalid subpath (allowed: content-assets/<number>).');
+}
+
+if (!is_array($files) || !count($files)) cfa_fail('No files given.');
+if (count($files) > $GLOBALS['CFA_MAX_FILES']) cfa_fail('Too many files (max ' . $GLOBALS['CFA_MAX_FILES'] . ').');
+
+// Validate every file entry up front (basename, extension, fetch-host) before touching anything.
+$clean = array();
+foreach ($files as $f) {
+	$name = trim((string)cfa_g($f,'name',''));
+	$url  = trim((string)cfa_g($f,'url',''));
+	if ($name === '' || $url === '') cfa_fail('Each file needs a name and a url.');
+	// name = basename only, conservative charset, must have an allowed extension.
+	if ($name !== basename($name) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $name) || strpos($name, '..') !== false) {
+		cfa_fail('Bad file name: ' . $name);
+	}
+	$dot = strrpos($name, '.');
+	$ext = $dot === false ? '' : strtolower(substr($name, $dot + 1));
+	if (!in_array($ext, $GLOBALS['CFA_EXT_ALLOW'], true)) cfa_fail('Disallowed file type: ' . $name);
+	// url: https on the pinned host only (SSRF guard). We also forbid redirects when fetching.
+	$pu = parse_url($url);
+	if (!$pu || strtolower(cfa_g($pu,'scheme','')) !== 'https'
+		|| strcasecmp(cfa_g($pu,'host',''), $GLOBALS['CFA_FETCH_HOST']) !== 0) {
+		cfa_fail('File url must be https on ' . $GLOBALS['CFA_FETCH_HOST'] . ': ' . $name);
+	}
+	$clean[] = array('name' => $name, 'url' => $url);
+}
+
+// -------- 3) resolve where this site lives --------
+$host = svn_host_for($domain);   // null => default (web1, local); else a remote server config
+if ($host) {
+	$webroot = rtrim($host['wc_base'], '/') . '/' . $domain . '/public_html';
+} else {
+	$webroot = '/home/vhosts/' . $domain . '/public_html';
+	if (!is_dir($webroot)) cfa_fail('Unknown site (no web root on web1, not in the host map): ' . $domain, 404);
+}
+
+// -------- 4) fetch all files into a local, world-readable staging dir --------
+$stage = sys_get_temp_dir() . '/cfa-' . bin2hex(openssl_random_pseudo_bytes(8));
+if (!@mkdir($stage, 0755, true)) cfa_fail('Could not create staging directory.', 500);
+@chmod($stage, 0755);
+
+$placed = array(); $failed = array(); $total = 0;
+foreach ($clean as $f) {
+	$dest = $stage . '/' . $f['name'];
+	$fh = @fopen($dest, 'wb');
+	if (!$fh) { $failed[] = array('name' => $f['name'], 'error' => 'staging open failed'); continue; }
+	$ch = curl_init($f['url']);
+	curl_setopt_array($ch, array(
+		CURLOPT_FILE           => $fh,
+		CURLOPT_FOLLOWLOCATION => false,            // no redirects -> can't be bounced to an internal host
+		CURLOPT_CONNECTTIMEOUT => 15,
+		CURLOPT_TIMEOUT        => 120,
+		CURLOPT_MAXFILESIZE    => $GLOBALS['CFA_MAX_FILE'],
+		CURLOPT_FAILONERROR    => true,             // treat 4xx/5xx as an error
+		CURLOPT_USERAGENT      => 'monitor-client-file-api/1.0',
+	));
+	$ok   = curl_exec($ch);
+	$code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+	$err  = curl_error($ch);
+	curl_close($ch);
+	fclose($fh);
+
+	$size = @filesize($dest);
+	if ($ok === false) { @unlink($dest); $failed[] = array('name' => $f['name'], 'error' => 'fetch failed (' . ($err ?: ('HTTP ' . $code)) . ')'); continue; }
+	if ($size === false || $size === 0) { @unlink($dest); $failed[] = array('name' => $f['name'], 'error' => 'empty file'); continue; }
+	if ($size > $GLOBALS['CFA_MAX_FILE']) { @unlink($dest); $failed[] = array('name' => $f['name'], 'error' => 'over per-file size cap'); continue; }
+	if ($total + $size > $GLOBALS['CFA_MAX_TOTAL']) { @unlink($dest); $failed[] = array('name' => $f['name'], 'error' => 'over total size cap'); continue; }
+	@chmod($dest, 0644);
+	$total += $size;
+	$placed[] = array('name' => $f['name'], 'bytes' => $size, 'url' => $f['url']);
+}
+
+// Don't purge a live folder if we have nothing to put back.
+if (!count($placed)) {
+	cfa_rmtree($stage);
+	cfa_fail('No files could be fetched; nothing placed (left existing content untouched).', 502,
+		array('failed' => $failed));
+}
+
+// -------- 5) place the staged files into the web root (local or remote) --------
+$placeErr = '';
+if ($host) {
+	$placeErr = cfa_place_remote($host, $webroot, $subpath, $stage, $placed, $purge);
+} else {
+	$placeErr = cfa_place_local($webroot, $subpath, $stage, $placed, $purge);
+}
+cfa_rmtree($stage);
+if ($placeErr !== '') cfa_fail('Placement failed: ' . $placeErr, 500, array('failed' => $failed));
+
+// -------- 6) the public base URL (the one field Copilot truly depends on) --------
+$pubhost = cfa_public_host($domain);
+$base_url = 'https://' . $pubhost . '/' . $subpath . '/';
+
+cfa_out(array(
+	'ok'       => true,
+	'base_url' => $base_url,
+	'placed'   => $placed,
+	'failed'   => $failed,
+));
+
+// ============================ placement backends ============================
+
+// Build a bash snippet that purges (optional) then copies the named files from $stage into
+// $webroot/$subpath. Shared by both backends; every value is single-quote escaped for the shell.
+function cfa_place_script($webroot, $subpath, $stage, $placed, $purge, $do_chown) {
+	$q = function ($s) { return "'" . str_replace("'", "'\\''", $s) . "'"; };
+	$s  = "set -e\n";
+	$s .= "WR=" . $q($webroot) . "\n";
+	$s .= "T=\"\$WR/" . $subpath . "\"\n";                 // $subpath is already validated content-assets/<digits>
+	$s .= "STAGE=" . $q($stage) . "\n";
+	// Re-assert the target stays under the web root (defence in depth; PHP already validated).
+	$s .= "case \"\$T\" in \"\$WR/\"*) : ;; *) echo 'path escape'; exit 9;; esac\n";
+	if ($purge) $s .= "rm -rf -- \"\$T\"\n";
+	$s .= "mkdir -p -- \"\$T\"\n";
+	foreach ($placed as $p) {
+		$n = $q($p['name']);
+		$s .= "cp -f -- \"\$STAGE\"/" . $n . " \"\$T\"/" . $n . "\n";
+		$s .= "chmod 644 \"\$T\"/" . $n . "\n";
+	}
+	$s .= "chmod 755 \"\$T\"\n";
+	if ($do_chown) {
+		// Remote backend runs as root via sudo, so hand the tree back to the site's own user.
+		$s .= "OWN=\$(stat -c %U \"\$WR\")\n";
+		$s .= "chown -R \"\$OWN\":\"\$OWN\" \"\$T\"\n";
+	}
+	$s .= "echo CFA_OK\n";
+	return $s;
+}
+
+// web1-local placement: run the script as the site's unix user via the monitor_runas sudo wrapper
+// (the same wrapper the SVN cron tool uses). Files end up owned by the site user automatically.
+function cfa_place_local($webroot, $subpath, $stage, $placed, $purge) {
+	if (!is_dir($webroot)) return 'web root not found: ' . $webroot;
+	$owner = '';
+	if (function_exists('posix_getpwuid')) {
+		$pw = @posix_getpwuid(@fileowner($webroot));
+		$owner = $pw ? $pw['name'] : '';
+	}
+	if ($owner === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $owner)) return 'could not determine site user for ' . $webroot;
+
+	$script = cfa_place_script($webroot, $subpath, $stage, $placed, $purge, false);
+	$cmd = 'sudo -n /usr/local/bin/monitor_runas ' . escapeshellarg($owner);
+	$descr = array(0 => array('pipe', 'r'), 1 => array('pipe', 'w'), 2 => array('pipe', 'w'));
+	$p = proc_open($cmd, $descr, $pipes);
+	if (!is_resource($p)) return 'could not start monitor_runas';
+	fwrite($pipes[0], $script); fclose($pipes[0]);
+	$out = stream_get_contents($pipes[1]); fclose($pipes[1]);
+	$er  = stream_get_contents($pipes[2]); fclose($pipes[2]);
+	$rc  = proc_close($p);
+	if ($rc !== 0 || strpos($out, 'CFA_OK') === false) {
+		return 'runas rc=' . $rc . ' ' . trim($out . ' ' . $er);
+	}
+	return '';
+}
+
+// Off-web1 placement: rsync the staged files to a temp dir on the site's server, then run the
+// placement script there as root (tema has passwordless sudo) and chown the result to the site user.
+function cfa_place_remote($host, $webroot, $subpath, $stage, $placed, $purge) {
+	$key   = '/mnt/drive2/vhosts/monitor.sayu.co.uk/.ssh/id_ed25519';
+	$known = '/mnt/drive2/vhosts/monitor.sayu.co.uk/.ssh/known_hosts';
+	$sshopts = '-i ' . escapeshellarg($key)
+		. ' -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=yes'
+		. ' -o UserKnownHostsFile=' . escapeshellarg($known);
+	$target = escapeshellarg($host['ssh_user'] . '@' . $host['ssh_host']);
+	$rtmp   = '/tmp/cfa-' . bin2hex(openssl_random_pseudo_bytes(8));
+
+	// 1) push the staged files (only the ones we fetched) to a fresh remote temp dir.
+	$rc = 0; $o = array();
+	$rsync = 'rsync -rt --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r --delete'
+		. ' -e ' . escapeshellarg('ssh ' . $sshopts)
+		. ' ' . escapeshellarg(rtrim($stage, '/') . '/')
+		. ' ' . escapeshellarg($host['ssh_user'] . '@' . $host['ssh_host'] . ':' . $rtmp . '/');
+	@exec($rsync . ' 2>&1', $o, $rc);
+	if ($rc !== 0) return 'rsync rc=' . $rc . ' ' . trim(implode(' ', $o));
+
+	// 2) place on the remote server as root (STAGE = the remote temp dir), chown to the site user,
+	//    then clean the temp up.
+	$script  = cfa_place_script($webroot, $subpath, $rtmp, $placed, $purge, true);
+	$remote  = 'sudo bash -c ' . escapeshellarg($script) . '; rc=$?; rm -rf -- ' . escapeshellarg($rtmp) . '; exit $rc';
+
+	$o2 = array(); $rc2 = 0;
+	@exec('ssh ' . $sshopts . ' ' . $target . ' ' . escapeshellarg($remote) . ' 2>&1', $o2, $rc2);
+	$out = implode("\n", $o2);
+	if ($rc2 !== 0 || strpos($out, 'CFA_OK') === false) return 'remote rc=' . $rc2 . ' ' . trim($out);
+	return '';
+}
+
+// The real public host for the site: follow the live redirect from https://<domain>/ and use the
+// final host (handles apex<->www canonicalisation per the site's own config). Falls back to the
+// domain as given if the probe fails.
+function cfa_public_host($domain) {
+	$ch = curl_init('https://' . $domain . '/');
+	curl_setopt_array($ch, array(
+		CURLOPT_NOBODY         => true,
+		CURLOPT_FOLLOWLOCATION => true,
+		CURLOPT_MAXREDIRS      => 5,
+		CURLOPT_CONNECTTIMEOUT => 8,
+		CURLOPT_TIMEOUT        => 12,
+		CURLOPT_SSL_VERIFYPEER => false,
+		CURLOPT_SSL_VERIFYHOST => 0,
+		CURLOPT_USERAGENT      => 'monitor-client-file-api/1.0',
+	));
+	curl_exec($ch);
+	$eff = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+	curl_close($ch);
+	$h = $eff !== '' ? parse_url($eff, PHP_URL_HOST) : '';
+	return ($h && preg_match('/^[A-Za-z0-9.-]+$/', $h)) ? strtolower($h) : $domain;
+}

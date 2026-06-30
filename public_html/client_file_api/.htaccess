@@ -1,0 +1,14 @@
+# Client File API — see place.php for the contract.
+#
+# The site-wide Basic-Auth + IP allowlist (inherited from /public_html/.htaccess) is bypassed for
+# this path in the vhost, not here: a child .htaccess can't loosen an inherited 2.4 `Require`, so the
+# exemption + Authorization pass-through (CGIPassAuth) + `Options -MultiViews` live in a
+# <Location /client_file_api> block in monitor.sayu.co.uk-ssl-real.conf. The real auth is the
+# Bearer token (and optional IP allowlist) enforced inside place.php.
+
+# Pretty endpoint: POST /client_file_api/place -> place.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /client_file_api/
+    RewriteRule ^place/?$ place.php [L]
+</IfModule>
