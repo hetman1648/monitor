@@ -83,6 +83,19 @@ array_unshift($out_servers, array(
 	'domains'  => $web1_domains,
 ));
 
+// Attach DB credentials (where configured) to the server that hosts the matching domain, so Copilot
+// can write the article row straight into the client DB. One DB on the server -> "db"; several -> "dbs".
+$creds = cfa_db_creds();
+if (!empty($creds)) {
+	foreach ($out_servers as &$entry) {
+		$sc = array();
+		foreach ($entry['domains'] as $d) { if (isset($creds[$d])) $sc[$d] = $creds[$d]; }
+		if (count($sc) === 1)      $entry['db']  = reset($sc);
+		else if (count($sc) > 1)   $entry['dbs'] = $sc;
+	}
+	unset($entry);
+}
+
 ksort($domains);
 cfa_out(array(
 	'ok'             => true,

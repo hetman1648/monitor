@@ -25,6 +25,23 @@ function cfa_ip_allow() {
 	);
 }
 
+// Per-site DB credentials, returned in /servers so Copilot can write the article row (va_articles
+// etc.) straight into the client database after /place has put the assets in. Keyed by domain (each
+// site has its own DB). The MySQL user is granted SELECT/INSERT/UPDATE/DELETE (no DDL) on that DB
+// only, from Copilot's egress IP. Password via env override, else the literal set when the grant was
+// created. Add a domain here only once its copilot_pub'@'<copilot-ip>' grant exists on that server.
+function cfa_db_creds() {
+	return array(
+		'puregusto.co.uk' => array(
+			'host'     => 'puregusto.co.uk',
+			'port'     => 3306,
+			'database' => 'puregusto',
+			'username' => 'copilot_pub',
+			'password' => getenv('CFA_DB_PUREGUSTO') ? getenv('CFA_DB_PUREGUSTO') : 'p0jz0rRtpKMd3C19wgrOCvEBfEB0',
+		),
+	);
+}
+
 // The host map (pure functions, no side effects): svn_host_for(), svn_site_host_map(), svn_host_servers()…
 require_once dirname(__FILE__) . '/../svn/svn_hosts.php';
 
