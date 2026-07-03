@@ -180,8 +180,7 @@ Allow from 96.22.185.22
 
 # Vlad
     Allow from 194.44.20.124
-    Allow from 188.230.211.111
-
+    Allow from 46.122.100.210
 
 
 # Kate
