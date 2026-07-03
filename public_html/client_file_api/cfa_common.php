@@ -31,6 +31,7 @@ function cfa_ip_allow() {
 // only, from Copilot's egress IP. Password via env override, else the literal set when the grant was
 // created. Add a domain here only once its copilot_pub'@'<copilot-ip>' grant exists on that server.
 function cfa_db_creds() {
+	$web2 = getenv('CFA_DB_WEB2') ? getenv('CFA_DB_WEB2') : 'L9AoMjG7cZlYgsD7lMnKbaX5UrHl';
 	return array(
 		'puregusto.co.uk' => array(
 			'host'     => 'puregusto.co.uk',
@@ -39,6 +40,10 @@ function cfa_db_creds() {
 			'username' => 'copilot_pub',
 			'password' => getenv('CFA_DB_PUREGUSTO') ? getenv('CFA_DB_PUREGUSTO') : 'p0jz0rRtpKMd3C19wgrOCvEBfEB0',
 		),
+		// web2 sites — one copilot_pub'@'78.46.105.205' user, granted per-DB; reached at web2:3306.
+		'richdiamonds.com' => array('host' => 'web2.sayu.co.uk', 'port' => 3306, 'database' => 'richdiamonds', 'username' => 'copilot_pub', 'password' => $web2),
+		'watchcentre.com'  => array('host' => 'web2.sayu.co.uk', 'port' => 3306, 'database' => 'watchcentre',  'username' => 'copilot_pub', 'password' => $web2),
+		'tressoro.com'     => array('host' => 'web2.sayu.co.uk', 'port' => 3306, 'database' => 'tressoro',     'username' => 'copilot_pub', 'password' => $web2),
 	);
 }
 

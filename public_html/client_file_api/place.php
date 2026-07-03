@@ -163,8 +163,14 @@ cfa_rmtree($stage);
 if ($placeErr !== '') cfa_fail('Placement failed: ' . $placeErr, 500, array('failed' => $failed));
 
 // -------- 6) the public base URL (the one field Copilot truly depends on) --------
-$pubhost = cfa_public_host($domain);
-$base_url = 'https://' . $pubhost . '/' . $subpath . '/';
+// If the site's server declares a public_base (it's served via something other than its own domain,
+// e.g. web2's userdir), build the URL from that pattern. Otherwise follow the domain's live redirect.
+if ($host && !empty($host['public_base'])) {
+	$base_url = rtrim(str_replace('{repo}', $domain, $host['public_base']), '/') . '/' . $subpath . '/';
+} else {
+	$pubhost = cfa_public_host($domain);
+	$base_url = 'https://' . $pubhost . '/' . $subpath . '/';
+}
 
 cfa_out(array(
 	'ok'       => true,

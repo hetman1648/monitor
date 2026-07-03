@@ -48,13 +48,17 @@ foreach ($map as $domain => $key) { $domains[$domain] = $key; }
 foreach ($by_key as $key => $doms) {
 	sort($doms);
 	$cfg = isset($servers[$key]) ? $servers[$key] : array();
-	$out_servers[] = array(
+	$entry = array(
 		'key'      => $key,
 		'default'  => false,
 		'ssh_host' => cfa_g($cfg, 'ssh_host', ''),
 		'wc_base'  => cfa_g($cfg, 'wc_base', ''),
 		'domains'  => $doms,
 	);
+	// public_base pattern (sites served via a userdir path rather than their own domain) — {repo}
+	// resolves per domain, which is what /place returns as base_url.
+	if (!empty($cfg['public_base'])) $entry['public_base'] = $cfg['public_base'];
+	$out_servers[] = $entry;
 }
 
 // web1 (default): every /home/vhosts/<domain>/public_html that isn't mapped off-web1.

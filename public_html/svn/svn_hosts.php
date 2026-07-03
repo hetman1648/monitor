@@ -31,12 +31,19 @@ function svn_site_host_map() {
 
 		'rubberduckbathrooms.co.uk'     => 'rubberduck',
 		'dev.rubberduckbathrooms.co.uk' => 'rubberduck',
+
+		'richdiamonds.com'              => 'web2',
+		'watchcentre.com'               => 'web2',
+		'tressoro.com'                  => 'web2',
 	);
 }
 
 // server key => connection + on-server path patterns ({repo} is substituted).
-//   wc_base   : parent dir of each site's working copy (wc_base/{repo}); '' = unknown
-//   log_path  : the site's error log
+//   wc_base     : parent dir of each site's working copy (wc_base/{repo}); '' = unknown
+//   log_path    : the site's error log
+//   public_base : optional. The real public base URL for the sites on this server when it is NOT the
+//                 site's own domain (e.g. served via a userdir path). Used by the client file API for
+//                 base_url instead of following the domain. Omitted => the domain is the public URL.
 function svn_host_servers() {
 	return array(
 		'rss' => array(
@@ -54,6 +61,14 @@ function svn_host_servers() {
 			'wc_base'  => '/var/www',
 			'log_path' => '/var/log/apache2/{repo}_error.log',
 		),
+		'web2' => array(
+			'ssh_host' => 'web2.sayu.co.uk', 'ssh_user' => 'tema',
+			'wc_base'  => '/var/vhosts',
+			'log_path' => '/var/log/vhosts/{repo}/error.log',
+			// These sites are reached publicly via web2's userdir path, not their own domain, so the
+			// client file API's base_url uses this pattern (files land in {wc_base}/{repo}/public_html).
+			'public_base' => 'https://web2.sayu.co.uk/~{repo}/',
+		),
 	);
 }
 
@@ -69,6 +84,9 @@ function svn_site_cron_users() {
 		'dev.puregusto.co.uk'           => '',          // TODO: confirm crontab owner
 		'rubberduckbathrooms.co.uk'     => 'rubber',
 		'dev.rubberduckbathrooms.co.uk' => 'rubber',
+		'richdiamonds.com'              => 'richdiamonds',
+		'watchcentre.com'               => 'watchcentre',
+		'tressoro.com'                  => 'tressoro',
 	);
 }
 
