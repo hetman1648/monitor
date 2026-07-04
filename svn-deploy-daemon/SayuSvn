@@ -1,0 +1,957 @@
+#!/usr/bin/perl
+
+use POSIX;
+use POSIX ":sys_wait_h";
+use File::Basename;
+use Socket;
+use IO::Handle;
+use Sys::Syslog qw( :DEFAULT setlogsock);
+use Digest::MD5 qw(md5_hex);
+use Fcntl qw(:flock);
+use DBI;
+use MIME::Base64 qw(encode_base64);
+use Time::Local;
+
+@children = ();
+sub REAPER {
+    $SIG{CHLD} = \&REAPER;
+    for ($i = 0; $i < scalar(@children); $i++) {
+	waitpid($children[$i],0);
+	delete $children[$i];
+    }
+}
+$SIG{CHLD} = \&REAPER;
+
+$CONFIG = "/etc/sayu-svn/sayu-svn.conf";
+%cfg = ();
+open(CONF,"$CONFIG");
+chomp(@data = <CONF>);
+close(CONF);
+
+for ($i = 0; $i < scalar(@data); $i++) {
+    $data[$i] =~ s/\ //g;
+    my ($key,$value) = split("=",$data[$i]);
+    $cfg{"$key"} = $value;
+}
+
+if ($cfg{"type"} eq "UNIX") {
+    if (-e $cfg{"socket"}) {
+	setlogsock('unix');
+	openlog($0,'pid','SayuSvn');
+	syslog('err', ($cfg{"socket"}) . " already exists. Exit.");
+	closelog();
+	exit(1);
+    }
+}
+
+POSIX::setsid or die "setsid: $!";
+
+chdir("/");
+umask 0022;
+
+foreach (0 .. (POSIX::sysconf (&POSIX::_SC_OPEN_MAX) || 1024)) { 
+    POSIX::close $_ 
+}
+
+open(STDIN, "</dev/null");
+open(STDOUT, ">/dev/null");
+open(STDERR, ">&STDOUT");
+
+my $pid = fork();
+
+if ($pid < 0) {
+    die "fork: $!";
+} elsif ($pid) {
+    if (!-e $cfg{"socket"}) {
+	if (!-d dirname($cfg{"pid_file"})) {
+	    system("mkdir -p " . (dirname($cfg{"pid_file"})));
+	}
+	open(PID_FILE,">" . ($cfg{"pid_file"}));
+	print PID_FILE "$pid";
+	close(PID_FILE);
+    }
+    exit(0);
+} elsif (!$pid) {
+}
+
+setsid();
+setpgrp(0,0);
+
+if ($cfg{"type"} eq "UNIX") {
+    socket(SAYUSVN,PF_UNIX,SOCK_STREAM,0);
+    unlink($cfg{"socket"});
+    bind(SAYUSVN,sockaddr_un($cfg{"socket"}));
+    chmod($cfg{"socket"},int($cfg{"socket_umask"}));
+    listen(SAYUSVN,100);
+}
+if ($cfg{"type"} eq "TCP") {
+    socket(SAYUSVN, PF_INET, SOCK_STREAM, getprotobyname("tcp"));
+    setsockopt(SAYUSVN, SOL_SOCKET, SO_REUSEADDR, 1);
+    bind(SAYUSVN, pack_sockaddr_in($cfg{"socket"}, inet_aton("77.68.48.248")));
+    listen(SAYUSVN, 100);
+}
+
+while (1) {
+    while (accept(CLIENT, SAYUSVN)) {
+	setsockopt(CLIENT, SOL_SOCKET, SO_SNDTIMEO, pack('L!L!', 15, 0));
+	setsockopt(CLIENT, SOL_SOCKET, SO_RCVTIMEO, pack('L!L!', 15, 0));
+	$svnpid = fork();
+	if ($svnpid) {
+	    push(@children,$svnpid);
+	    next;
+	}
+	if (!$svnpid) {
+	    &do_threaded();
+	    exit;
+	}
+    }
+}
+
+sub do_threaded {
+    our %parameters = ();
+    CLIENT->autoflush(1);
+    print CLIENT "SayuSvn daemon ready...\n";
+    my $instructions = <CLIENT>;
+    &log_message("Got instructions: $instructions");
+    our (@pairs) = split("&",$instructions);
+    my $i = 0;
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    if ($parameters{"action"} eq "createuser") { 
+	print CLIENT &createuser($instructions);
+    }
+    if ($parameters{"action"} eq "passwd") {
+	print CLIENT &passwd($instructions);
+    }
+    if ($parameters{"action"} eq "show") {
+	print CLIENT &show($instructions);
+    }
+    if ($parameters{"action"} eq "checkout") {
+	print CLIENT &checkout($instructions);
+    }
+    if ($parameters{"action"} eq "state") {
+	print CLIENT &state($instructions);
+    }
+    if ($parameters{"action"} eq "shperm") {
+	print CLIENT &shperm($instructions);
+    }
+    if ($parameters{"action"} eq "shmyperm") {
+	print CLIENT &shmyperm($instructions);
+    }
+    if ($parameters{"action"} eq "mypasswd") {
+	print CLIENT &mypasswd($instructions);
+    }
+    if ($parameters{"action"} eq "showupdates") {
+	print CLIENT &showupdates($instructions);
+    }
+    if ($parameters{"action"} eq "showusers") {
+	print CLIENT &showusers($instructions);
+    }
+    if ($parameters{"action"} eq "shlasterr") {
+	print CLIENT &showlasterrors($instructions);
+    }
+    if ($parameters{"action"} eq "shcriterr") {
+	print CLIENT &showcriterrors($instructions);
+    }
+    if ($parameters{"action"} eq "showcrons") {
+	print CLIENT &showcrons($instructions);
+    }
+    if ($parameters{"action"} eq "shdbbackup") {
+	print CLIENT &showdbbackups($instructions);
+    }
+    close(CLIENT);
+}
+
+sub log_message {
+    my ($message) = @_;
+    setlogsock('unix');
+    openlog('SayuSvn', 'pid', 'SayuSvn');
+    syslog('info', $message);
+    closelog();
+}
+
+sub createuser {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"createuser");
+    if ($rc eq "+OK Accepted") {
+	our @ret = ();
+	my $cmd = "cat " . ($cfg{"passwd_file"}) . "| grep ^" . ($parameters{"newuser"}) . ":";
+	chomp(@ret = `$cmd`);
+	if (scalar(@ret)) {
+	    return "-ERR User \"" . ($parameters{"newuser"}) . "\" already exists\n";
+	}
+	$cmd = "cat " . ($cfg{"passwd_file"}) . "| grep :subdomain=" . ($parameters{"subdomain"}) . ":";
+	chomp(@ret = `$cmd`);
+	if (scalar(@ret)) {
+	    return "-ERR Subdomain \"" . ($parameters{"subdomain"}) . "\" already exists\n";
+	}
+	if (length($parameters{"newuser"}) < 3) {
+	    return "-ERR Username for new user must include more than 2 symbols\n";
+	}
+	if ($parameters{"newuser"} =~ /[^a-zA-Z0-9_]+/) {
+	    return "-ERR Username includes invalid symbol(s)\n";
+	}
+	if (length($parameters{"newpassword"}) < 6) {
+	    return "-ERR Password for new user must include more than 6 symbols\n";
+	}
+	if (length($parameters{"subdomain"}) < 2) {
+	    return "-ERR Invalid subdomain received\n";
+	}
+	if ($parameters{"subdomain"} =~ /[^a-z0-9]+/) {
+	    return "-ERR Subdomain includes invalid symbol(s)\n";
+	}
+	if (($parameters{"usertype"} ne "admin") && ($parameters{"usertype"} ne "developer")) {
+	    return "-ERR Invalid usertype\n";
+	}
+	my $waiting = 0;
+	open(F,">>" . ($cfg{"passwd_file"}));
+	while (!flock(F,2)) {
+	    sleep(1);
+	    $waiting++;
+	    if ($waiting > 120) {
+		return "-ERR Can't lock svn passwd file\n";
+	    }
+	}
+	if ($parameters{"usertype"} eq "admin") {
+	    print F "" . ($parameters{"newuser"}) . ":" . (md5_hex($parameters{"newpassword"})) . ":subdomain=" . ($parameters{"subdomain"}) . ":createuser=y:passwd=y:checkout=y:show=y:state=y:shperm=y:shmyperm=y:mypasswd=y:showupdates=y:shlasterr=y:shcriterr=y:showcrons=y\n";
+	}
+	if ($parameters{"usertype"} eq "developer") {
+	    print F "" . ($parameters{"newuser"}) . ":" . (md5_hex($parameters{"newpassword"})) . ":subdomain=" . ($parameters{"subdomain"}) . ":createuser=n:passwd=n:checkout=y:show=y:state=y:shperm=n:shmyperm=y:mypasswd=y:showupdates=y:shlasterr=y:shcriterr=y:showcrons=y\n";
+	}
+	close(F);
+	$waiting = 0;
+	open(F,">>" . ($cfg{"svn_users_file"}));
+	while (!flock(F,2)) {
+	    sleep(1);
+	    $waiting++;
+	    if ($waiting > 120) {
+		return "-ERR Can't lock svn users file\n";
+	    }
+	}
+	print F ($parameters{"newuser"}) . " = " . ($parameters{"newpassword"}) . "\n";
+	close(F);
+	return "+OK User created\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub passwd {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"passwd");
+    if ($rc eq "+OK Accepted") {
+	our @ret = ();
+	my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^" . ($parameters{"chusername"}) . ":";
+	chomp(@ret = `$cmd`);
+	if (!scalar(@ret)) {
+	    return "-ERR User \"" . ($parameters{"chusername"}) . "\" doesn't exists\n";
+	}
+	if (length($parameters{"chpassword"}) < 6) {
+	    return "-ERR Password must include more than 6 symbols\n";
+	}
+	our @passwd_content = ();
+	open(F,$cfg{"passwd_file"});
+	chomp(@passwd_content = <F>);
+	close(F);
+	my $waiting = 0;
+	open(F,">" . ($cfg{"passwd_file"}));
+	while (!flock(F,2)) {
+	    sleep(1);
+	    $waiting++;
+	    if ($waiting > 120) {
+		return "-ERR Can't lock svn passwd file\n";
+	    }
+	}
+	my $i = 0;
+	for ($i = 0; $i < scalar(@passwd_content); $i++) {
+	    if ($passwd_content[$i] eq $ret[0]) {
+		our @chunks = split(":",$ret[0]);
+		print F ($chunks[0]) . ":" . (md5_hex($parameters{"chpassword"}));
+		for ($j = 2; $j < scalar(@chunks); $j++) {
+		    print F ":" . ($chunks[$j]);
+		}
+		print F "\n";
+	    }
+	    else {
+		print F $passwd_content[$i] . "\n";
+	    }
+	}
+	close(F);
+
+	$cmd = "cat " . ($cfg{"svn_users_file"}) . " | grep '^" . ($parameters{"chusername"}) . " ='";
+	chomp(@ret = `$cmd`);
+	@passwd_content = ();
+	open(F,$cfg{"svn_users_file"});
+	chomp(@passwd_content = <F>);
+	close(F);
+	my $waiting = 0;
+	open(F,">" . ($cfg{"svn_users_file"}));
+	while (!flock(F,2)) {
+	    sleep(1);
+	    $waiting++;
+	    if ($waiting > 120) {
+		return "-ERR Can't lock svn users file\n";
+	    }
+	}
+	my $i = 0;
+	for ($i = 0; $i < scalar(@passwd_content); $i++) {
+	    if ($passwd_content[$i] eq $ret[0]) {
+		our @chunks = split("=",$ret[0]);
+		print F ($chunks[0]) . "= " . ($parameters{"chpassword"}) . "\n";
+	    }
+	    else {
+		print F $passwd_content[$i] . "\n";
+	    }
+	}
+	close(F);
+	return "+OK Password changed\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub show {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"show");
+    if ($rc eq "+OK Accepted") {
+	our @list = ();
+	my $cmd = "ls " . ($cfg{"svn_root"});
+	chomp(@list = `$cmd`);
+	my $rlist = join("\n",@list);
+	return "+OK Repositories list: " . ($rlist) . "\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub showusers {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    my $i = 0;
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"showusers");
+    if ($rc eq "+OK Accepted") {
+	our @list = ();
+	my $cmd = "cat " . $cfg{"passwd_file"};
+	my $ulist = "";
+	chomp(@list = `$cmd`);
+	for ($i = 0; $i < scalar(@list); $i++) {
+	    $list[$i] =~ /^([^:]+):/;
+	    $ulist .= $1 . " (";
+	    if ($list[$i] =~ /createuser=y/) {
+		$ulist .= "admin";
+	    }
+	    else {
+		$ulist .= "user";
+	    }
+	    $ulist .= ")\n";
+	}
+	return "+OK Users list: " . ($ulist) . "\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub checkout {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"checkout");
+    if ($rc eq "+OK Accepted") {
+	if (length($parameters{"path"})) {
+	    if (-d $cfg{"clients_root"} . "/" . $parameters{"repository"} . "/" . $parameters{"path"}) {
+		chdir($cfg{"clients_root"} . "/" . $parameters{"repository"} . "/" . $parameters{"path"});
+	    }
+	    else {
+		return "-ERR Invalid PATH specified: " . ($cfg{"clients_root"}) . "/" . ($parameters{"repository"}) . "/" . ($parameters{"path"});
+	    }
+	}
+	else {
+	    chdir($cfg{"clients_root"} . "/" . $parameters{"repository"});
+	}
+	my $cmd = "export LC_ALL=en_US.UTF-8; svn update --non-interactive --trust-server-cert --no-auth-cache --username " . ($parameters{"username"}) . " --password " . ($parameters{"password"}) . " --force";
+	my $svnresponse = "";
+	$svnresponse = `$cmd`;
+	chdir("/");
+	my $target = ($cfg{"clients_root"}) . "/" . ($parameters{"repository"});
+	my $owner = (getpwuid((stat($target))[4]))[0];
+	# svn ran as root; hand the tree back to the working-copy owner (the site user).
+	if (defined($owner) && $owner ne "" && $owner ne "root") { system("chown -R " . $owner . ":" . $owner . " " . $target . " &"); }
+	return "+OK Checkout complete\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub state {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"state");
+    if ($rc eq "+OK Accepted") {
+	my $cmd = "export LC_ALL=en_US.UTF-8; svn info --non-interactive --trust-server-cert --no-auth-cache svn://web1.sayu.co.uk" . ($cfg{"svn_root"}) . "/" . $parameters{"repository"} . " --username " . ($parameters{"username"}) . " --password " . ($parameters{"password"});
+	my $svnresponse = "";
+	$svnresponse = `$cmd`;
+	chdir("/");
+	if ($svnresponse =~ /Path:/) {
+	    return "+OK Status: $svnresponse\n";
+	}
+	else {
+	    return "-ERR Repository getting status error. Check if \"svnserve -d\" is ran\n";
+	}
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub showupdates {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    my $i = 0;
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"showupdates");
+    if ($rc eq "+OK Accepted") {
+	chdir($cfg{"clients_root"} . "/" . $parameters{"repository"});
+	my $cmd = "export LC_ALL=en_US.UTF-8; svn status --non-interactive --trust-server-cert --no-auth-cache --show-updates --username " . ($parameters{"username"}) . " --password " . ($parameters{"password"});
+	our @svnresponse = ();
+	chomp(@svnresponse = `$cmd`);
+	my $svnresp = "";
+	for ($i = 0; $i < scalar(@svnresponse); $i++) {
+	    if ($svnresponse[$i] !~ /^\?/ || $svnresponse[$i] =~ /\.php$/ || $svnresponse[$i] =~ /\.js$/ || $svnresponse[$i] =~ /\.html$/ || $svnresponse[$i] =~ /\.css$/) {
+		if ($svnresponse[$i] !~ /ftp_demo\//) { # patch for mount by --bind option folder
+		    $svnresp .= $svnresponse[$i] . "\n";
+		}
+	    }
+	}
+	chdir("/");
+	if ($svnresp =~ /revision/) {
+	    return "+OK Updates: $svnresp\n";
+	}
+	else {
+	    return "-ERR Repository show updates error. Check if \"svnserve -d\" is ran\n";
+	}
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub shperm {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"shperm");
+    if ($rc eq "+OK Accepted") {
+	my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^" . ($parameters{"shusername"}) . ":";
+	my $response = "";
+	$response = `$cmd`;
+	our @list = split(":",$response);
+	chomp(@list);
+	$response = $list[0];
+	my $i = 0;
+	for ($i = 2; $i < scalar(@list); $i++) {
+	    $response .= ":";
+	    $response .= $list[$i]
+	}
+	return "+OK Permissions list: $response\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub shmyperm {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"shmyperm");
+    if ($rc eq "+OK Accepted") {
+	my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^" . ($parameters{"username"}) . ":";
+	my $response = "";
+	$response = `$cmd`;
+	our @list = split(":",$response);
+	chomp(@list);
+	$response = $list[0];
+	my $i = 0;
+	for ($i = 2; $i < scalar(@list); $i++) {
+	    $response .= ":";
+	    $response .= $list[$i]
+	}
+	return "+OK Permissions list: $response\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub mypasswd {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"mypasswd");
+    if ($rc eq "+OK Accepted") {
+	our @ret = ();
+	my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^" . ($parameters{"username"}) . ":";
+	chomp(@ret = `$cmd`);
+	if (!scalar(@ret)) {
+	    return "-ERR User \"" . ($parameters{"username"}) . "\" doesn't exists\n";
+	}
+	if (length($parameters{"chpassword"}) < 6) {
+	    return "-ERR Password must include more than 6 symbols\n";
+	}
+	our @passwd_content = ();
+	open(F,$cfg{"passwd_file"});
+	chomp(@passwd_content = <F>);
+	close(F);
+	my $waiting = 0;
+	open(F,">" . ($cfg{"passwd_file"}));
+	while (!flock(F,2)) {
+	    sleep(1);
+	    $waiting++;
+	    if ($waiting > 120) {
+		return "-ERR Can't lock svn passwd file\n";
+	    }
+	}
+	my $i = 0;
+	for ($i = 0; $i < scalar(@passwd_content); $i++) {
+	    if ($passwd_content[$i] eq $ret[0]) {
+		our @chunks = split(":",$ret[0]);
+		print F ($chunks[0]) . ":" . (md5_hex($parameters{"chpassword"}));
+		for ($j = 2; $j < scalar(@chunks); $j++) {
+		    print F ":" . ($chunks[$j]);
+		}
+		print F "\n";
+	    }
+	    else {
+		print F $passwd_content[$i] . "\n";
+	    }
+	}
+	close(F);
+
+	$cmd = "cat " . ($cfg{"svn_users_file"}) . " | grep '^" . ($parameters{"username"}) . " ='";
+	chomp(@ret = `$cmd`);
+	@passwd_content = ();
+	open(F,$cfg{"svn_users_file"});
+	chomp(@passwd_content = <F>);
+	close(F);
+	my $waiting = 0;
+	open(F,">" . ($cfg{"svn_users_file"}));
+	while (!flock(F,2)) {
+	    sleep(1);
+	    $waiting++;
+	    if ($waiting > 120) {
+		return "-ERR Can't lock svn users file\n";
+	    }
+	}
+	my $i = 0;
+	for ($i = 0; $i < scalar(@passwd_content); $i++) {
+	    if ($passwd_content[$i] eq $ret[0]) {
+		our @chunks = split("=",$ret[0]);
+		print F ($chunks[0]) . "= " . ($parameters{"chpassword"}) . "\n";
+	    }
+	    else {
+		print F $passwd_content[$i] . "\n";
+	    }
+	}
+	close(F);
+	return "+OK Password changed\n";
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub showlasterrors {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"shlasterr");
+    if ($rc eq "+OK Accepted") {
+	my $http_log = "";
+	my $https_log = "";
+	if (-f "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/error.log") { $http_log = "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/error.log"; }
+	if (-f "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/ssl_error.log") { $https_log = "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/ssl_error.log"; }
+	if (length($http_log) || length($https_log)) {
+	    if (!length($parameters{"start_date_time"})) {
+		my $cmd = "cat $http_log $https_log";
+		my $response = "";
+		my @error_log = ();
+		chomp(@error_log = `$cmd`);
+		if (scalar(@error_log)) {
+		    if (scalar(@error_log) >= 50) {
+			my $arr_size = scalar(@error_log);
+			for (my $j = $arr_size - 51; $j <= $arr_size - 1; $j++) {
+			    $response .= $error_log[$j] . "\n";
+			}
+		    }
+		    else {
+			for (my $j = 0; $j < scalar(@error_log); $j++) {
+			    $response .= $error_log[$j] . "\n";
+			}
+		    }
+		    $response = encode_base64($response);
+		    return "+OK Last Errors: $response\n";
+		}
+		else {
+		    return "-ERR The error log is empty\n";
+		}
+	    }
+	    else {
+		$response = &log_after_ts($parameters{"start_date_time"}, $parameters{"repository"});
+		if (!length($response)) {
+		    return "-ERR The error log is empty\n";
+		}
+		else {
+		    $response = encode_base64($response);
+		    return "+OK Last Errors: $response\n";
+		}
+	    }
+	}
+	else {
+	    return "-ERR No logs found\n";
+	}
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub showcriterrors {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"shcriterr");
+    if ($rc eq "+OK Accepted") {
+	my $http_log = "";
+	my $https_log = "";
+	if (-f "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/error.log") { $http_log = "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/error.log"; }
+	if (-f "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/ssl_error.log") { $https_log = "/mnt/drive2/logs/" . ($parameters{"repository"}) . "/ssl_error.log"; }
+	if (length($http_log) || length($https_log)) {
+	    my $cmd = "cat $http_log $https_log | egrep '(PHP Fatal error)|(core:alert)|(:error)' | grep -v access_compat | grep -v 'PHP Notice' | grep -v 'ssl:error'";
+	    my $response = "";
+	    my @error_log = ();
+	    if (!length($parameters{"start_date_time"})) {
+		chomp(@error_log = `$cmd`);
+	    }
+	    else {
+		@error_log = &err_after_ts($parameters{"start_date_time"}, $cmd);
+	    }
+	    if (scalar(@error_log)) {
+		if (scalar(@error_log) >= 50) {
+		    my $arr_size = scalar(@error_log);
+		    for (my $j = $arr_size - 51; $j <= $arr_size - 1; $j++) {
+			$response .= $error_log[$j] . "\n";
+		    }
+		}
+		else {
+		    for (my $j = 0; $j < scalar(@error_log); $j++) {
+			$response .= $error_log[$j] . "\n";
+		    }
+		}
+		$response = encode_base64($response);
+		return "+OK Fatal Errors: $response\n";
+	    }
+	    else {
+		return "-ERR No critical errors found\n";
+	    }
+	}
+	else {
+	    return "-ERR No logs found\n";
+	}
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub showcrons {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"showcrons");
+    if ($rc eq "+OK Accepted") {
+	my @cron = ();
+	my @jobs = ();
+	my $repository = $parameters{"repository"};
+	chomp(@cron = `egrep '\/$repository' /var/spool/cron/crontabs/* --exclude=/var/spool/cron/crontabs/root`);
+
+	if (scalar(@cron)) {
+	    my ($fn) = split(":", $cron[0]);
+	    chomp(@jobs = `cat $fn | grep -v '^#'`);
+	    my $response = join("\n", @jobs);
+	    $response = encode_base64($response);
+	    return "+OK Cron Jobs list: $response\n";
+	}
+	else {
+	    return "+OK No Cron Jobs installed yet";
+	}
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub showdbbackups {
+    my ($input) = @_;
+    our %parameters = ();
+    our (@pairs) = split("&",$input);
+    my $i = 0;
+    for ($i = 0; $i < scalar(@pairs); $i++) {
+	my ($key,$value) = split("=",$pairs[$i]);
+	$parameters{$key} = $value;
+	$parameters{$key} =~ s/(\r)|(\n)//g;
+    }
+    my $rc = &check_rights($parameters{"username"},$parameters{"password"},"shdbbackup");
+    if ($rc eq "+OK Accepted") {
+	my $response = "";
+	my $connection = DBI->connect("DBI:mysql:" . ($cfg{"clients_db_name"}) . ":" . ($cfg{"clients_db_host"}), $cfg{"clients_db_user"}, $cfg{"clients_db_password"});
+	my $sql  = "SELECT mysql_databases.db_name FROM mysql_databases INNER JOIN http_users_data ON mysql_databases.user_id=http_users_data.user_id";
+	   $sql .= " WHERE http_users_data.hostname='" . ($parameters{"repository"}) . "' LIMIT 1;";
+	my $result = $connection->prepare(qq|$sql|);
+	$result->execute();
+	if ($result->rows()) {
+	    my @dbs = $result->fetchrow();
+	    my $cmd = "ssh backup.sayu.co.uk ls -al /backup/dbs/daily/" . ($dbs[0]) . "-*.dump.bz2 | awk '{print \$9}'";
+	    my @data = `$cmd`;
+	    chomp(@data);
+	    @data = sort(@data);
+	    if (scalar(@data)) {
+		my $j = 0;
+		for ($j = 0; $j < scalar(@data); $j++) {
+		    my @row = split("/", $data[$j]);
+		    $response .= "$row[$#row]\n";
+		}
+		$result->finish();
+		$connection->disconnect();
+		return "+OK DB backups list: $response\n";
+	    }
+	    else {
+		$result->finish();
+		$connection->disconnect();
+		return "-ERR No DB backups found for " . ($parameters{"repository"});
+	    }
+	}
+	else {
+	    $result->finish();
+	    $connection->disconnect();
+	    return "-ERR No DBs linked on this repository";
+	}
+    }
+    else { return "-ERR Access denied\n"; }
+}
+
+sub check_rights {
+    my ($username,$password,$perm) = @_;
+    our @rights = ();
+    if (! -f $cfg{"passwd_file"}) { return "-ERR Missing passwd file"; }
+    else {
+	if ($perm eq "createuser") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep createuser=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "passwd") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep passwd=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "show") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep show=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "checkout") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep checkout=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "state") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep state=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "shperm") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep shperm=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "shmyperm") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep shmyperm=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "mypasswd") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep mypasswd=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "showupdates") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep showupdates=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "showusers") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep showusers=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "shlasterr") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep shlasterr=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "shcriterr") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep shcriterr=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "showcrons") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep showcrons=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+	if ($perm eq "shdbbackup") {
+	    my $cmd = "cat " . ($cfg{"passwd_file"}) . " | grep ^$username: | grep :" . (md5_hex($password)) . ": | grep shdbbackup=y";
+	    chomp(@rights = `$cmd`);
+	    if (!scalar(@rights)) { return "-ERR Access denied"; }
+	    else { return "+OK Accepted"; }
+	}
+    }
+}
+
+sub log_after_ts() {
+    my %mon2num = qw(Jan 0  Feb 1  Mar 2  Apr 3  May 4  Jun 5  Jul 6  Aug 7  Sep 8  Oct 9 Nov 10 Dec 11);
+    my ($timestamp, $repository) = @_;
+    my $log_content = "";
+    my @output = ();
+    my @ssl_output = ();
+    my @clean_output = ();
+    my $i = 0;
+    my $j = 0;
+    if (-f "/mnt/drive2/logs/$repository/ssl_error.log") {
+	open(F, "/mnt/drive2/logs/$repository/ssl_error.log");
+	chomp(@ssl_output = <F>);
+	close(F);
+	for ($i = 0; $i < scalar(@ssl_output); $i++) {
+	    $ssl_output[$i] =~ /^\[([^\]]+)\]/;
+	    my ($wday, $mon, $mday, $hour, $min, $sec, $msec, $year) = split(/[\s.:]+/, $1);
+	    my $time = timelocal($sec, $min, $hour, $mday, $mon2num{substr($mon, 0, 3)}, $year);
+	    if ($time >= $timestamp) {
+		if ($j < 50) {
+		    $clean_output[$j] = $ssl_output[$i];
+		    $j++;
+		}
+	    }
+	}
+    }
+    if ($j < 50) {
+	if (-f "/mnt/drive2/logs/$repository/error.log") {
+	    open(F, "/mnt/drive2/logs/$repository/error.log");
+	    chomp(@output = <F>);
+	    close(F);
+	}
+	for ($i = 0; $i < scalar(@output); $i++) {
+	    $output[$i] =~ /^\[([^\]]+)\]/;
+	    my ($wday, $mon, $mday, $hour, $min, $sec, $msec, $year) = split(/[\s.:]+/, $1);
+	    my $time = timelocal($sec, $min, $hour, $mday, $mon2num{substr($mon, 0, 3)}, $year);
+	    if ($time >= $timestamp) {
+		if ($j < 50) {
+		    $clean_output[$j] = $output[$i];
+		    $j++;
+		}
+	    }
+	}
+    }
+    $log_content = join("\n", @clean_output);
+    return $log_content;
+}
+
+sub err_after_ts() {
+    my %mon2num = qw(Jan 0  Feb 1  Mar 2  Apr 3  May 4  Jun 5  Jul 6  Aug 7  Sep 8  Oct 9 Nov 10 Dec 11);
+    my ($timestamp, $cmd) = @_;
+    my @clean_output = ();
+    my @output = `$cmd`;
+    chomp(@output);
+    my $i = 0;
+    my $j = 0;
+    for ($i = 0; $i < scalar(@output); $i++) {
+	$output[$i] =~ /^\[([^\]]+)\]/;
+	my ($wday, $mon, $mday, $hour, $min, $sec, $msec, $year) = split(/[\s.:]+/, $1);
+	my $time = timelocal($sec, $min, $hour, $mday, $mon2num{substr($mon, 0, 3)}, $year);
+	if ($time >= $timestamp) {
+	    if ($j < 50) {
+		$clean_output[$j] = $output[$i];
+		$j++;
+	    }
+	}
+    }
+
+    return @clean_output;
+}
