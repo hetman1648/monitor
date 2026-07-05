@@ -327,6 +327,39 @@ html.dark-mode{
 
 #svnApp .field-label{ font-size:12px; font-weight:800; letter-spacing:.7px; color:var(--muted-2); text-transform:uppercase; margin:6px 0 8px; }
 #svnApp .preview-chips{ display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+#svnApp .svn-ta{ width:100%; box-sizing:border-box; resize:vertical; min-height:120px; background:var(--raise); border:1px solid var(--line-strong); border-radius:10px; padding:11px 14px; color:var(--ink); font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; outline:none; transition:.15s; }
+#svnApp .svn-ta:focus{ border-color:var(--acc-solid); box-shadow:0 0 0 3px rgba(93,111,214,.18); }
+#svnApp .svn-ta::placeholder{ color:var(--muted-2); }
+#svnApp .glist-preview{ margin-top:14px; }
+#svnApp .glist-sum{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:12.5px; margin-bottom:10px; }
+#svnApp .glist-pill{ font-weight:700; border-radius:20px; padding:3px 10px; }
+#svnApp .glist-pill.ok{ color:var(--ok); background:var(--ok-bg); }
+#svnApp .glist-pill.warn{ color:var(--warn); background:var(--warn-bg); }
+#svnApp .glist-rows{ display:flex; flex-direction:column; gap:4px; max-height:230px; overflow:auto; }
+#svnApp .glist-row{ display:flex; align-items:center; gap:9px; font-size:13px; padding:5px 9px; border-radius:8px; background:var(--raise); border:1px solid var(--line); }
+#svnApp .glist-row .gl-dom{ color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .glist-row .gl-arrow{ color:var(--muted-2); flex:none; }
+#svnApp .glist-row .gl-repo{ color:var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; }
+#svnApp .glist-row .gl-tag{ margin-left:auto; flex:none; font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; padding:2px 8px; border-radius:6px; }
+#svnApp .glist-row.miss{ border-color:var(--warn-bg); }
+#svnApp .glist-row.miss .gl-dom{ color:var(--warn); }
+#svnApp .glist-row .gl-tag.ok{ color:var(--ok); background:var(--ok-bg); }
+#svnApp .glist-row .gl-tag.miss{ color:var(--warn); background:var(--warn-bg); }
+#svnApp .glist-row .gl-tag.fuzzy{ color:var(--muted); background:var(--hover); }
+#svnApp .gcrit-site{ border:1px solid var(--line-strong); border-radius:12px; margin-top:12px; overflow:hidden; }
+#svnApp .gcrit-site-head{ display:flex; align-items:center; gap:10px; padding:10px 13px; background:var(--raise); border-bottom:1px solid var(--line); }
+#svnApp .gcrit-dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+#svnApp .gcrit-dot.warn{ background:var(--warn); }
+#svnApp .gcrit-name{ font-size:13.5px; font-weight:700; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .gcrit-badge{ font-size:11.5px; font-weight:800; border-radius:6px; padding:2px 8px; flex:none; }
+#svnApp .gcrit-badge.warn{ color:var(--warn); background:var(--warn-bg); }
+#svnApp .gcrit-site-head .gcrit-open{ margin-left:auto; flex:none; }
+#svnApp .gcrit-site .log-list{ padding:4px 10px 8px; }
+#svnApp .gcrit-line{ display:flex; align-items:center; gap:8px; font-size:13px; padding:9px 12px; margin-top:10px; border-radius:9px; }
+#svnApp .gcrit-line.ok{ color:var(--ok); background:var(--ok-bg); }
+#svnApp .gcrit-line.err{ color:var(--warn); background:var(--warn-bg); }
+#svnApp .gcrit-line.muted{ color:var(--muted); }
+#svnApp .gcrit-line svg{ flex:none; }
 #svnApp .pchip{ font-size:12.5px; font-weight:600; color:var(--ink-soft); background:var(--raise); border:1px solid var(--line); border-radius:20px; padding:5px 11px; cursor:pointer; }
 #svnApp .pchip:hover{ border-color:var(--line-strong); color:var(--ink); }
 
@@ -546,6 +579,7 @@ html.dark-mode{
       <div class="head-actions">
         <button class="btn" id="btnHistory" data-info="history">History</button>
         <button class="btn" id="btnLog" data-info="log">Error Log</button>
+        <button class="btn" id="btnCritical">Critical Errors</button>
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
         <button class="btn" id="btnBackups">Backups</button>
         <button class="btn" id="btnDevCopy">Dev copy</button>
@@ -738,12 +772,15 @@ function hashDevCopy(h){
   var r = decodeURIComponent(h.slice(i + 4).split('~')[0]);
   return REPOS.indexOf(r) !== -1 ? r : '';
 }
-// Reconcile the open overlay modal (backups / info / dev copy) with target markers. Avoids reload loops.
-function reconcileOverlay(bk, info, dc){
+// Whether the hash flags the group critical-errors view open (e.g. "g-12~crit").
+function hashCritical(h){ return (h||'').indexOf('~crit') !== -1; }
+// Reconcile the open overlay modal (backups / info / dev copy / group-critical) with target markers. Avoids reload loops.
+function reconcileOverlay(bk, info, dc, crit){
   if(bk){ if(BK_OPEN_REPO !== bk) openBackups(bk); }
   else if(info){ if(!INFO_OPEN || INFO_OPEN.kind !== info.kind || INFO_OPEN.repo !== info.repo) openInfo(info.kind, info.repo); }
   else if(dc){ if(DC_OPEN_REPO !== dc) openDevCopy(dc); }
-  else { if(BK_OPEN_REPO || INFO_OPEN || DC_OPEN_REPO) closeModal(); }
+  else if(crit){ if(!GCRIT || GCRIT.scope !== String(STATE.activeGroup)) openGroupCritical(true); }
+  else { if(BK_OPEN_REPO || INFO_OPEN || DC_OPEN_REPO || GCRIT) closeModal(); }
 }
 var SVN_PATH_PREFIX = 'svn://web1.sayu.co.uk/mnt/drive2/webclients/';
 
@@ -886,6 +923,7 @@ function openGroupMenu(){
   });
   html += '<div class="rail-sep"></div>';
   html += '<button class="btn ghost grp-new" id="grpNewBtn">'+icon('folderPlus',17)+' New group from selection</button>';
+  html += '<button class="btn ghost grp-new" id="grpNewListBtn">'+icon('folderPlus',17)+' New group from a list</button>';
   html += '</div>';
   $('#grpDd').append(html);
   $('#grpTrigger').addClass('open');
@@ -1177,7 +1215,7 @@ function openActionsPop(repo, anchor){
 
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); } BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
+function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); } BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; GCRIT=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
 
 // Styled confirm dialog (replaces window.confirm); layers above any open modal.
 var UICONFIRM_CB = null;
@@ -1265,6 +1303,84 @@ function openSaveGroup(presetRepos){
     + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn ghost" data-close-modal="1">Cancel</button>'
     + '<button class="btn solid" id="saveGroupBtn">'+icon('check',16)+' Save group</button></div></div>');
   $('#grpNameInput').data('repos', repos).focus();
+}
+
+// ---- new group from a pasted list of domains ----
+// Normalise a pasted line to a bare host: drop protocol, path, leading www., trailing punctuation.
+function glNormDomain(s){
+  s = String(s).trim().toLowerCase();
+  if(!s) return '';
+  s = s.replace(/^[a-z][a-z0-9+.-]*:\/\//,''); // scheme://
+  s = s.replace(/[\/?#].*$/,'');               // path/query/fragment
+  s = s.replace(/^www\./,'');
+  s = s.replace(/^[\s,;>*\-]+|[\s,;.]+$/g,'');
+  return s;
+}
+// Resolve a normalised domain to a real repository name, or null. Returns {repo, how}.
+function glMatchRepo(dom){
+  if(!dom) return null;
+  for(var i=0;i<REPOS.length;i++){ if(REPOS[i].toLowerCase()===dom) return {repo:REPOS[i], how:'exact'}; }
+  for(var i=0;i<REPOS.length;i++){ if(REPOS[i].toLowerCase().replace(/^www\./,'')===dom) return {repo:REPOS[i], how:'exact'}; }
+  var hits=[];
+  for(var i=0;i<REPOS.length;i++){ var rl=REPOS[i].toLowerCase(); if(rl.indexOf(dom)!==-1 || dom.indexOf(rl)!==-1) hits.push(REPOS[i]); }
+  if(hits.length===1) return {repo:hits[0], how:'fuzzy'};
+  return null;
+}
+// Parse the textarea into de-duplicated, matched rows (order preserved).
+function glParseList(text){
+  var rows=[], seenRepo={}, seenDom={};
+  String(text||'').split(/[\r\n]+/).forEach(function(line){
+    var dom = glNormDomain(line);
+    if(!dom || seenDom[dom]) return;
+    seenDom[dom]=true;
+    var m = glMatchRepo(dom);
+    if(m && seenRepo[m.repo]) return; // two lines resolving to the same repo
+    if(m) seenRepo[m.repo]=true;
+    rows.push({ domain:dom, repo:m?m.repo:null, how:m?m.how:null });
+  });
+  return rows;
+}
+function renderGroupListPreview(){
+  var rows = glParseList($('#grpListInput').val());
+  var matched = rows.filter(function(r){ return r.repo; });
+  var missing = rows.filter(function(r){ return !r.repo; });
+  $('#grpListInput').data('repos', matched.map(function(r){ return r.repo; }));
+  var $p = $('#grpListPreview');
+  if(!rows.length){ $p.empty(); return; }
+  var sum = '<div class="glist-sum"><span class="glist-pill ok">'+matched.length+' matched</span>'
+    + (missing.length ? '<span class="glist-pill warn">'+missing.length+' not found</span>' : '')
+    + '</div>';
+  var body = rows.map(function(r){
+    if(r.repo){
+      var tag = r.how==='fuzzy' ? '<span class="gl-tag fuzzy">~ matched</span>' : '<span class="gl-tag ok">matched</span>';
+      var repoTxt = (r.how==='fuzzy' || r.repo.toLowerCase()!==r.domain) ? '<span class="gl-arrow">'+icon('chevronR',13)+'</span><span class="gl-repo">'+esc(r.repo)+'</span>' : '';
+      return '<div class="glist-row"><span class="gl-dom">'+esc(r.domain)+'</span>'+repoTxt+tag+'</div>';
+    }
+    return '<div class="glist-row miss"><span class="gl-dom">'+esc(r.domain)+'</span><span class="gl-tag miss">no repo</span></div>';
+  }).join('');
+  $p.html(sum + '<div class="glist-rows">'+body+'</div>');
+}
+function openGroupFromList(){
+  modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('folderPlus',21)+'</div>'
+    + '<div><h3>New group from a list</h3><p>Paste one domain per line. Each is matched to an SVN repository, then saved as a shared group.</p></div>'
+    + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body">'
+    + '<div class="field-label">Group name</div>'
+    + '<div class="input">'+icon('folder',16)+'<input type="text" id="grpNameInput" placeholder="e.g. Golf brands"></div>'
+    + '<div class="field-label" style="margin-top:14px">Sites — one domain per line</div>'
+    + '<textarea id="grpListInput" class="svn-ta" rows="8" placeholder="brownhills.co.uk&#10;completegolfer.co.uk&#10;discountgolfstore.co.uk"></textarea>'
+    + '<div id="grpListPreview" class="glist-preview"></div>'
+    + '</div>'
+    + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn ghost" data-close-modal="1">Cancel</button>'
+    + '<button class="btn solid" id="saveListGroupBtn">'+icon('check',16)+' Create group</button></div></div>');
+  $('#grpNameInput').focus();
+}
+function doSaveListGroup(){
+  var name=$('#grpNameInput').val().trim();
+  var repos=$('#grpListInput').data('repos')||[];
+  if(!name){ $('#grpNameInput').focus(); return; }
+  if(!repos.length){ alert('None of the pasted domains matched a repository. Check the spelling, or remove lines marked "no repo".'); return; }
+  groupsAction({action:'create', name:name, repositories:repos}, function(d){ closeModal(); if(d.newId){ pickScope(String(d.newId), {}); } });
 }
 
 // diff modal
@@ -1516,14 +1632,9 @@ function logHead(uniq,total){
     + '<span class="spacer"></span>'
     + '<button class="btn tiny" id="logToggle">'+(LOG.mode==='raw'?'Grouped view':'Raw view')+'</button></div>';
 }
-function renderLog(){
-  var txt=LOG.txt||'', trimmed=txt.trim();
-  if(trimmed===''){ $('#infoBody').html('<div class="svn-modal-message">The log is empty.</div>'); return; }
-  if(trimmed.charAt(0)!=='[' && trimmed.length<200 && !/PHP (Notice|Warning|Fatal|Parse|Deprecated)/.test(trimmed)){
-    $('#infoBody').html('<div class="svn-modal-message">'+esc(trimmed)+'</div>'); return;
-  }
-  if(LOG.mode==='raw'){ $('#infoBody').html(logHead(0,0)+'<div class="info-pre">'+esc(txt)+'</div>'); return; }
-  var lines=txt.replace(/\r/g,'').split('\n').filter(function(l){return l.trim()!=='';});
+// Parse raw error-log text into de-duplicated, severity-sorted groups (+ generic lines).
+function parseLogGroups(txt){
+  var lines=String(txt||'').replace(/\r/g,'').split('\n').filter(function(l){return l.trim()!=='';});
   var groups={}, order=[], generic={}, gorder=[], total=0;
   lines.forEach(function(line){
     var when=logApacheTime((line.match(/^\[([^\]]+)\]/)||[])[1]||'');
@@ -1543,20 +1654,106 @@ function renderLog(){
     }
   });
   order.sort(function(a,b){ var w=logSevWeight(groups[b].sev)-logSevWeight(groups[a].sev); return w!==0?w:groups[b].count-groups[a].count; });
-  var html=logHead(order.length+gorder.length, total)+'<div class="log-list">';
-  order.forEach(function(k){ var g=groups[k];
+  return {groups:groups, order:order, generic:generic, gorder:gorder, total:total, uniq:order.length+gorder.length};
+}
+// Render parsed log groups into the grouped list markup (shared by single-site & group views).
+function logListHtml(p){
+  var html='<div class="log-list">';
+  p.order.forEach(function(k){ var g=p.groups[k];
     html+='<div class="log-item"><div class="log-main"><div class="log-msg"><span class="logsev '+logSevClass(g.sev)+'">'+esc(g.sev)+'</span><span class="log-text">'+esc(g.text)+'</span></div>'
       + (g.file?'<button class="log-loc log-open mono" data-file="'+esc(g.file)+'" data-line="'+esc(g.line||'')+'" title="Open '+esc(g.file)+(g.line?' at line '+esc(g.line):'')+'">'+icon('file',12)+esc(logBase(g.file))+(g.line?':'+esc(g.line):'')+'</button>':'')
       + (g.via && (!g.file || g.via.file!==g.file) ? '<button class="log-loc log-open mono" data-file="'+esc(g.via.file)+'" data-line="'+esc(g.via.line)+'" title="Open page '+esc(g.via.file)+' at line '+esc(g.via.line)+'">'+icon('file',12)+'page: '+esc(logBase(g.via.file))+':'+esc(g.via.line)+'</button>' : '')
       + logUrlHtml(g.url)
       + '</div><div class="log-meta">'+logCopyHtml(g)+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
   });
-  gorder.forEach(function(k){ var g=generic[k];
+  p.gorder.forEach(function(k){ var g=p.generic[k];
     html+='<div class="log-item"><div class="log-main"><div class="log-text mono" style="font-weight:500;white-space:pre-wrap;word-break:break-word">'+esc(g.text)+'</div>'+logUrlHtml(g.url)+'</div>'
       + '<div class="log-meta">'+logCopyHtml(g)+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
   });
-  html+='</div>';
-  $('#infoBody').html(html);
+  return html+'</div>';
+}
+function renderLog(){
+  var txt=LOG.txt||'', trimmed=txt.trim();
+  if(trimmed===''){ $('#infoBody').html('<div class="svn-modal-message">The log is empty.</div>'); return; }
+  if(trimmed.charAt(0)!=='[' && trimmed.length<200 && !/PHP (Notice|Warning|Fatal|Parse|Deprecated)/.test(trimmed)){
+    $('#infoBody').html('<div class="svn-modal-message">'+esc(trimmed)+'</div>'); return;
+  }
+  if(LOG.mode==='raw'){ $('#infoBody').html(logHead(0,0)+'<div class="info-pre">'+esc(txt)+'</div>'); return; }
+  var p=parseLogGroups(txt);
+  $('#infoBody').html(logHead(p.uniq, p.total)+logListHtml(p));
+}
+
+// ---- group critical errors (aggregate across every site in the active scope) ----
+var GCRIT=null;
+// Classify a get_logs.php (critical-mode) response for one site.
+function critClassify(txt){
+  var t=String(txt||'').trim();
+  if(t==='') return {state:'clean'};
+  if(/^(no critical errors|the (error )?log is empty|error log location not configured)/i.test(t)) return {state:'clean'};
+  if(/^ERROR:|^could not read/i.test(t)) return {state:'error', msg:t};
+  var p=parseLogGroups(t);
+  if(p.uniq===0) return {state:'clean'};
+  return {state:'errors', parsed:p, count:p.uniq, total:p.total};
+}
+function renderGroupCritical(){
+  if(!GCRIT) return;
+  var $b=$('#gcritBody'); if(!$b.length) return;
+  var res=GCRIT.results, withErr=[], clean=[], errored=[], loading=[];
+  GCRIT.repos.forEach(function(r){ var x=res[r]||{state:'loading'};
+    if(x.state==='errors') withErr.push(r);
+    else if(x.state==='clean') clean.push(r);
+    else if(x.state==='error') errored.push(r);
+    else loading.push(r);
+  });
+  withErr.sort(function(a,b){ return (res[b].count||0)-(res[a].count||0); });
+  var scanning=GCRIT.done<GCRIT.total;
+  var html='<div class="cron-head">'
+    + '<span class="ct">'+(scanning?('<span class="spin"></span> Scanning '+GCRIT.done+'/'+GCRIT.total+' sites'):(GCRIT.total+' site'+(GCRIT.total!==1?'s':'')+' checked'))+'</span>'
+    + '<span class="spacer"></span>'
+    + '<span class="ct">'+(withErr.length?('<b style="color:var(--warn)">'+withErr.length+'</b> with critical errors'):(scanning?'':'<span style="color:var(--ok)">no critical errors</span>'))+'</span></div>';
+  withErr.forEach(function(r){ var x=res[r];
+    html+='<div class="gcrit-site"><div class="gcrit-site-head"><span class="gcrit-dot warn"></span>'
+      + '<span class="gcrit-name mono">'+esc(r)+'</span>'
+      + '<span class="gcrit-badge warn">'+x.count+' issue'+(x.count!==1?'s':'')+(x.total>x.count?' · '+x.total+' total':'')+'</span>'
+      + '<button class="btn tiny ghost gcrit-open" data-crit-repo="'+esc(r)+'">Open site log</button></div>'
+      + logListHtml(x.parsed) + '</div>';
+  });
+  if(errored.length){ html+='<div class="gcrit-line err">'+icon('alert',14)+'<span>Could not read: '+errored.map(function(r){return esc(r);}).join(', ')+'</span></div>'; }
+  if(loading.length){ html+='<div class="gcrit-line muted"><span class="spin"></span><span>Checking '+loading.length+' more site'+(loading.length!==1?'s':'')+'…</span></div>'; }
+  if(clean.length){ html+='<div class="gcrit-line ok">'+icon('check',14)+'<span>'+clean.length+' site'+(clean.length!==1?'s':'')+' with no critical errors</span></div>'; }
+  $b.html(html);
+}
+function openGroupCritical(fromHash){
+  var ag=STATE.activeGroup;
+  if(ag && ag.indexOf('__one:')===0){ openInfo('critical', ag.slice(6)); return; }   // single site -> existing view
+  var repos=scopedRepos();
+  if(!repos.length){ alert('Choose a group (or a scope with sites) first.'); return; }
+  if(!fromHash && repos.length>30 && !confirm('This scope has '+repos.length+' sites. Reading critical errors for all of them can take a while. Continue?')) return;
+  BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); dcStopPoll(); }
+  // Persist in the hash only for saved groups (numeric id) — not the heavy "all sites" scope.
+  if(/^\d+$/.test(String(ag))){
+    var nh=scopeToHash(ag)+'~crit';
+    if(((location.hash||'').replace(/^#/,''))!==nh){ location.hash=nh; }
+  }
+  modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('alert',21)+'</div>'
+    + '<div style="min-width:0"><h3>Critical errors</h3><p>Fatal / parse / critical errors across <span class="mono">'+esc(activeScopeName())+'</span></p></div>'
+    + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body"><div id="gcritBody"><span class="spin"></span> Loading…</div></div>'
+    + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn ghost" id="gcritReload">Re-scan</button><button class="btn solid" data-close-modal="1">Close</button></div></div>');
+  GCRIT={scope:String(ag), repos:repos.slice(), results:{}, done:0, total:repos.length};
+  renderGroupCritical();
+  var idx=0, running=0, CONC=4;
+  (function pump(){
+    while(running<CONC && idx<GCRIT.repos.length){
+      var repo=GCRIT.repos[idx++]; running++;
+      GCRIT.results[repo]={state:'loading'};
+      (function(repo){
+        $.post('get_logs.php', {repository:repo}, function(txt){ if(GCRIT) GCRIT.results[repo]=critClassify(txt); })
+          .fail(function(){ if(GCRIT) GCRIT.results[repo]={state:'error', msg:'Request failed.'}; })
+          .always(function(){ if(!GCRIT) return; running--; GCRIT.done++; renderGroupCritical(); pump(); });
+      })(repo);
+    }
+  })();
 }
 
 function closeSource(){ $('#sourceHost').empty(); }
@@ -1620,7 +1817,7 @@ function renderHistory(data, repo){
 
 function openInfo(kind, repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
-  INFO_OPEN = { kind: kind, repo: repo }; BK_OPEN_REPO = null; DC_OPEN_REPO = null; if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); dcStopPoll(); }
+  INFO_OPEN = { kind: kind, repo: repo }; BK_OPEN_REPO = null; DC_OPEN_REPO = null; GCRIT = null; if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); dcStopPoll(); }
   // Reflect the open info modal in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
@@ -1926,13 +2123,14 @@ $(function(){
     var bk = hashBackups(location.hash);
     var info = hashInfo(location.hash);
     var dc = hashDevCopy(location.hash);
+    var crit = hashCritical(location.hash);
     var sc = hashToScope(location.hash);
     if(sc && String(sc)!==String(STATE.activeGroup)){
       if(sc==='__all') pickScope('__all', {});
       else if(sc.indexOf('__one:')===0) openSingle(sc.slice(6));
       else pickScope(sc, {});
     }
-    reconcileOverlay(bk, info, dc);
+    reconcileOverlay(bk, info, dc, crit);
   });
 
   loadGroups(function(){
@@ -1940,6 +2138,7 @@ $(function(){
     var bk0 = hashBackups(location.hash);
     var info0 = hashInfo(location.hash);
     var dc0 = hashDevCopy(location.hash);
+    var crit0 = hashCritical(location.hash);
     (function restoreScope(){
       // 1) Restore scope from the URL hash if present and valid.
       var hsc = hashToScope(location.hash);
@@ -1959,9 +2158,9 @@ $(function(){
       if(initial){ openSingle(initial); }
       else { renderGroupTrigger(); renderTable(); renderApplyBar(); }
     })();
-    if(bk0 || info0 || dc0) reconcileOverlay(bk0, info0, dc0);
+    if(bk0 || info0 || dc0 || crit0) reconcileOverlay(bk0, info0, dc0, crit0);
     // Autofocus the finder with its value pre-selected, so the first keystroke replaces it.
-    if(!bk0 && !info0 && !dc0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
+    if(!bk0 && !info0 && !dc0 && !crit0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
   });
 
   // group dropdown
@@ -1969,6 +2168,9 @@ $(function(){
   $(document).on('click', '[data-pick-group]', function(e){ e.stopPropagation(); var id=$(this).attr('data-pick-group'); closeGroupMenu(); pickScope(id, {}); });
   $(document).on('click', '[data-del-group]', function(e){ e.stopPropagation(); var id=$(this).attr('data-del-group'); uiConfirm({icon:'folder', title:'Delete this group?', body:'Sites are not affected — only the saved group is removed.', confirmLabel:'Delete', danger:true}, function(){ groupsAction({action:'delete', id:id}, function(){ if(String(STATE.activeGroup)===String(id)){ pickScope('__all',{}); } openGroupMenu(); }); }); });
   $(document).on('click', '#grpNewBtn', function(e){ e.stopPropagation(); closeGroupMenu(); openSaveGroup(); });
+  $(document).on('click', '#grpNewListBtn', function(e){ e.stopPropagation(); closeGroupMenu(); openGroupFromList(); });
+  $(document).on('input', '#grpListInput', function(){ renderGroupListPreview(); });
+  $(document).on('click', '#saveListGroupBtn', function(){ doSaveListGroup(); });
 
   // finder
   // Clicking (or tabbing) into the finder selects its contents, so the prefilled site name is
@@ -2120,6 +2322,16 @@ $(function(){
 
   // global head buttons
   $('#btnHistory,#btnLog,#btnCron').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
+  // Critical errors: aggregate across the whole group/all scope, or fall back to the single focused site.
+  $('#btnCritical').on('click', function(){
+    var ag=STATE.activeGroup;
+    if(ag && ag!=='__none' && ag.indexOf('__one:')!==0){ openGroupCritical(); return; }
+    var repo=focusedRepoForGlobal();
+    if(repo){ openInfo('critical', repo); return; }
+    alert('Choose a group (or a single site) to view critical errors.');
+  });
+  $(document).on('click', '.gcrit-open', function(){ openInfo('critical', $(this).attr('data-crit-repo')); });
+  $(document).on('click', '#gcritReload', function(){ openGroupCritical(true); });
   $('#btnBackups').on('click', function(){ openBackups(focusedRepoForGlobal()); });
   $('#btnDevCopy').on('click', function(){ openDevCopy(focusedRepoForGlobal()); });
   $('#btnDevDbs').on('click', function(){ openDevDbs(); });
