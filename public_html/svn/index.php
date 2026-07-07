@@ -33,6 +33,12 @@ if (strpos($res, '+OK Repositories list') !== false) {
 }
 
 $user_name = GetSessionParam("UserName");
+
+// The current user's dev subdomain (<subdomain>.sayuconnect.com) — used to build a direct link
+// to their dev copy of a site in the Dev copy popup.
+$dev_subdomain = '';
+$db->query("SELECT svn_subdomain FROM users WHERE user_id=" . (int) $user_id);
+if ($db->next_record()) $dev_subdomain = trim((string) $db->f("svn_subdomain"));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -360,6 +366,19 @@ html.dark-mode{
 #svnApp .gcrit-line.err{ color:var(--warn); background:var(--warn-bg); }
 #svnApp .gcrit-line.muted{ color:var(--muted); }
 #svnApp .gcrit-line svg{ flex:none; }
+#svnApp .dc-status{ border:1px solid var(--line-strong); border-radius:11px; padding:11px 13px; margin:0 0 14px; background:var(--raise); }
+#svnApp .dcs-head{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+#svnApp .dcs-title{ font-size:12px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--muted-2); }
+#svnApp .dcs-open{ margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--acc-solid); }
+#svnApp .dcs-open:hover{ text-decoration:underline; }
+#svnApp .dcs-open svg{ flex:none; }
+#svnApp .dcs-empty{ font-size:13px; color:var(--muted); display:flex; align-items:center; gap:8px; padding:3px 0; }
+#svnApp .dcs-row{ display:flex; align-items:center; gap:9px; font-size:13px; padding:6px 0; border-top:1px solid var(--line); }
+#svnApp .dcs-row:first-of-type{ border-top:none; }
+#svnApp .dcs-ic{ color:var(--muted-2); flex:none; display:inline-flex; }
+#svnApp .dcs-label{ color:var(--muted); min-width:74px; flex:none; }
+#svnApp .dcs-val{ color:var(--ink-soft); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .dcs-none{ color:var(--muted-2); }
 #svnApp .pchip{ font-size:12.5px; font-weight:600; color:var(--ink-soft); background:var(--raise); border:1px solid var(--line); border-radius:20px; padding:5px 11px; cursor:pointer; }
 #svnApp .pchip:hover{ border-color:var(--line-strong); color:var(--ink); }
 
@@ -456,6 +475,20 @@ html.dark-mode{
 #svnApp .logsev.warning{ background:var(--warn-bg); color:var(--warn); }
 #svnApp .logsev.fatal,#svnApp .logsev.parse{ background:var(--err-bg); color:var(--err); }
 #svnApp .logsev.deprecated,#svnApp .logsev.strict{ background:var(--fill-2); color:var(--muted); }
+#svnApp .logsev.database{ background:rgba(154,111,166,.16); color:var(--addv); }
+#svnApp .logsev.other{ background:var(--fill-2); color:var(--muted); }
+#svnApp .logf-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:2px 0 12px; }
+#svnApp .logf-sevs{ display:flex; flex-wrap:wrap; gap:7px; }
+#svnApp .logf-chip{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; border:1px solid transparent; transition:.13s; }
+#svnApp .logf-chip .logf-n{ font-size:10px; font-weight:700; background:var(--hover); border-radius:10px; padding:0 5px; }
+#svnApp .logf-chip.off{ opacity:.42; filter:grayscale(.55); }
+#svnApp .logf-chip.on{ box-shadow:0 0 0 1px currentColor inset; }
+#svnApp .logf-none{ font-size:12px; color:var(--muted-2); }
+#svnApp .logw-seg{ display:inline-flex; margin-left:auto; border:1px solid var(--line-strong); border-radius:9px; overflow:hidden; }
+#svnApp .logw-btn{ font-size:12px; font-weight:700; color:var(--muted); padding:6px 11px; border-right:1px solid var(--line); background:transparent; transition:.13s; white-space:nowrap; }
+#svnApp .logw-btn:last-child{ border-right:none; }
+#svnApp .logw-btn:hover{ background:var(--hover); color:var(--ink); }
+#svnApp .logw-btn.on{ background:var(--acc-solid); color:#fff; }
 #svnApp .log-open{ display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--info); margin-top:4px; padding:2px 6px; border-radius:6px; border:1px solid transparent; cursor:pointer; max-width:100%; }
 #svnApp .log-open:hover{ background:var(--hover); border-color:var(--line-strong); color:var(--info); text-decoration:underline; }
 #svnApp .log-open svg{ flex:none; opacity:.8; }
@@ -713,6 +746,7 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 
 // ---------------- state ----------------
 var REPOS = [<?php echo $repositories_typehead; ?>];
+var DEV_SUBDOMAIN = <?php echo json_encode($dev_subdomain); ?>;
 var STATE = {
   groups: [],
   activeGroup: '__none',    // '__none' | '__all' | '__one:<repo>' | groupId(number as string)
@@ -1570,6 +1604,15 @@ function logSevClass(s){ s=(s||'').toLowerCase();
   if(s.indexOf('deprecated')===0) return 'deprecated'; if(s.indexOf('strict')===0) return 'strict'; return 'notice'; }
 function logSevWeight(s){ return ({fatal:4,parse:4,warning:2,notice:1,deprecated:0,strict:0})[logSevClass(s)]||1; }
 function logApacheTime(tm){ var m=(tm||'').match(/^\w+\s+(\w+)\s+(\d+)\s+(\d+):(\d+)/); return m?(m[2]+' '+m[1]+' '+m[3]+':'+m[4]):''; }
+var LOG_MONTHS={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+// Parse an apache-style "[Sun Jul 05 18:18:15.28 2026]" prefix into epoch ms (0 if unparseable).
+function logApacheEpoch(line){
+  var m=String(line).match(/^\[\w+\s+(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)(?:\.\d+)?\s+(\d+)\]/);
+  if(!m || !(m[1] in LOG_MONTHS)) return 0;
+  var d=new Date(+m[6], LOG_MONTHS[m[1]], +m[2], +m[3], +m[4], +m[5]);
+  var t=d.getTime();
+  return isNaN(t)?0:t;
+}
 function logExtractPhp(line){
   var out=[], s=line.replace(/\\n/g,'\n').replace(/PHP message:\s*/g,'\n');
   s.split('\n').forEach(function(p){
@@ -1638,39 +1681,90 @@ function parseLogGroups(txt){
   var groups={}, order=[], generic={}, gorder=[], total=0;
   lines.forEach(function(line){
     var when=logApacheTime((line.match(/^\[([^\]]+)\]/)||[])[1]||'');
+    var ts=logApacheEpoch(line);
     var url=logExtractUrl(line);
     var via=logExtractScript(line);
     var msgs=logExtractPhp(line);
     if(msgs.length){
       msgs.forEach(function(m){ total++;
         var key=m.sev+'|'+m.text+'|'+m.file+'|'+m.line;
-        if(!groups[key]){ groups[key]={sev:m.sev,text:m.text,file:m.file,line:m.line,count:0,last:when,url:url,via:via}; order.push(key); }
-        groups[key].count++; if(when) groups[key].last=when; if(url) groups[key].url=url; if(via) groups[key].via=via;
+        if(!groups[key]){ groups[key]={sev:m.sev,text:m.text,file:m.file,line:m.line,count:0,last:when,ts:ts,url:url,via:via}; order.push(key); }
+        groups[key].count++; if(when) groups[key].last=when; if(ts>groups[key].ts) groups[key].ts=ts; if(url) groups[key].url=url; if(via) groups[key].via=via;
       });
     } else {
       var rest=line.replace(/^(\[[^\]]*\]\s*)+/,'').trim() || line.trim(); total++;
-      if(!generic[rest]){ generic[rest]={text:rest,count:0,last:when,url:url}; gorder.push(rest); }
-      generic[rest].count++; if(when) generic[rest].last=when; if(url) generic[rest].url=url;
+      if(!generic[rest]){ generic[rest]={text:rest,count:0,last:when,ts:ts,url:url}; gorder.push(rest); }
+      generic[rest].count++; if(when) generic[rest].last=when; if(ts>generic[rest].ts) generic[rest].ts=ts; if(url) generic[rest].url=url;
     }
   });
   order.sort(function(a,b){ var w=logSevWeight(groups[b].sev)-logSevWeight(groups[a].sev); return w!==0?w:groups[b].count-groups[a].count; });
   return {groups:groups, order:order, generic:generic, gorder:gorder, total:total, uniq:order.length+gorder.length};
 }
 // Render parsed log groups into the grouped list markup (shared by single-site & group views).
-function logListHtml(p){
-  var html='<div class="log-list">';
-  p.order.forEach(function(k){ var g=p.groups[k];
-    html+='<div class="log-item"><div class="log-main"><div class="log-msg"><span class="logsev '+logSevClass(g.sev)+'">'+esc(g.sev)+'</span><span class="log-text">'+esc(g.text)+'</span></div>'
+// Severity/type category for a parsed group — drives the filter chips.
+function logGroupCat(g){
+  if(g.sev){
+    var c=logSevClass(g.sev);
+    if(c==='fatal'||c==='parse') return 'fatal';
+    if(c==='warning') return 'warning';
+    if(c==='notice') return 'notice';
+    return 'deprecated'; // deprecated / strict
+  }
+  if(/database error|invalid sql|sql syntax|\bmysqli?\b|\bSQL\b/i.test(g.text||'')) return 'database';
+  return 'other';
+}
+// Flatten parsed groups into display order with a category attached to each.
+function logGroupsFlat(p){
+  var arr=[];
+  p.order.forEach(function(k){ var g=p.groups[k]; arr.push({g:g, cat:logGroupCat(g), kind:'php'}); });
+  p.gorder.forEach(function(k){ var g=p.generic[k]; arr.push({g:g, cat:logGroupCat(g), kind:'generic'}); });
+  return arr;
+}
+function logItemHtml(it){
+  var g=it.g;
+  if(it.kind==='php'){
+    return '<div class="log-item"><div class="log-main"><div class="log-msg"><span class="logsev '+logSevClass(g.sev)+'">'+esc(g.sev)+'</span><span class="log-text">'+esc(g.text)+'</span></div>'
       + (g.file?'<button class="log-loc log-open mono" data-file="'+esc(g.file)+'" data-line="'+esc(g.line||'')+'" title="Open '+esc(g.file)+(g.line?' at line '+esc(g.line):'')+'">'+icon('file',12)+esc(logBase(g.file))+(g.line?':'+esc(g.line):'')+'</button>':'')
       + (g.via && (!g.file || g.via.file!==g.file) ? '<button class="log-loc log-open mono" data-file="'+esc(g.via.file)+'" data-line="'+esc(g.via.line)+'" title="Open page '+esc(g.via.file)+' at line '+esc(g.via.line)+'">'+icon('file',12)+'page: '+esc(logBase(g.via.file))+':'+esc(g.via.line)+'</button>' : '')
       + logUrlHtml(g.url)
       + '</div><div class="log-meta">'+logCopyHtml(g)+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
-  });
-  p.gorder.forEach(function(k){ var g=p.generic[k];
-    html+='<div class="log-item"><div class="log-main"><div class="log-text mono" style="font-weight:500;white-space:pre-wrap;word-break:break-word">'+esc(g.text)+'</div>'+logUrlHtml(g.url)+'</div>'
-      + '<div class="log-meta">'+logCopyHtml(g)+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
-  });
-  return html+'</div>';
+  }
+  return '<div class="log-item"><div class="log-main"><div class="log-msg"><span class="logsev '+it.cat+'">'+(it.cat==='database'?'DB':'error')+'</span><div class="log-text mono" style="font-weight:500;white-space:pre-wrap;word-break:break-word">'+esc(g.text)+'</div></div>'+logUrlHtml(g.url)+'</div>'
+    + '<div class="log-meta">'+logCopyHtml(g)+(g.count>1?'<span class="log-count">×'+g.count+'</span>':'')+(g.last?'<span class="log-when">'+esc(g.last)+'</span>':'')+'</div></div>';
+}
+function logListFromFlat(arr){
+  return '<div class="log-list">'+arr.map(logItemHtml).join('')+'</div>';
+}
+
+// ---- log filters (severity + recency), shared by the single-site log and the group critical view ----
+var LOG_CATS=[
+  {key:'fatal',      label:'Fatal'},
+  {key:'database',   label:'Database'},
+  {key:'warning',    label:'Warning'},
+  {key:'notice',     label:'Notice'},
+  {key:'deprecated', label:'Deprecated'},
+  {key:'other',      label:'Other'}
+];
+var LOG_WINDOWS=[ {min:0,label:'All time'}, {min:1440,label:'24h'}, {min:120,label:'2h'}, {min:30,label:'30m'} ];
+var LOG_FILTER={}, LOG_WINDOW=0;   // LOG_FILTER: cat->bool (absent = shown); LOG_WINDOW: minutes, 0 = all
+function logFilterReset(){ LOG_FILTER={}; LOG_WINDOW=0; }
+function logCatOn(cat){ return LOG_FILTER[cat]!==false; }
+// Keep only groups newer than the active window (groups with no timestamp are dropped when a window is set).
+function logApplyWindow(flat){
+  if(!LOG_WINDOW) return flat;
+  var cutoff=(new Date()).getTime() - LOG_WINDOW*60000;
+  return flat.filter(function(it){ return it.g.ts && it.g.ts>=cutoff; });
+}
+function logCatCounts(flat){ var c={}; flat.forEach(function(it){ c[it.cat]=(c[it.cat]||0)+1; }); return c; }
+function logFilterBarHtml(counts){
+  var chips=LOG_CATS.filter(function(c){ return counts[c.key]; }).map(function(c){
+    return '<button class="logf-chip logsev '+c.key+(logCatOn(c.key)?' on':' off')+'" data-logf="'+c.key+'">'+esc(c.label)+'<span class="logf-n">'+counts[c.key]+'</span></button>';
+  }).join('');
+  var wins=LOG_WINDOWS.map(function(w){
+    return '<button class="logw-btn'+(LOG_WINDOW===w.min?' on':'')+'" data-logw="'+w.min+'">'+esc(w.label)+'</button>';
+  }).join('');
+  return '<div class="logf-bar"><div class="logf-sevs">'+(chips||'<span class="logf-none">no matching severities</span>')+'</div>'
+    + '<div class="logw-seg">'+wins+'</div></div>';
 }
 function renderLog(){
   var txt=LOG.txt||'', trimmed=txt.trim();
@@ -1680,7 +1774,13 @@ function renderLog(){
   }
   if(LOG.mode==='raw'){ $('#infoBody').html(logHead(0,0)+'<div class="info-pre">'+esc(txt)+'</div>'); return; }
   var p=parseLogGroups(txt);
-  $('#infoBody').html(logHead(p.uniq, p.total)+logListHtml(p));
+  var flat=logGroupsFlat(p);
+  var windowed=logApplyWindow(flat);
+  var counts=logCatCounts(windowed);
+  var shown=windowed.filter(function(it){ return logCatOn(it.cat); });
+  var body = shown.length ? logListFromFlat(shown)
+    : '<div class="svn-modal-message">No entries match the current filters.</div>';
+  $('#infoBody').html(logHead(p.uniq, p.total)+logFilterBarHtml(counts)+body);
 }
 
 // ---- group critical errors (aggregate across every site in the active scope) ----
@@ -1693,7 +1793,7 @@ function critClassify(txt){
   if(/^ERROR:|^could not read/i.test(t)) return {state:'error', msg:t};
   var p=parseLogGroups(t);
   if(p.uniq===0) return {state:'clean'};
-  return {state:'errors', parsed:p, count:p.uniq, total:p.total};
+  return {state:'errors', parsed:p, flat:logGroupsFlat(p), count:p.uniq, total:p.total};
 }
 function renderGroupCritical(){
   if(!GCRIT) return;
@@ -1707,17 +1807,24 @@ function renderGroupCritical(){
   });
   withErr.sort(function(a,b){ return (res[b].count||0)-(res[a].count||0); });
   var scanning=GCRIT.done<GCRIT.total;
+  // Aggregate counts (after the recency window) across every site with errors -> drives the filter chips.
+  var counts={}, siteShown={};
+  withErr.forEach(function(r){ var w=logApplyWindow(res[r].flat); var c=logCatCounts(w); for(var k in c){ counts[k]=(counts[k]||0)+c[k]; }
+    siteShown[r]=w.filter(function(it){ return logCatOn(it.cat); }); });
+  var visSites=withErr.filter(function(r){ return siteShown[r].length; });
   var html='<div class="cron-head">'
     + '<span class="ct">'+(scanning?('<span class="spin"></span> Scanning '+GCRIT.done+'/'+GCRIT.total+' sites'):(GCRIT.total+' site'+(GCRIT.total!==1?'s':'')+' checked'))+'</span>'
     + '<span class="spacer"></span>'
     + '<span class="ct">'+(withErr.length?('<b style="color:var(--warn)">'+withErr.length+'</b> with critical errors'):(scanning?'':'<span style="color:var(--ok)">no critical errors</span>'))+'</span></div>';
-  withErr.forEach(function(r){ var x=res[r];
+  if(withErr.length) html+=logFilterBarHtml(counts);
+  visSites.forEach(function(r){ var x=res[r], shown=siteShown[r];
     html+='<div class="gcrit-site"><div class="gcrit-site-head"><span class="gcrit-dot warn"></span>'
       + '<span class="gcrit-name mono">'+esc(r)+'</span>'
-      + '<span class="gcrit-badge warn">'+x.count+' issue'+(x.count!==1?'s':'')+(x.total>x.count?' · '+x.total+' total':'')+'</span>'
+      + '<span class="gcrit-badge warn">'+shown.length+' shown'+(x.count>shown.length?' / '+x.count:'')+'</span>'
       + '<button class="btn tiny ghost gcrit-open" data-crit-repo="'+esc(r)+'">Open site log</button></div>'
-      + logListHtml(x.parsed) + '</div>';
+      + logListFromFlat(shown) + '</div>';
   });
+  if(withErr.length && !visSites.length) html+='<div class="gcrit-line muted"><span>No errors match the current filters.</span></div>';
   if(errored.length){ html+='<div class="gcrit-line err">'+icon('alert',14)+'<span>Could not read: '+errored.map(function(r){return esc(r);}).join(', ')+'</span></div>'; }
   if(loading.length){ html+='<div class="gcrit-line muted"><span class="spin"></span><span>Checking '+loading.length+' more site'+(loading.length!==1?'s':'')+'…</span></div>'; }
   if(clean.length){ html+='<div class="gcrit-line ok">'+icon('check',14)+'<span>'+clean.length+' site'+(clean.length!==1?'s':'')+' with no critical errors</span></div>'; }
@@ -1730,6 +1837,7 @@ function openGroupCritical(fromHash){
   if(!repos.length){ alert('Choose a group (or a scope with sites) first.'); return; }
   if(!fromHash && repos.length>30 && !confirm('This scope has '+repos.length+' sites. Reading critical errors for all of them can take a while. Continue?')) return;
   BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); dcStopPoll(); }
+  logFilterReset();
   // Persist in the hash only for saved groups (numeric id) — not the heavy "all sites" scope.
   if(/^\d+$/.test(String(ag))){
     var nh=scopeToHash(ag)+'~crit';
@@ -1818,6 +1926,7 @@ function renderHistory(data, repo){
 function openInfo(kind, repo){
   if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
   INFO_OPEN = { kind: kind, repo: repo }; BK_OPEN_REPO = null; DC_OPEN_REPO = null; GCRIT = null; if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); dcStopPoll(); }
+  if(kind==='log' || kind==='critical') logFilterReset();
   // Reflect the open info modal in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
@@ -1919,6 +2028,7 @@ function openDevCopy(repo){
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body">'
     + '<p style="color:var(--muted);font-size:13px;margin:0 0 14px">Creates <span class="mono">~/projects/'+esc(repo)+'</span> on slayer, served at your <span class="mono">…sayuconnect.com</span> subdomain, with a <span class="mono">&lt;you&gt;_'+esc(repo.split(".")[0])+'</span> database.</p>'
+    + '<div class="dc-status" id="dcStatus"></div>'
     + '<div class="checkbox-group"><input type="checkbox" id="dcFiles" checked><label for="dcFiles">Copy files (svn checkout)</label></div>'
     + '<div class="checkbox-group"><input type="checkbox" id="dcDB" checked><label for="dcDB">Copy database (latest nightly backup)</label></div>'
     + '<div class="checkbox-group"><input type="checkbox" id="dcImg" checked><label for="dcImg">Copy images<span class="dc-img-note" id="dcImgNote"></span></label></div>'
@@ -1931,6 +2041,7 @@ function openDevCopy(repo){
     + '<button type="button" class="btn ghost" id="dcStopBtn" style="display:none">Stop</button>'
     + '<button class="btn solid" id="dcStart" data-repo="'+esc(repo)+'">Start dev copy</button></div></div>');
   dcRestoreState(repo);
+  dcLoadStatus(repo);
 }
 // On open (incl. after a page refresh): resume a still-running dev-copy job and reflect any
 // in-progress image copy (progress bar + the "Copy images" box disabled so we don't start a 2nd).
@@ -1946,12 +2057,53 @@ function dcRestoreState(repo){
   }, 'json');
   dcStartImgPoll(repo, false);
 }
+// ---- dev-copy status panel (link to the dev site + files/db/images summary) ----
+function devSiteUrl(repo, php8){ if(!DEV_SUBDOMAIN) return ''; return 'https://'+DEV_SUBDOMAIN+(php8?'8':'')+'.sayuconnect.com/'+repo+'/'; }
+function dcRelTime(sec){
+  if(!sec) return '';
+  var d=(new Date()).getTime()/1000 - sec; if(d<0) d=0;
+  if(d<90) return 'just now';
+  var m=Math.round(d/60); if(m<60) return m+' min ago';
+  var h=Math.round(d/3600); if(h<48) return h+'h ago';
+  var days=Math.round(d/86400); if(days<14) return days+'d ago';
+  return Math.round(days/7)+'w ago';
+}
+function dcDbEpoch(s){ var m=String(s||'').match(/^(\d+)-(\d+)-(\d+)[ T](\d+):(\d+):(\d+)/); if(!m) return 0; var d=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]); var t=d.getTime(); return isNaN(t)?0:Math.floor(t/1000); }
+function dcDevLinkHtml(repo){
+  var url=devSiteUrl(repo, $('#dcPhp8').is(':checked'));
+  return url ? '<a class="dcs-open" href="'+esc(url)+'" target="_blank" rel="noopener">'+icon('link',13)+'Open dev site</a>'
+             : '<span class="dcs-none">no dev subdomain on your account</span>';
+}
+function dcStatusRow(ic, label, val){ return '<div class="dcs-row"><span class="dcs-ic">'+icon(ic,15)+'</span><span class="dcs-label">'+label+'</span><span class="dcs-val">'+val+'</span></div>'; }
+function dcRenderStatus(d, repo){
+  var $s=$('#dcStatus'); if(!$s.length) return;
+  var head='<div class="dcs-head"><span class="dcs-title">Current dev copy</span>'+dcDevLinkHtml(repo)+'</div>';
+  if(!d || !d.ok){ $s.html(head+'<div class="dcs-empty">Could not read dev-copy status.</div>'); return; }
+  if(!d.exists){ $s.html(head+'<div class="dcs-empty">No dev copy on slayer yet — start one below.</div>'); return; }
+  var filesVal=(d.rev?'<b>r'+esc(d.rev)+'</b>':'—')+(d.files_mtime?' · updated '+esc(dcRelTime(d.files_mtime)):'');
+  var dbVal;
+  if(d.db_name){
+    var imp=dcDbEpoch(d.db_create), upd=dcDbEpoch(d.db_update);
+    dbVal='<span class="mono">'+esc(d.db_name)+'</span>'+(d.db_bytes>=0?' · '+esc(dcBytes(d.db_bytes)):'')
+      + (imp?' · imported '+esc(dcRelTime(imp)):'')
+      + (upd && Math.abs(upd-imp)>120?' · changed '+esc(dcRelTime(upd)):'');
+  } else { dbVal='<span class="dcs-none">not imported</span>'; }
+  var imgVal=d.img_present ? ((d.img_count>=0?esc(d.img_count)+' item'+(d.img_count!==1?'s':''):'present')+(d.img_mtime?' · updated '+esc(dcRelTime(d.img_mtime)):''))
+    : '<span class="dcs-none">none</span>';
+  $s.html(head + dcStatusRow('branch','Files',filesVal) + dcStatusRow('database','Database',dbVal) + dcStatusRow('copy','Images',imgVal));
+}
+function dcLoadStatus(repo){
+  var $s=$('#dcStatus'); if(!$s.length) return;
+  $s.html('<div class="dcs-head"><span class="dcs-title">Current dev copy</span>'+dcDevLinkHtml(repo)+'</div><div class="dcs-empty"><span class="spin"></span> Checking dev copy…</div>');
+  $.post('dev_copy_info.php', {repository:repo}, function(d){ if(DC_OPEN_REPO===repo) dcRenderStatus(d, repo); }, 'json')
+    .fail(function(){ if(DC_OPEN_REPO===repo) dcRenderStatus(null, repo); });
+}
 function dcFinish(d){
   dcStopPoll();
   var st=(d&&d.state)||'error';
   $('#dcStopBtn').hide(); $('#dcStart').prop('disabled',false).show().text('Start dev copy');
   var $a=$('#dcAlert').removeClass('alert-success alert-error');
-  if(st==='done'){ $a.addClass('alert-success').html((d&&d.url)?('Done. <a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.url)+'</a>'):'Dev copy complete.').addClass('show'); }
+  if(st==='done'){ $a.addClass('alert-success').html((d&&d.url)?('Done. <a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.url)+'</a>'):'Dev copy complete.').addClass('show'); if(DC_OPEN_REPO) dcLoadStatus(DC_OPEN_REPO); }
   else if(st==='stopped'){ $a.addClass('alert-error').text('Dev copy cancelled.').addClass('show'); }
   else { $a.addClass('alert-error').text((d&&d.message)||'Dev copy failed.').addClass('show'); }
   DC_JOB=null;
@@ -2291,6 +2443,9 @@ $(function(){
 
   // error log grouped/raw toggle
   $(document).on('click', '#logToggle', function(){ LOG.mode = LOG.mode==='raw'?'grouped':'raw'; renderLog(); });
+  // log filters: severity chips + recency window (shared by single-site log & group critical view)
+  $(document).on('click', '.logf-chip', function(){ var k=$(this).attr('data-logf'); LOG_FILTER[k]=(LOG_FILTER[k]===false); if(GCRIT) renderGroupCritical(); else renderLog(); });
+  $(document).on('click', '.logw-btn', function(){ LOG_WINDOW=parseInt($(this).attr('data-logw'),10)||0; if(GCRIT) renderGroupCritical(); else renderLog(); });
   // open referenced source file at the reported line
   $(document).on('click', '.log-open', function(){ openSource($(this).attr('data-file'), parseInt($(this).attr('data-line'),10)||0); });
   $(document).on('click', '.log-copy', function(){
@@ -2452,6 +2607,8 @@ $(function(){
     if(!DC_JOB) return; $(this).prop('disabled',true).text('Stopping…');
     $.post('dev_copy_stop.php', {job:DC_JOB}, function(){}, 'json');
   });
+  // Keep the "Open dev site" link in step with the PHP 8 toggle (php8 -> <subdomain>8.sayuconnect.com).
+  $(document).on('change', '#dcPhp8', function(){ if(DC_OPEN_REPO){ var u=devSiteUrl(DC_OPEN_REPO, $(this).is(':checked')); $('#dcStatus .dcs-open').attr('href', u); } });
 
   // dev DBs browser
   $(document).on('click', '[data-ddb-open=db]', function(){ ddbLoadTables($(this).attr('data-db')); });
