@@ -379,6 +379,17 @@ html.dark-mode{
 #svnApp .dcs-label{ color:var(--muted); min-width:74px; flex:none; }
 #svnApp .dcs-val{ color:var(--ink-soft); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #svnApp .dcs-none{ color:var(--muted-2); }
+#svnApp .mail-list{ display:flex; flex-direction:column; gap:5px; }
+#svnApp .mail-row{ display:flex; align-items:center; gap:12px; padding:9px 12px; background:var(--card-2); border:1px solid var(--line); border-radius:9px; font-size:13px; }
+#svnApp .mail-when{ color:var(--muted); font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; white-space:nowrap; flex:none; min-width:96px; }
+#svnApp .mail-addr{ display:inline-flex; align-items:center; gap:5px; color:var(--ink); min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .mail-addr svg{ color:var(--muted-2); flex:none; }
+#svnApp .mail-from{ color:var(--muted); font-size:12px; min-width:0; max-width:38%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:none; }
+#svnApp .mail-status{ flex:none; font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; padding:2px 8px; border-radius:6px; }
+#svnApp .mail-status.ok{ color:var(--ok); background:var(--ok-bg); }
+#svnApp .mail-status.warn{ color:var(--warn); background:var(--warn-bg); }
+#svnApp .mail-status.err{ color:var(--err); background:var(--err-bg); }
+#svnApp .mail-status.muted{ color:var(--muted); background:var(--fill-2); }
 #svnApp .pchip{ font-size:12.5px; font-weight:600; color:var(--ink-soft); background:var(--raise); border:1px solid var(--line); border-radius:20px; padding:5px 11px; cursor:pointer; }
 #svnApp .pchip:hover{ border-color:var(--line-strong); color:var(--ink); }
 
@@ -613,6 +624,7 @@ html.dark-mode{
         <button class="btn" id="btnHistory" data-info="history">History</button>
         <button class="btn" id="btnLog" data-info="log">Error Log</button>
         <button class="btn" id="btnCritical">Critical Errors</button>
+        <button class="btn" id="btnMail" data-info="mail">Mail Log</button>
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
         <button class="btn" id="btnBackups">Backups</button>
         <button class="btn" id="btnDevCopy">Dev copy</button>
@@ -717,6 +729,7 @@ var ICONS = {
   chevron:'M6 9l6 6 6-6',
   chevronR:'M9 6l6 6-6 6',
   plus:'M12 5v14M5 12h14',
+  mail:'M3 5h18v14H3zM3 6l9 7 9-7',
   folder:'M3 6h6l2 2h10v11H3V6Z',
   folderPlus:'M3 6h6l2 2h10v11H3V6ZM12 11v5M9.5 13.5h5',
   grid:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
@@ -794,7 +807,7 @@ function hashInfo(h){
   var c = v.indexOf(':');
   if(c < 0) return null;
   var kind = v.slice(0, c), repo = v.slice(c + 1);
-  if(['history','log','critical','cron'].indexOf(kind) === -1) return null;
+  if(['history','log','critical','cron','mail'].indexOf(kind) === -1) return null;
   if(REPOS.indexOf(repo) === -1) return null;
   return { kind: kind, repo: repo };
 }
@@ -1932,9 +1945,9 @@ function openInfo(kind, repo){
   // Reflect the open info modal in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
-  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'] };
+  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'], mail:['Mail log','Recent mail sent from this domain'] };
   var t = titles[kind];
-  modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':'file'),21)+'</div>'
+  modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':(kind==='mail'?'mail':'file')),21)+'</div>'
     + '<div style="min-width:0"><h3>'+t[0]+'</h3><p>'+t[1]+' · <span class="mono">'+esc(repo)+'</span></p></div>'
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body"><div id="infoBody"><span class="spin"></span> Loading…</div></div>'
@@ -1963,7 +1976,27 @@ function openInfo(kind, repo){
     $.post('get_logs.php', {repository:repo}, function(t){ lg.crit=t||''; logMerge(); }).fail(function(){ lg.crit=''; logMerge(); });
   } else if(kind==='critical'){
     $.post('get_logs.php', {repository:repo}, function(txt){ LOG={txt:txt,mode:'grouped'}; renderLog(); });
+  } else if(kind==='mail'){
+    $.post('mail_log.php', {repository:repo, limit:100}, function(d){
+      if(d&&d.ok){ renderMailLog(d, repo); }
+      else { $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not read the mail log.')+'</div>'); }
+    }, 'json').fail(function(){ $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
   }
+}
+// ---- mail log rendering ----
+function mailStatusClass(s){ s=(s||'').toLowerCase(); if(s==='sent') return 'ok'; if(s==='bounced'||s==='expired') return 'err'; if(s==='deferred') return 'warn'; return 'muted'; }
+function renderMailLog(d, repo){
+  if(d.note){ $('#infoBody').html('<div class="svn-modal-message">'+esc(d.note)+'</div>'); return; }
+  var rows=d.rows||[];
+  if(!rows.length){ $('#infoBody').html('<div class="svn-modal-message">No mail found for '+esc(repo)+' in the current mail log.</div>'); return; }
+  var head='<div class="cron-head"><span class="ct">'+rows.length+' recent deliver'+(rows.length!==1?'ies':'y')+' from <span class="mono">'+esc(repo)+'</span></span></div>';
+  var body=rows.map(function(r){
+    return '<div class="mail-row"><span class="mail-when">'+esc(r.time)+'</span>'
+      + '<span class="mail-addr mail-to" title="'+esc(r.to)+'">'+icon('chevronR',12)+esc(r.to)+'</span>'
+      + '<span class="mail-from mono" title="from '+esc(r.from)+'">'+esc(r.from)+'</span>'
+      + '<span class="mail-status '+mailStatusClass(r.status)+'">'+esc(r.status)+'</span></div>';
+  }).join('');
+  $('#infoBody').html(head+'<div class="mail-list">'+body+'</div>');
 }
 function openDevTools(repo){
   if(!repo){ alert('Pick a site first.'); return; }
@@ -2494,7 +2527,7 @@ $(function(){
   function doSaveGroup(){ var name=$('#grpNameInput').val().trim(); var repos=$('#grpNameInput').data('repos')||[]; if(!name){ $('#grpNameInput').focus(); return; } groupsAction({action:'create', name:name, repositories:repos}, function(d){ closeModal(); if(d.newId){ pickScope(String(d.newId), {}); } }); }
 
   // global head buttons
-  $('#btnHistory,#btnLog,#btnCron').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
+  $('#btnHistory,#btnLog,#btnCron,#btnMail').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
   // Critical errors: aggregate across the whole group/all scope, or fall back to the single focused site.
   $('#btnCritical').on('click', function(){
     var ag=STATE.activeGroup;
