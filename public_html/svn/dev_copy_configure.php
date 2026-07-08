@@ -127,4 +127,33 @@ if (is_dir(dirname($rf)) && (!is_file($rf) || trim((string) file_get_contents($r
 	$done[] = 'robots.txt:disallow-all';
 }
 
+// F) admin folder(s): make the ViArt admin reachable on the dev copy. The admin .htaccess blocks by
+//    GeoIP country (RewriteRule [F=403] guarded by GEOIP_COUNTRY_CODE, which is UNSET on slayer -> every
+//    request 403s) and IP-allowlists some sensitive pages (Deny from all / Allow from <office IPs>).
+//    Neutralise both here — the dev copy is already gated by sayu-dev basic auth + robots noindex, so the
+//    live geo/IP protection isn't needed. Idempotent via a marker; original kept as .devbak.
+foreach ((array) glob($proj . '/public_html/*/admin_login.php') as $al) {
+	$af = dirname($al) . '/.htaccess';
+	if (!is_file($af)) continue;
+	$h = (string) file_get_contents($af);
+	if (strpos($h, 'dev copy: admin access relaxed') !== false) continue; // already relaxed
+	$lines = preg_split('/\r\n|\r|\n/', $h);
+	$out = array(); $changed = false;
+	foreach ($lines as $ln) {
+		$bare = ltrim($ln);
+		if ($bare !== '' && $bare[0] === '#') { $out[] = $ln; continue; }               // leave comments
+		if (preg_match('/GEOIP_COUNTRY_CODE/i', $ln)                                     // geo RewriteCond
+			|| preg_match('/^\s*RewriteRule\b.*\[[^\]]*F(?:=\d+)?[,\]]/i', $ln)          // any [F]/[F=403] forbid rule
+			|| preg_match('/^\s*Deny\s+from\s+all\b/i', $ln)) {                          // IP-allowlist deny
+			$out[] = '#' . $ln; $changed = true; continue;
+		}
+		$out[] = $ln;
+	}
+	if ($changed) {
+		if (!is_file($af . '.devbak')) @copy($af, $af . '.devbak');
+		@file_put_contents($af, "# dev copy: admin access relaxed\n" . implode("\n", $out) . "\n");
+		$done[] = 'admin:' . basename(dirname($al));
+	}
+}
+
 echo $done ? ('   configured: ' . implode(', ', $done) . "\n") : "   (no framework config needed)\n";

@@ -40,6 +40,40 @@ if ($login === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $login)) {
 	dcinfo_json(array("ok" => false, "error" => "Your Developer Settings are incomplete."));
 }
 
+// The admin folder + auto-login query for this site (from clients_sites, matching svn_site_status.php's
+// host-matching). Returned so the popup can build a dev-site admin link: the folder path is the same in
+// the dev checkout as live, and the imported DB carries the same admin credentials.
+function dcinfo_admin_parts(&$db, $repository) {
+	$d = strtolower(preg_replace('/[^a-z0-9.\-]/i', '', $repository));
+	if ($d === '') return array('', '');
+	$db->query("SELECT web_address,admin_web_address,admin_web_site_login,admin_web_site_password FROM clients_sites WHERE web_address LIKE " . ToSQL('%' . $d . '%', "text") . " ORDER BY client_id LIMIT 50");
+	$rows = array();
+	while ($db->next_record()) {
+		$rows[] = array('wa' => (string) $db->f("web_address"), 'awa' => (string) $db->f("admin_web_address"),
+			'login' => (string) $db->f("admin_web_site_login"), 'pass' => (string) $db->f("admin_web_site_password"));
+	}
+	$tail = '.' . $d; $matched = null;
+	foreach ($rows as $r) {
+		$wa = strtolower(trim($r['wa']));
+		$host = parse_url($wa, PHP_URL_HOST); if (!$host) { $host = parse_url('http://' . ltrim($wa, '/'), PHP_URL_HOST); }
+		$host = strtolower((string) $host);
+		$m = ($host === $d || $host === 'www.' . $d || (strlen($host) > strlen($tail) && substr($host, -strlen($tail)) === $tail));
+		if (!$m && preg_match('#[/~]' . preg_quote($d, '#') . '(?:/|$)#', $wa)) { $m = true; }
+		if ($m) { $matched = $r; break; }
+	}
+	if (!$matched || $matched['awa'] === '' || $matched['login'] === '') return array('', '');
+	// Reduce admin_web_address to the folder path under the site root (drop any leading host).
+	$adm = trim(str_ireplace(array('http://', 'https://'), '', $matched['awa']), '/');
+	$fs = strpos($adm, '/');
+	if ($fs !== false && strpos(substr($adm, 0, $fs), '.') !== false) { $adm = substr($adm, $fs + 1); }
+	else if ($fs === false && strpos($adm, '.') !== false) { $adm = ''; }  // bare host, no folder
+	$adm = trim($adm, '/');
+	if ($adm === '') return array('', '');
+	$query = '?operation=login&login=' . urlencode($matched['login']) . '&password=' . urlencode((string) $matched['pass']);
+	return array($adm, $query);
+}
+list($admin_path, $admin_query) = dcinfo_admin_parts($db, $repository);
+
 $proj = "/home/staff/" . $login . "/projects/" . $repository;
 
 // Remote status script — emits key=value lines. $proj is built from a validated login + repository.
@@ -95,6 +129,8 @@ dcinfo_json(array(
 	"ok"          => true,
 	"exists"      => $exists,
 	"dev_url"     => $dev_url,
+	"admin_path"  => $admin_path,
+	"admin_query" => $admin_query,
 	"rev"         => $g('rev'),
 	"changed"     => $g('changed'),
 	"files_mtime" => ($g('files_mtime') !== '' ? (int) $g('files_mtime') : 0),

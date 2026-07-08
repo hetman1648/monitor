@@ -1735,6 +1735,8 @@ function logItemHtml(it){
 function logListFromFlat(arr){
   return '<div class="log-list">'+arr.map(logItemHtml).join('')+'</div>';
 }
+// True when a get_logs.php response is actual log content (not an empty/status/error message).
+function logLooksReal(t){ t=(t||'').trim(); if(t==='') return false; return !/^(no critical errors|the (error )?log is empty|error log location|ERROR:|could not read)/i.test(t); }
 
 // ---- log filters (severity + recency), shared by the single-site log and the group critical view ----
 var LOG_CATS=[
@@ -1930,7 +1932,7 @@ function openInfo(kind, repo){
   // Reflect the open info modal in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
-  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Last 50 errors from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'] };
+  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'] };
   var t = titles[kind];
   modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':'file'),21)+'</div>'
     + '<div style="min-width:0"><h3>'+t[0]+'</h3><p>'+t[1]+' · <span class="mono">'+esc(repo)+'</span></p></div>'
@@ -1948,7 +1950,17 @@ function openInfo(kind, repo){
       else { $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not read crontab.')+'</div>'); }
     }, 'json');
   } else if(kind==='log'){
-    $.post('get_logs.php', {repository:repo, last_50_errors:1}, function(txt){ LOG={txt:txt,mode:'grouped'}; renderLog(); });
+    // The plain error log is a short recent tail (the gateway caps the payload at ~16KB), so a fatal
+    // from even 30 min ago can be pushed out by per-request noise. Also pull the critical grep (fatals
+    // across the whole log) and merge, so recent fatals always show. The grouped parser de-dups overlap.
+    var lg={};
+    function logMerge(){
+      if(lg.tail===undefined || lg.crit===undefined) return;
+      var real=[]; if(logLooksReal(lg.crit)) real.push(lg.crit); if(logLooksReal(lg.tail)) real.push(lg.tail);
+      LOG={txt: real.length ? real.join('\n') : (lg.tail||lg.crit||''), mode:'grouped'}; renderLog();
+    }
+    $.post('get_logs.php', {repository:repo, last_50_errors:1}, function(t){ lg.tail=t||''; logMerge(); }).fail(function(){ lg.tail=''; logMerge(); });
+    $.post('get_logs.php', {repository:repo}, function(t){ lg.crit=t||''; logMerge(); }).fail(function(){ lg.crit=''; logMerge(); });
   } else if(kind==='critical'){
     $.post('get_logs.php', {repository:repo}, function(txt){ LOG={txt:txt,mode:'grouped'}; renderLog(); });
   }
@@ -2069,15 +2081,21 @@ function dcRelTime(sec){
   return Math.round(days/7)+'w ago';
 }
 function dcDbEpoch(s){ var m=String(s||'').match(/^(\d+)-(\d+)-(\d+)[ T](\d+):(\d+):(\d+)/); if(!m) return 0; var d=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]); var t=d.getTime(); return isNaN(t)?0:Math.floor(t/1000); }
-function dcDevLinkHtml(repo){
-  var url=devSiteUrl(repo, $('#dcPhp8').is(':checked'));
-  return url ? '<a class="dcs-open" href="'+esc(url)+'" target="_blank" rel="noopener">'+icon('link',13)+'Open dev site</a>'
-             : '<span class="dcs-none">no dev subdomain on your account</span>';
+function devAdminUrl(repo, php8, adminPath, adminQuery){ var base=devSiteUrl(repo, php8); return (base && adminPath) ? (base+adminPath+'/admin_login.php'+(adminQuery||'')) : ''; }
+function dcDevLinkHtml(repo, adminPath, adminQuery){
+  var php8=$('#dcPhp8').is(':checked'), url=devSiteUrl(repo, php8);
+  if(!url) return '<span class="dcs-none">no dev subdomain on your account</span>';
+  var h='<a class="dcs-open dcs-site" href="'+esc(url)+'" target="_blank" rel="noopener">'+icon('link',13)+'Open dev site</a>';
+  var au=devAdminUrl(repo, php8, adminPath, adminQuery);
+  if(au){ h+='<a class="dcs-open dcs-admin" href="'+esc(au)+'" target="_blank" rel="noopener">'+icon('login',13)+'Open admin</a>'; }
+  return h;
 }
 function dcStatusRow(ic, label, val){ return '<div class="dcs-row"><span class="dcs-ic">'+icon(ic,15)+'</span><span class="dcs-label">'+label+'</span><span class="dcs-val">'+val+'</span></div>'; }
 function dcRenderStatus(d, repo){
   var $s=$('#dcStatus'); if(!$s.length) return;
-  var head='<div class="dcs-head"><span class="dcs-title">Current dev copy</span>'+dcDevLinkHtml(repo)+'</div>';
+  var ap=(d&&d.admin_path)||'', aq=(d&&d.admin_query)||'';
+  $s.data('adminPath', ap).data('adminQuery', aq);   // stash so the PHP 8 toggle can rebuild the admin href
+  var head='<div class="dcs-head"><span class="dcs-title">Current dev copy</span>'+dcDevLinkHtml(repo, ap, aq)+'</div>';
   if(!d || !d.ok){ $s.html(head+'<div class="dcs-empty">Could not read dev-copy status.</div>'); return; }
   if(!d.exists){ $s.html(head+'<div class="dcs-empty">No dev copy on slayer yet — start one below.</div>'); return; }
   var filesVal=(d.rev?'<b>r'+esc(d.rev)+'</b>':'—')+(d.files_mtime?' · updated '+esc(dcRelTime(d.files_mtime)):'');
@@ -2607,8 +2625,14 @@ $(function(){
     if(!DC_JOB) return; $(this).prop('disabled',true).text('Stopping…');
     $.post('dev_copy_stop.php', {job:DC_JOB}, function(){}, 'json');
   });
-  // Keep the "Open dev site" link in step with the PHP 8 toggle (php8 -> <subdomain>8.sayuconnect.com).
-  $(document).on('change', '#dcPhp8', function(){ if(DC_OPEN_REPO){ var u=devSiteUrl(DC_OPEN_REPO, $(this).is(':checked')); $('#dcStatus .dcs-open').attr('href', u); } });
+  // Keep the "Open dev site" / "Open admin" links in step with the PHP 8 toggle (-> <subdomain>8.sayuconnect.com).
+  $(document).on('change', '#dcPhp8', function(){
+    if(!DC_OPEN_REPO) return;
+    var php8=$(this).is(':checked'), $s=$('#dcStatus');
+    $s.find('.dcs-site').attr('href', devSiteUrl(DC_OPEN_REPO, php8));
+    var au=devAdminUrl(DC_OPEN_REPO, php8, $s.data('adminPath'), $s.data('adminQuery'));
+    if(au) $s.find('.dcs-admin').attr('href', au);
+  });
 
   // dev DBs browser
   $(document).on('click', '[data-ddb-open=db]', function(){ ddbLoadTables($(this).attr('data-db')); });
