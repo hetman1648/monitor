@@ -550,6 +550,10 @@ html.dark-mode{
 @media (max-width:600px){ #svnApp .cron-item{ flex-direction:column; gap:7px; align-items:stretch; } #svnApp .cron-when{ width:auto; } #svnApp .cron-edit-fields .cron-in:first-child, #svnApp .cron-add-fields .cron-in:first-child{ width:100%; } }
 #svnApp .svn-modal-message{ padding:14px 16px; border-radius:10px; background:rgba(88,169,214,.12); color:#bfe0f2; font-size:14px; }
 #svnApp .svn-modal-message--warn{ background:var(--warn-bg); color:var(--warn); }
+#svnApp .svn-modal-message--ok{ background:var(--ok-bg); color:var(--ok); }
+#svnApp .hist-actions{ display:flex; gap:6px; align-items:center; }
+#svnApp .hist-revert{ color:var(--muted); }
+#svnApp .hist-revert:hover{ color:var(--err); border-color:var(--err-bg); }
 #svnApp .svn-modal-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
 #svnApp .svn-modal-table th{ text-align:left; padding:10px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted-2); border-bottom:1px solid var(--line-strong); }
 #svnApp .svn-modal-table td{ padding:9px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft); vertical-align:top; }
@@ -751,6 +755,7 @@ var ICONS = {
   bolt:'M13 2 4 14h7l-1 8 9-12h-7l1-8Z',
   user:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0',
   history:'M3 3v6h6M3.5 9a9 9 0 1 1-1 5M12 7v5l4 2',
+  undo:'M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12H7',
   dots:'M5 12h.01M12 12h.01M19 12h.01',
   branch:'M6 4v12M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 0v3a4 4 0 0 1-4 4H8',
   tools:'M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6L5 19.7l6-6a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3Z',
@@ -1944,10 +1949,34 @@ function renderHistory(data, repo){
         + '<div class="hist-meta">'+(r.author?'<span class="hist-by">'+icon('user',12)+esc(r.author)+'</span>':'')+deployed+'</div>'
         + (r.file_count?'<button class="hist-files-toggle" data-hi="'+idx+'">'+icon('file',12)+r.file_count+' file'+(r.file_count!==1?'s':'')+' changed</button><div class="hist-files" id="histFiles'+idx+'" style="display:none"></div>':'')
       + '</div>'
-      + '<div class="hist-actions">'+(commits&&r.revision?'<button class="btn tiny hist-diff" data-rev="'+esc(r.revision)+'">View diff</button>':'')+'</div>'
+      + '<div class="hist-actions">'+(commits&&r.revision?'<button class="btn tiny hist-diff" data-rev="'+esc(r.revision)+'">View diff</button>':'')
+        +(r.revision?'<button class="btn tiny ghost hist-revert" data-rev="'+esc(r.revision)+'" title="Roll the live site back to r'+esc(r.revision)+'">'+icon('undo',13)+'Revert to r'+esc(r.revision)+'</button>':'')+'</div>'
     + '</div>';
   });
   $('#infoBody').html(html+'</div>');
+}
+// Roll the live working copy back to a specific revision (svn update -r REV as the site user).
+function doRevert(repo, rev){
+  if(!repo || !rev) return;
+  uiConfirm({icon:'undo', danger:true, title:'Revert '+repo+' to r'+rev+'?', confirmLabel:'Revert to r'+rev,
+    bodyHtml:'Runs <span class="mono">svn update -r '+esc(rev)+'</span> on the <b>live</b> working copy — the site’s files roll back to revision '+esc(rev)+'. Newer commits stay in SVN and can be re-deployed afterwards.'},
+    function(){
+      var $btns=$('.hist-revert[data-rev="'+rev+'"]'); $btns.prop('disabled',true);
+      $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('undo',21)+'</div>'
+        + '<div style="min-width:0"><h3>Revert to r'+esc(rev)+'</h3><p class="mono" style="font-size:12px">'+esc(repo)+'</p></div>'
+        + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
+        + '<div class="modal-body"><div id="revBody"><span class="spin"></span> Running svn update -r '+esc(rev)+' on the live site…</div></div>'
+        + '<div class="modal-foot"><div class="mf-grow" id="revFoot"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
+      $.post('revert_repository.php', {repository:repo, revision:rev}, function(d){
+        $btns.prop('disabled',false);
+        var msg = (d&&d.ok)
+          ? '<div class="svn-modal-message svn-modal-message--ok">Reverted — live site now at r'+esc(d.updatedTo||rev)+'.</div>'
+          : '<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Revert failed.')+'</div>';
+        var out = (d&&d.output) ? '<div class="info-pre mono" style="white-space:pre-wrap;word-break:break-word;margin-top:10px">'+esc(d.output)+'</div>' : '';
+        $('#revBody').html(msg+out);
+        if(d&&d.ok){ $('#revFoot').text('Deploy log updated'); $.post('history.php', {repository:repo}, function(h){ if(h&&h.ok) renderHistory(h, repo); }, 'json'); }
+      }, 'json').fail(function(){ $btns.prop('disabled',false); $('#revBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
+    });
 }
 
 function openInfo(kind, repo){
@@ -2601,6 +2630,7 @@ $(function(){
     else { if(!$f.data('filled')){ $f.html(histFilesHtml((HIST.rows[idx]||{}).files)).data('filled',1); } $f.slideDown(120); }
   });
   $(document).on('click', '.hist-diff', function(){ openRevDiff(HIST.repo, $(this).attr('data-rev')); });
+  $(document).on('click', '.hist-revert', function(){ doRevert(HIST.repo, $(this).attr('data-rev')); });
   $(document).on('click', '.hist-file-open', function(){ openSource($(this).attr('data-file'), 0); });
 
   // apply bar
