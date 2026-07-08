@@ -380,7 +380,19 @@ html.dark-mode{
 #svnApp .dcs-val{ color:var(--ink-soft); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #svnApp .dcs-none{ color:var(--muted-2); }
 #svnApp .mail-list{ display:flex; flex-direction:column; gap:5px; }
-#svnApp .mail-row{ display:flex; align-items:center; gap:12px; padding:9px 12px; background:var(--card-2); border:1px solid var(--line); border-radius:9px; font-size:13px; }
+#svnApp .mail-row{ width:100%; text-align:left; cursor:pointer; display:flex; align-items:center; gap:12px; padding:9px 12px; background:var(--card-2); border:1px solid var(--line); border-radius:9px; font-size:13px; transition:.12s; }
+#svnApp .mail-row:hover{ border-color:var(--acc-solid); background:var(--hover-2); }
+#svnApp .me-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 22px; margin-bottom:6px; }
+#svnApp .me-field{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+#svnApp .me-lbl{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); }
+#svnApp .me-val{ font-size:13px; color:var(--ink); word-break:break-word; }
+#svnApp .me-sub{ font-size:12px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--muted-2); margin:14px 0 8px; }
+#svnApp .me-recips{ display:flex; flex-direction:column; gap:7px; }
+#svnApp .me-recip{ display:grid; grid-template-columns:auto 1fr; gap:4px 10px; align-items:center; padding:9px 11px; background:var(--card-2); border:1px solid var(--line); border-radius:9px; }
+#svnApp .me-recip .mail-status{ grid-row:1; }
+#svnApp .me-to{ font-size:13px; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; word-break:break-all; }
+#svnApp .me-rmeta{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:10px; font-size:11.5px; color:var(--muted); }
+#svnApp .me-detail{ grid-column:1 / -1; font-size:11.5px; color:var(--muted-2); word-break:break-word; }
 #svnApp .mail-when{ color:var(--muted); font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; white-space:nowrap; flex:none; min-width:96px; }
 #svnApp .mail-addr{ display:inline-flex; align-items:center; gap:5px; color:var(--ink); min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #svnApp .mail-addr svg{ color:var(--muted-2); flex:none; }
@@ -1984,19 +1996,95 @@ function openInfo(kind, repo){
   }
 }
 // ---- mail log rendering ----
+var MAIL_REPO='';
 function mailStatusClass(s){ s=(s||'').toLowerCase(); if(s==='sent') return 'ok'; if(s==='bounced'||s==='expired') return 'err'; if(s==='deferred') return 'warn'; return 'muted'; }
 function renderMailLog(d, repo){
+  MAIL_REPO=repo;
   if(d.note){ $('#infoBody').html('<div class="svn-modal-message">'+esc(d.note)+'</div>'); return; }
   var rows=d.rows||[];
   if(!rows.length){ $('#infoBody').html('<div class="svn-modal-message">No mail found for '+esc(repo)+' in the current mail log.</div>'); return; }
-  var head='<div class="cron-head"><span class="ct">'+rows.length+' recent deliver'+(rows.length!==1?'ies':'y')+' from <span class="mono">'+esc(repo)+'</span></span></div>';
+  var src = (d.source && d.source!=='web1') ? (' · <span style="color:var(--muted-2)">via '+esc(d.source)+'</span>') : '';
+  var head='<div class="cron-head"><span class="ct">'+rows.length+' recent deliver'+(rows.length!==1?'ies':'y')+' from <span class="mono">'+esc(repo)+'</span>'+src+'</span><span class="spacer"></span><span class="ct" style="color:var(--muted-2)">click a row for details</span></div>';
   var body=rows.map(function(r){
-    return '<div class="mail-row"><span class="mail-when">'+esc(r.time)+'</span>'
-      + '<span class="mail-addr mail-to" title="'+esc(r.to)+'">'+icon('chevronR',12)+esc(r.to)+'</span>'
+    return '<button type="button" class="mail-row" data-mailqid="'+esc(r.qid)+'" title="View log entry ('+esc(r.qid)+')"><span class="mail-when">'+esc(r.time)+'</span>'
+      + '<span class="mail-addr mail-to">'+icon('chevronR',12)+esc(r.to)+'</span>'
       + '<span class="mail-from mono" title="from '+esc(r.from)+'">'+esc(r.from)+'</span>'
-      + '<span class="mail-status '+mailStatusClass(r.status)+'">'+esc(r.status)+'</span></div>';
+      + '<span class="mail-status '+mailStatusClass(r.status)+'">'+esc(r.status)+'</span></button>';
   }).join('');
   $('#infoBody').html(head+'<div class="mail-list">'+body+'</div>');
+}
+// ---- single mail entry (parsed + raw), layered above the list ----
+var MAIL_ENTRY={raw:'', mode:'parsed'};
+function mailParseEntry(raw){
+  var lines=String(raw||'').split('\n').filter(function(l){return l.trim()!=='';});
+  var info={from:'',size:'',nrcpt:'',msgid:'',dkim:'',client:'',uid:'',first:'',last:'',removed:false,recips:[]};
+  lines.forEach(function(l){
+    var ts=(l.match(/^(\w{3}\s+\d+\s+[\d:]+)/)||[])[1]||'';
+    if(ts){ if(!info.first) info.first=ts; info.last=ts; }
+    var m;
+    if(m=l.match(/\bfrom=<([^>]*)>/)) info.from=m[1];
+    if(m=l.match(/\bsize=(\d+)/)) info.size=m[1];
+    if(m=l.match(/\bnrcpt=(\d+)/)) info.nrcpt=m[1];
+    if(m=l.match(/message-id=<([^>]*)>/)) info.msgid=m[1];
+    if(m=l.match(/DKIM-Signature.*?\bd=([A-Za-z0-9.\-]+)/)) info.dkim=m[1];
+    if(m=l.match(/\bclient=([^,\s]+)/)) info.client=m[1];
+    if(m=l.match(/\buid=(\d+)/)) info.uid=m[1];
+    if(/:\s*removed\s*$/.test(l)) info.removed=true;
+    if(/\bto=<[^>]*>/.test(l)){
+      info.recips.push({
+        to:(l.match(/\bto=<([^>]*)>/)||[])[1]||'',
+        relay:(l.match(/\brelay=([^,]+)/)||[])[1]||'',
+        delay:(l.match(/\bdelay=([^,]+)/)||[])[1]||'',
+        dsn:(l.match(/\bdsn=([^,]+)/)||[])[1]||'',
+        status:(l.match(/\bstatus=(\w+)/)||[])[1]||'',
+        detail:(l.match(/status=\w+\s+\(([\s\S]*)\)\s*$/)||[])[1]||'',
+        time:ts
+      });
+    }
+  });
+  return info;
+}
+function mailEntryBody(){
+  if(MAIL_ENTRY.mode==='raw'){
+    return '<div class="info-pre mono" style="white-space:pre-wrap;word-break:break-word">'+esc(MAIL_ENTRY.raw||'(no log lines)')+'</div>';
+  }
+  var i=mailParseEntry(MAIL_ENTRY.raw);
+  function field(lbl,val,mono){ if(!val) return ''; return '<div class="me-field"><span class="me-lbl">'+lbl+'</span><span class="me-val'+(mono?' mono':'')+'">'+esc(val)+'</span></div>'; }
+  var when = i.first + (i.last && i.last!==i.first ? ' → '+i.last : '');
+  var meta = '<div class="me-grid">'
+    + field('Sent', when, false)
+    + field('From', i.from, true)
+    + field('Size', i.size?(Math.round(i.size/1024*10)/10+' KB ('+i.size+' bytes)'):'', false)
+    + field('Recipients', i.nrcpt, false)
+    + field('DKIM domain', i.dkim, true)
+    + field('Origin', i.client, true)
+    + field('Message-ID', i.msgid, true)
+    + '</div>';
+  var recs = i.recips.length ? ('<div class="me-sub">Deliveries</div><div class="me-recips">'+i.recips.map(function(r){
+      return '<div class="me-recip"><span class="mail-status '+mailStatusClass(r.status)+'">'+esc(r.status||'?')+'</span>'
+        + '<span class="me-to">'+esc(r.to)+'</span>'
+        + '<div class="me-rmeta">'+(r.relay?'<span title="relay">'+esc(r.relay)+'</span>':'')+(r.dsn?'<span>dsn '+esc(r.dsn)+'</span>':'')+(r.delay?'<span>'+esc(r.delay)+'s</span>':'')+'</div>'
+        + (r.detail?'<div class="me-detail mono">'+esc(r.detail)+'</div>':'')+'</div>';
+    }).join('')+'</div>') : '';
+  return meta + recs;
+}
+function renderMailEntry(){
+  $('#meBody').html(mailEntryBody());
+  $('#meToggle').text(MAIL_ENTRY.mode==='raw'?'Parsed view':'Raw view');
+}
+function openMailEntry(repo, qid){
+  MAIL_ENTRY={raw:'', mode:'parsed'};
+  $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('mail',21)+'</div>'
+    + '<div style="min-width:0"><h3>Mail entry</h3><p class="mono" style="font-size:12px">'+esc(repo)+' · '+esc(qid)+'</p></div>'
+    + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body"><div class="cron-head"><span class="ct">postfix queue-id <span class="mono">'+esc(qid)+'</span></span><span class="spacer"></span>'
+    +   '<button class="btn tiny" id="meToggle">Raw view</button><button class="btn tiny" id="meCopy">'+icon('copy',13)+' Copy raw</button></div>'
+    + '<div id="meBody"><span class="spin"></span> Loading…</div></div>'
+    + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
+  $.post('mail_log.php', {repository:repo, action:'raw', qid:qid}, function(d){
+    if(d&&d.ok){ MAIL_ENTRY.raw=d.raw||''; renderMailEntry(); }
+    else { $('#meBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not read the mail entry.')+'</div>'); }
+  }, 'json').fail(function(){ $('#meBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
 }
 function openDevTools(repo){
   if(!repo){ alert('Pick a site first.'); return; }
@@ -2688,6 +2776,10 @@ $(function(){
   $(document).on('click', '#uiConfirmYes', function(){ var cb=UICONFIRM_CB; closeConfirm(); if(cb) cb(); });
   // source viewer (layered above the log modal)
   $(document).on('click', '[data-close-source]', function(){ closeSource(); });
+  // mail log: open a message's log entry; toggle parsed/raw; copy raw
+  $(document).on('click', '[data-mailqid]', function(){ openMailEntry(MAIL_REPO, $(this).attr('data-mailqid')); });
+  $(document).on('click', '#meToggle', function(){ MAIL_ENTRY.mode = MAIL_ENTRY.mode==='raw'?'parsed':'raw'; renderMailEntry(); });
+  $(document).on('click', '#meCopy', function(){ var $b=$(this); bkCopyText(MAIL_ENTRY.raw||''); var h=$b.html(); $b.html(icon('check',13)+' Copied'); setTimeout(function(){ $b.html(h); }, 1200); });
   $(document).on('click', '[data-source-scrim]', function(e){ if(e.target===this) closeSource(); });
   $(document).on('click', function(e){
     if(!$(e.target).closest('#finderInput,#finderDd').length) $('#finderDd').removeClass('show');
