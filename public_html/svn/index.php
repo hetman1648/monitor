@@ -382,6 +382,34 @@ html.dark-mode{
 #svnApp .mail-list{ display:flex; flex-direction:column; gap:5px; }
 #svnApp .mail-row{ width:100%; text-align:left; cursor:pointer; display:flex; align-items:center; gap:12px; padding:9px 12px; background:var(--card-2); border:1px solid var(--line); border-radius:9px; font-size:13px; transition:.12s; }
 #svnApp .mail-row:hover{ border-color:var(--acc-solid); background:var(--hover-2); }
+/* Servers (host health) */
+#svnApp .svh-cards{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media (max-width:720px){ #svnApp .svh-cards{ grid-template-columns:1fr; } }
+#svnApp .svh-card{ border:1px solid var(--line); border-radius:var(--r-md); background:var(--card-2); padding:14px 15px; min-width:0; }
+#svnApp .svh-card-head{ display:flex; align-items:center; gap:8px; color:var(--ink); }
+#svnApp .svh-card-head svg{ color:var(--muted); flex:none; }
+#svnApp .svh-card-title{ font-weight:700; font-size:14px; }
+#svnApp .svh-host{ font-size:12px; color:var(--ink-soft); margin-left:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .svh-tag{ flex:none; font-size:10px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; padding:2px 6px; border-radius:6px; background:var(--raise-2); color:var(--muted); }
+#svnApp .svh-tag.ssh{ background:rgba(93,111,214,.16); color:var(--acc-solid); }
+#svnApp .svh-meta{ font-size:11.5px; color:var(--muted); margin:5px 0 11px; word-break:break-word; }
+#svnApp .svh-stats{ display:flex; flex-direction:column; gap:11px; }
+#svnApp .svh-stat{ min-width:0; }
+#svnApp .svh-stat-lbl{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); margin-bottom:3px; }
+#svnApp .svh-stat-val{ font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums; }
+#svnApp .svh-of{ color:var(--muted-2); font-size:.85em; font-weight:400; }
+#svnApp .svh-stat-sub{ font-size:11px; color:var(--muted); margin-top:2px; }
+#svnApp .svh-hint{ display:block; font-size:11px; color:var(--muted); margin-top:3px; }
+#svnApp .svh-bar{ height:6px; border-radius:4px; background:var(--raise-2); overflow:hidden; margin:5px 0 1px; }
+#svnApp .svh-bar-fill{ height:100%; border-radius:4px; background:var(--ok); transition:width .3s; }
+#svnApp .svh-bar-fill.warn{ background:var(--warn); }
+#svnApp .svh-bar-fill.crit{ background:var(--err); }
+#svnApp .svh-disks{ margin-top:12px; }
+#svnApp .svh-sub{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); margin-bottom:7px; }
+#svnApp .svh-disk{ margin-bottom:9px; }
+#svnApp .svh-disk-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:12px; color:var(--ink-soft); }
+#svnApp .svh-disk-num{ color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+#svnApp .svh-note{ margin-top:11px; font-size:11.5px; color:var(--muted); border-top:1px solid var(--line); padding-top:9px; }
 #svnApp .me-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 22px; margin-bottom:6px; }
 #svnApp .me-field{ display:flex; flex-direction:column; gap:2px; min-width:0; }
 #svnApp .me-lbl{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); }
@@ -642,6 +670,7 @@ html.dark-mode{
         <button class="btn" id="btnCritical">Critical Errors</button>
         <button class="btn" id="btnMail" data-info="mail">Mail Log</button>
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
+        <button class="btn" id="btnServers">Servers</button>
         <button class="btn" id="btnBackups">Backups</button>
         <button class="btn" id="btnDevCopy">Dev copy</button>
         <button class="btn" id="btnDevDbs">Dev DBs</button>
@@ -764,7 +793,10 @@ var ICONS = {
   database:'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3ZM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
   link:'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5',
   play:'M7 5l12 7-12 7z',
-  terminal:'M4 5h16v14H4zM7 9l3 2.5L7 14M12.5 14.5H16'
+  terminal:'M4 5h16v14H4zM7 9l3 2.5L7 14M12.5 14.5H16',
+  server:'M4 4h16v6H4zM4 14h16v6H4zM7.5 7h.01M7.5 17h.01M12 7h4M12 17h4',
+  cpu:'M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2M6 6h12v12H6zM10 10h4v4h-4z',
+  gauge:'M12 13l4-4M7 18a7 7 0 1 1 10 0M12 3v0'
 };
 function icon(name, s, w, style){
   s = s || 18; w = w || 1.8; style = style || '';
@@ -1264,6 +1296,7 @@ function openActionsPop(repo, anchor){
     ['log','Error log', icon('file',16)],
     ['critical','Critical errors', icon('alert',16)],
     ['cron','Cron jobs', icon('calendar',16)],
+    ['servers','Servers', icon('server',16)],
     ['backups','Backups', icon('database',16)],
     ['devcopy','Dev copy', icon('copy',16)],
     ['devtools','Dev tools', icon('tools',16)]
@@ -2427,6 +2460,75 @@ function renderBackups(d){
   $('#bkList').html('<div class="bk-rows">'+html+'</div>');
 }
 
+// ---------------- Servers (host health) ----------------
+function svhBytesKb(kb){ kb=+kb||0; var b=kb*1024; if(b>=1099511627776) return (b/1099511627776).toFixed(1)+' TB'; if(b>=1073741824) return (b/1073741824).toFixed(1)+' GB'; if(b>=1048576) return (b/1048576).toFixed(0)+' MB'; return (b/1024).toFixed(0)+' KB'; }
+function svhMb(mb){ mb=+mb||0; if(mb>=1048576) return (mb/1048576).toFixed(1)+' TB'; if(mb>=1024) return (mb/1024).toFixed(1)+' GB'; return mb+' MB'; }
+function svhDur(s){ s=Math.round(+s||0); var d=Math.floor(s/86400); s-=d*86400; var h=Math.floor(s/3600); s-=h*3600; var m=Math.floor(s/60); if(d>0) return d+'d '+h+'h'; if(h>0) return h+'h '+m+'m'; return m+'m'; }
+function svhNum(n){ n=+n||0; if(n>=1e9) return (n/1e9).toFixed(1)+'B'; if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'k'; return String(n); }
+function svhBar(pct, warn){ pct=Math.max(0,Math.min(100,Math.round(pct))); var cls = pct>=(warn||90)?'crit':(pct>=(warn?warn-15:75)?'warn':'ok'); return '<div class="svh-bar"><div class="svh-bar-fill '+cls+'" style="width:'+pct+'%"></div></div>'; }
+function svhStat(lbl, val, sub){ return '<div class="svh-stat"><div class="svh-stat-lbl">'+esc(lbl)+'</div><div class="svh-stat-val">'+val+'</div>'+(sub?'<div class="svh-stat-sub">'+sub+'</div>':'')+'</div>'; }
+function svhWebCard(w){
+  if(!w || !w.hostname && !w.name){ return '<div class="svh-card"><div class="svn-modal-message svn-modal-message--warn">Could not read server metrics.</div></div>'; }
+  var stats='';
+  // CPU
+  if(w.cpu_pct!=null){ stats += svhStat('CPU', esc(w.cpu_pct)+'%', svhBar(w.cpu_pct,90) + '<span class="svh-hint">'+esc(w.cores||'?')+' cores'+(w.load?' · load '+w.load.map(function(x){return x.toFixed(2);}).join(' / '):'')+'</span>'); }
+  else if(w.load){ var lpct=w.cores?(w.load[0]/w.cores*100):0; stats += svhStat('Load', w.load.map(function(x){return x.toFixed(2);}).join(' / '), svhBar(lpct,100)+'<span class="svh-hint">'+esc(w.cores||'?')+' cores</span>'); }
+  // Memory
+  if(w.mem_total_kb){ var used=w.mem_total_kb-(w.mem_avail_kb||0); var mp=w.mem_total_kb?used/w.mem_total_kb*100:0;
+    stats += svhStat('Memory', svhBytesKb(used)+' <span class="svh-of">/ '+svhBytesKb(w.mem_total_kb)+'</span>', svhBar(mp,90)+'<span class="svh-hint">'+svhBytesKb(w.mem_avail_kb||0)+' available</span>'); }
+  // Swap
+  if(w.swap_total_kb){ var su=w.swap_total_kb-(w.swap_free_kb||0); var sp=w.swap_total_kb?su/w.swap_total_kb*100:0;
+    stats += svhStat('Swap', svhBytesKb(su)+' <span class="svh-of">/ '+svhBytesKb(w.swap_total_kb)+'</span>', svhBar(sp,80)); }
+  var disks=(w.disks||[]).map(function(d){ var dp=d.total_kb?d.used_kb/d.total_kb*100:0;
+    return '<div class="svh-disk"><div class="svh-disk-head"><span class="mono">'+esc(d.mount)+'</span><span class="svh-disk-num">'+svhBytesKb(d.avail_kb)+' free <span class="svh-of">/ '+svhBytesKb(d.total_kb)+'</span></span></div>'+svhBar(dp,90)+'</div>';
+  }).join('');
+  var meta=[];
+  if(w.os) meta.push(esc(w.os));
+  if(w.kernel) meta.push('kernel '+esc(w.kernel));
+  if(w.uptime_s!=null) meta.push('up '+esc(svhDur(w.uptime_s)));
+  return '<div class="svh-card">'
+    + '<div class="svh-card-head">'+icon('server',17)+'<span class="svh-card-title">Web server</span>'
+    +   '<span class="svh-host mono">'+esc(w.hostname||w.name)+'</span>'+(w.is_local?'<span class="svh-tag">this host</span>':'<span class="svh-tag ssh">ssh</span>')+'</div>'
+    + (meta.length?'<div class="svh-meta">'+meta.join(' · ')+'</div>':'')
+    + '<div class="svh-stats">'+(stats||'<span class="svh-hint">no metrics</span>')+'</div>'
+    + (disks?'<div class="svh-disks"><div class="svh-sub">Disks</div>'+disks+'</div>':'')
+    + '</div>';
+}
+function svhDbCard(db){
+  if(!db){ return ''; }
+  var stats='';
+  if(db.uptime!=null) stats += svhStat('DB uptime', esc(svhDur(db.uptime)));
+  if(db.threads_connected!=null) stats += svhStat('Connections', esc(db.threads_connected)+(db.max_connections?' <span class="svh-of">/ '+esc(db.max_connections)+'</span>':''), db.threads_running!=null?('<span class="svh-hint">'+esc(db.threads_running)+' running now</span>'):'');
+  if(db.questions!=null) stats += svhStat('Queries', esc(svhNum(db.questions)), db.slow_queries!=null?('<span class="svh-hint">'+svhNum(db.slow_queries)+' slow</span>'):'');
+  if(db.schemas!=null) stats += svhStat('Databases', esc(db.schemas), db.size_mb!=null?('<span class="svh-hint">'+svhMb(db.size_mb)+' total</span>'):'');
+  else if(db.size_mb!=null) stats += svhStat('Data size', svhMb(db.size_mb));
+  var tag = db.kind==='shared' ? '<span class="svh-tag">shared</span>' : '<span class="svh-tag ssh">local</span>';
+  return '<div class="svh-card">'
+    + '<div class="svh-card-head">'+icon('database',17)+'<span class="svh-card-title">Database server</span>'
+    +   '<span class="svh-host mono">'+esc(db.host||'')+'</span>'+tag+'</div>'
+    + (db.version?'<div class="svh-meta">'+esc(db.version)+'</div>':'')
+    + '<div class="svh-stats">'+(stats||'<span class="svh-hint">no status available</span>')+'</div>'
+    + (db.note?'<div class="svh-note">'+esc(db.note)+'</div>':'')
+    + '</div>';
+}
+function renderServers(d, repo){
+  if(!d || !d.ok){ $('#svhBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not read server health.')+'</div>'); return; }
+  $('#svhBody').html('<div class="svh-cards">'+svhWebCard(d.web)+svhDbCard(d.db)+'</div>');
+}
+function openServers(repo){
+  if(!repo){ alert('Pick a site first (use a site’s ⋯ menu, or select a single site).'); return; }
+  modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon('server',21)+'</div>'
+    + '<div style="min-width:0"><h3>Servers</h3><p>Health &amp; technical params of the hosting for · <span class="mono">'+esc(repo)+'</span></p></div>'
+    + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body"><div id="svhBody"><span class="spin"></span> Reading server metrics…</div></div>'
+    + '<div class="modal-foot"><button class="btn" id="svhRefresh">'+icon('refresh',14)+' Refresh</button><div class="mf-grow"></div><button class="btn solid" data-close-modal="1">Close</button></div></div>');
+  var load=function(){ $('#svhBody').html('<span class="spin"></span> Reading server metrics…');
+    $.post('server_health.php', {repository:repo}, function(d){ renderServers(d, repo); }, 'json')
+      .fail(function(){ $('#svhBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); }); };
+  $(document).off('click.svhRefresh').on('click.svhRefresh', '#svhRefresh', load);
+  load();
+}
+
 function focusedRepoForGlobal(){
   var sel = selRepos();
   if(sel.length===1) return sel[0];
@@ -2578,7 +2680,7 @@ $(function(){
   // popover actions
   $(document).on('click', '[data-toggle-group]', function(e){ e.stopPropagation(); var gid=$(this).attr('data-toggle-group'), repo=$(this).attr('data-repo'); var g=groupById(gid); var inG=g&&g.siteIds.indexOf(repo)!==-1; groupsAction({action: inG?'remove_site':'add_site', id:gid, repository:repo}, function(){ openAddGroupPop(repo, document.querySelector('[data-addgroup="'+cssEsc(repo)+'"]')||document.body); }); });
   $(document).on('click', '[data-newgroup-repo]', function(e){ e.stopPropagation(); var repo=$(this).attr('data-newgroup-repo'); closeAllPopovers(); openSaveGroup([repo]); });
-  $(document).on('click', '[data-siteaction]', function(e){ e.stopPropagation(); var a=$(this).attr('data-siteaction'), repo=$(this).attr('data-repo'); closeAllPopovers(); if(a==='devtools') openDevTools(repo); else if(a==='backups') openBackups(repo); else if(a==='devcopy') openDevCopy(repo); else openInfo(a, repo); });
+  $(document).on('click', '[data-siteaction]', function(e){ e.stopPropagation(); var a=$(this).attr('data-siteaction'), repo=$(this).attr('data-repo'); closeAllPopovers(); if(a==='devtools') openDevTools(repo); else if(a==='backups') openBackups(repo); else if(a==='servers') openServers(repo); else if(a==='devcopy') openDevCopy(repo); else openInfo(a, repo); });
 
   // diff
   $(document).on('click', '.vdiff', function(){ openDiff($(this).attr('data-diff-repo'), $(this).attr('data-diff-file')); });
@@ -2676,6 +2778,7 @@ $(function(){
   });
   $(document).on('click', '.gcrit-open', function(){ openInfo('critical', $(this).attr('data-crit-repo')); });
   $(document).on('click', '#gcritReload', function(){ openGroupCritical(true); });
+  $('#btnServers').on('click', function(){ openServers(focusedRepoForGlobal()); });
   $('#btnBackups').on('click', function(){ openBackups(focusedRepoForGlobal()); });
   $('#btnDevCopy').on('click', function(){ openDevCopy(focusedRepoForGlobal()); });
   $('#btnDevDbs').on('click', function(){ openDevDbs(); });
