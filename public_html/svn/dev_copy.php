@@ -184,8 +184,13 @@ if ($want_db) {
 		$run .= "echo '   (latest dump " . $dump_latest . " looked broken/too small — using newest healthy dump instead)'\n";
 	}
 	$run .= $SLAYER . " " . escapeshellarg($create) . " || { echo '!! create db failed'; ok=0; }\n";
+	// Strip DEFINER clauses, and strip the source DB's schema qualifier (`<slug>`.) so schema-qualified
+	// objects (e.g. `CREATE TRIGGER `pcmob128`.`t`…`) land in the dev DB instead of failing with
+	// "Table 'pcmob128.x' doesn't exist". The slug is the dump's origin db name; only backtick-quoted
+	// `<slug>`. qualifiers are removed, so USE statements and string data are untouched.
 	$run .= $BACKUP . " " . escapeshellarg("cat /backup/dbs/daily/" . $dumpfile)
-		. " | " . $decomp . " | sed -E 's/DEFINER=`[^`]+`@`[^`]+` ?//g' | "
+		. " | " . $decomp . " | sed -E 's/DEFINER=`[^`]+`@`[^`]+` ?//g'"
+		. " | sed -E 's/`" . $slug . "`\\.//g' | "
 		. $SLAYER . " " . escapeshellarg("sudo mysql --one-database " . $dbname) . " || { echo '!! db import failed'; ok=0; }\n";
 
 	// Point the imported ViArt settings at the dev URL (harmless no-op if no va_global_settings).
