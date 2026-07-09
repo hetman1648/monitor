@@ -1703,6 +1703,7 @@ function logHead(uniq,total){
   return '<div class="cron-head">'
     + (LOG.mode==='raw' ? '<span class="ct">Raw log</span>' : '<span class="ct">'+uniq+' unique · '+total+' total</span>')
     + '<span class="spacer"></span>'
+    + '<button class="btn tiny" id="logCopyAll">'+icon('copy',13)+' Copy all</button>'
     + '<button class="btn tiny" id="logToggle">'+(LOG.mode==='raw'?'Grouped view':'Raw view')+'</button></div>';
 }
 // Parse raw error-log text into de-duplicated, severity-sorted groups (+ generic lines).
@@ -1810,6 +1811,7 @@ function renderLog(){
   var windowed=logApplyWindow(flat);
   var counts=logCatCounts(windowed);
   var shown=windowed.filter(function(it){ return logCatOn(it.cat); });
+  LOG._shown = shown;   // stash for "Copy all"
   var body = shown.length ? logListFromFlat(shown)
     : '<div class="svn-modal-message">No entries match the current filters.</div>';
   $('#infoBody').html(logHead(p.uniq, p.total)+logFilterBarHtml(counts)+body);
@@ -1844,9 +1846,13 @@ function renderGroupCritical(){
   withErr.forEach(function(r){ var w=logApplyWindow(res[r].flat); var c=logCatCounts(w); for(var k in c){ counts[k]=(counts[k]||0)+c[k]; }
     siteShown[r]=w.filter(function(it){ return logCatOn(it.cat); }); });
   var visSites=withErr.filter(function(r){ return siteShown[r].length; });
+  var totalShown=0; visSites.forEach(function(r){ totalShown+=siteShown[r].length; });
+  // Stash what's currently visible so "Copy all" copies exactly the filtered list on screen.
+  GCRIT._copy = visSites.map(function(r){ return {repo:r, items:siteShown[r]}; });
   var html='<div class="cron-head">'
     + '<span class="ct">'+(scanning?('<span class="spin"></span> Scanning '+GCRIT.done+'/'+GCRIT.total+' sites'):(GCRIT.total+' site'+(GCRIT.total!==1?'s':'')+' checked'))+'</span>'
     + '<span class="spacer"></span>'
+    + (visSites.length?'<button class="btn tiny" id="gcritCopyAll">'+icon('copy',13)+' Copy all ('+totalShown+')</button>':'')
     + '<span class="ct">'+(withErr.length?('<b style="color:var(--warn)">'+withErr.length+'</b> with critical errors'):(scanning?'':'<span style="color:var(--ok)">no critical errors</span>'))+'</span></div>';
   if(withErr.length) html+=logFilterBarHtml(counts);
   visSites.forEach(function(r){ var x=res[r], shown=siteShown[r];
@@ -1861,6 +1867,13 @@ function renderGroupCritical(){
   if(loading.length){ html+='<div class="gcrit-line muted"><span class="spin"></span><span>Checking '+loading.length+' more site'+(loading.length!==1?'s':'')+'…</span></div>'; }
   if(clean.length){ html+='<div class="gcrit-line ok">'+icon('check',14)+'<span>'+clean.length+' site'+(clean.length!==1?'s':'')+' with no critical errors</span></div>'; }
   $b.html(html);
+}
+// Assemble the whole visible critical list (all sites, current filters) as plain text for the clipboard.
+function copyGroupCriticalText(){
+  if(!GCRIT || !GCRIT._copy || !GCRIT._copy.length) return '';
+  return GCRIT._copy.map(function(s){
+    return '### ' + s.repo + ' (' + s.items.length + ') ###\n' + s.items.map(function(it){ return logCopyText(it.g); }).join('\n\n');
+  }).join('\n\n');
 }
 function openGroupCritical(fromHash){
   var ag=STATE.activeGroup;
@@ -2611,6 +2624,13 @@ $(function(){
 
   // error log grouped/raw toggle
   $(document).on('click', '#logToggle', function(){ LOG.mode = LOG.mode==='raw'?'grouped':'raw'; renderLog(); });
+  // copy-all: single-site log (grouped -> formatted entries; raw -> the raw text) and group-critical
+  function copyBtnDone($b){ var h=$b.html(); $b.html(icon('check',13)+' Copied'); setTimeout(function(){ $b.html(h); }, 1200); }
+  $(document).on('click', '#logCopyAll', function(){
+    var t = (LOG.mode==='raw') ? (LOG.txt||'') : (LOG._shown||[]).map(function(it){ return logCopyText(it.g); }).join('\n\n');
+    if(!t) return; bkCopyText(t); copyBtnDone($(this));
+  });
+  $(document).on('click', '#gcritCopyAll', function(){ var t=copyGroupCriticalText(); if(!t) return; bkCopyText(t); copyBtnDone($(this)); });
   // log filters: severity chips + recency window (shared by single-site log & group critical view)
   $(document).on('click', '.logf-chip', function(){ var k=$(this).attr('data-logf'); LOG_FILTER[k]=(LOG_FILTER[k]===false); if(GCRIT) renderGroupCritical(); else renderLog(); });
   $(document).on('click', '.logw-btn', function(){ LOG_WINDOW=parseInt($(this).attr('data-logw'),10)||0; if(GCRIT) renderGroupCritical(); else renderLog(); });
