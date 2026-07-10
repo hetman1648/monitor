@@ -237,6 +237,20 @@ html.dark-mode{
 #svnApp .pop-check{ width:19px; height:19px; border-radius:6px; border:1.7px solid var(--muted-2); display:flex; align-items:center; justify-content:center; color:#fff; flex:none; transition:.12s; }
 #svnApp .pop-item.on .pop-check{ background:var(--acc-solid); border-color:var(--acc-solid); }
 #svnApp .pop-name{ flex:1; font-size:14px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* domain right-click context menu */
+#svnApp .svnctx{ position:fixed; min-width:212px; max-width:92vw; background:var(--card-2); border:1px solid var(--line-strong); border-radius:12px; box-shadow:var(--shadow); padding:6px; z-index:60; display:flex; flex-direction:column; gap:1px; }
+#svnApp .svnctx-head{ font-size:12px; color:var(--ink-soft); padding:6px 10px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-bottom:1px solid var(--line); margin-bottom:3px; }
+#svnApp .svnctx-sec{ font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--muted-2); padding:7px 10px 3px; }
+#svnApp .svnctx-item{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; text-align:left; color:var(--ink-soft); font-size:13.5px; font-weight:600; transition:.12s; cursor:pointer; }
+#svnApp .svnctx-item:hover{ background:var(--hover); color:var(--ink); }
+#svnApp .svnctx-ic{ color:var(--muted); flex:none; display:inline-flex; }
+#svnApp .svnctx-item .svnctx-sub{ margin-left:auto; font-size:11px; font-weight:500; color:var(--muted-2); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .svnctx-pending{ pointer-events:none; opacity:.6; }
+#svnApp .svnctx-pending .svnctx-ic{ color:var(--muted-2); }
+#svnApp .svnctx-disabled{ pointer-events:none; opacity:.4; }
+#svnApp .host{ cursor:context-menu; }
+#svnApp .svnctx-toast{ position:fixed; z-index:61; background:var(--ink); color:var(--card); font-size:12.5px; font-weight:700; padding:7px 12px; border-radius:8px; box-shadow:var(--shadow); pointer-events:none; opacity:0; transition:opacity .12s; }
+#svnApp .svnctx-toast.show{ opacity:.96; }
 
 #svnApp .sbadge{ display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:800; letter-spacing:.2px; padding:5px 11px; border-radius:20px; white-space:nowrap; }
 #svnApp .sbadge .sd{ width:7px; height:7px; border-radius:50%; }
@@ -1267,7 +1281,7 @@ function syncSelAll(){
 }
 
 // ---------------- popovers ----------------
-function closeAllPopovers(){ $('#svnApp .pop-backdrop, #svnApp .pop').remove(); $('#svnApp .site-btn.on').removeClass('on'); closeGroupMenu(); $('#finderDd').removeClass('show'); }
+function closeAllPopovers(){ $('#svnApp .pop-backdrop, #svnApp .pop').remove(); $('#svnApp .site-btn.on').removeClass('on'); if(typeof closeCtxMenu==='function') closeCtxMenu(); closeGroupMenu(); $('#finderDd').removeClass('show'); }
 
 function openAddGroupPop(repo, anchor){
   closeAllPopovers();
@@ -1308,6 +1322,71 @@ function openActionsPop(repo, anchor){
   });
   html += '</div>';
   $('#svnApp').append(html);
+}
+
+// ---------------- domain right-click context menu ----------------
+var CTX_ADMIN = {};   // repo -> adminUrl ('' once resolved with no admin)
+function domainFullUrl(repo){ return 'https://'+repo+'/'; }
+function knownAdminUrl(repo){
+  if(typeof STATE!=='undefined' && STATE.sites[repo] && STATE.sites[repo].adminUrl) return STATE.sites[repo].adminUrl;
+  return CTX_ADMIN.hasOwnProperty(repo) ? CTX_ADMIN[repo] : null;   // null = not resolved yet
+}
+function adminPathFromUrl(u){
+  if(!u) return '';
+  var p='';
+  try{ p = new URL(u).pathname || ''; }
+  catch(e){ p = String(u).replace(/^https?:\/\/[^\/]+/i,'').replace(/[?#].*$/,''); }
+  return p.replace(/admin_login\.php$/i,'');   // -> /ADM-XXX/
+}
+function closeCtxMenu(){ $('#svnApp .svnctx').remove(); $(document).off('.svnctx'); $(window).off('.svnctx'); }
+function ctxToast(x, y, msg){
+  $('#svnApp .svnctx-toast').remove();
+  var $t=$('<div class="svnctx-toast">'+esc(msg)+'</div>').appendTo('#svnApp').css({left:x+'px', top:(y+2)+'px'});
+  requestAnimationFrame(function(){ $t.addClass('show'); });
+  setTimeout(function(){ $t.removeClass('show'); setTimeout(function(){ $t.remove(); }, 200); }, 1100);
+}
+function ctxCopy(text, x, y, label){ copyText(text, function(){}); ctxToast(x, y, 'Copied '+label); }
+function openDomainCtx(repo, x, y){
+  closeCtxMenu(); closeAllPopovers();
+  var admin = knownAdminUrl(repo);              // string | null(unresolved)
+  var pending = (admin===null);
+  function item(action, label, ic, sub, cls){
+    return '<button class="svnctx-item'+(cls||'')+'" data-ctx="'+action+'"><span class="svnctx-ic">'+icon(ic,15)+'</span><span>'+esc(label)+'</span>'
+      + (sub?'<span class="svnctx-sub mono">'+esc(sub)+'</span>':'')+'</button>';
+  }
+  var adminCls = pending ? ' svnctx-pending' : (admin ? '' : ' svnctx-disabled');
+  var html = '<div class="svnctx" data-ctxrepo="'+esc(repo)+'">'
+    + '<div class="svnctx-head mono">'+esc(repo)+'</div>'
+    + '<div class="svnctx-sec">Copy</div>'
+    + item('copy-domain','Domain','copy')
+    + item('copy-url','Full URL','copy')
+    + item('copy-admin','Admin path','copy', pending?'…':(admin?adminPathFromUrl(admin):'none'), adminCls)
+    + '<div class="svnctx-sec">Open</div>'
+    + item('open-url','URL','link')
+    + item('open-admin','Admin','login', '', adminCls)
+    + '</div>';
+  var $m = $(html).appendTo('#svnApp');
+  $m.css({left:x+'px', top:y+'px'});
+  // keep on-screen
+  var w=$m.outerWidth(), h=$m.outerHeight();
+  if(x+w > window.innerWidth-8)  $m.css('left', Math.max(8, window.innerWidth - w - 8));
+  if(y+h > window.innerHeight-8) $m.css('top',  Math.max(8, window.innerHeight - h - 8));
+  // lazily resolve admin for not-yet-scanned sites
+  if(pending){
+    $.post('site_admin.php', {repository:repo}, function(d){
+      var u = (d&&d.ok) ? (d.adminUrl||'') : '';
+      CTX_ADMIN[repo] = u;
+      var $cur = $('#svnApp .svnctx[data-ctxrepo="'+cssEsc(repo)+'"]'); if(!$cur.length) return;
+      $cur.find('[data-ctx=copy-admin]').removeClass('svnctx-pending').addClass(u?'':'svnctx-disabled').find('.svnctx-sub').text(u?adminPathFromUrl(u):'none');
+      $cur.find('[data-ctx=open-admin]').removeClass('svnctx-pending').addClass(u?'':'svnctx-disabled');
+    }, 'json').fail(function(){ CTX_ADMIN[repo]=''; var $cur=$('#svnApp .svnctx[data-ctxrepo="'+cssEsc(repo)+'"]'); $cur.find('.svnctx-pending').removeClass('svnctx-pending').addClass('svnctx-disabled'); $cur.find('[data-ctx=copy-admin] .svnctx-sub').text('none'); });
+  }
+  setTimeout(function(){
+    $(document).on('mousedown.svnctx', function(e){ if(!$(e.target).closest('.svnctx').length) closeCtxMenu(); });
+    $(document).on('contextmenu.svnctx', function(e){ if(!$(e.target).closest('.svnctx,.host').length) closeCtxMenu(); });
+    $(document).on('keydown.svnctx', function(e){ if(e.key==='Escape') closeCtxMenu(); });
+    $(window).on('scroll.svnctx resize.svnctx', function(){ closeCtxMenu(); });
+  }, 0);
 }
 
 // ---------------- modals ----------------
@@ -2689,6 +2768,27 @@ $(function(){
   $(document).on('click', '[data-toggle-group]', function(e){ e.stopPropagation(); var gid=$(this).attr('data-toggle-group'), repo=$(this).attr('data-repo'); var g=groupById(gid); var inG=g&&g.siteIds.indexOf(repo)!==-1; groupsAction({action: inG?'remove_site':'add_site', id:gid, repository:repo}, function(){ openAddGroupPop(repo, document.querySelector('[data-addgroup="'+cssEsc(repo)+'"]')||document.body); }); });
   $(document).on('click', '[data-newgroup-repo]', function(e){ e.stopPropagation(); var repo=$(this).attr('data-newgroup-repo'); closeAllPopovers(); openSaveGroup([repo]); });
   $(document).on('click', '[data-siteaction]', function(e){ e.stopPropagation(); var a=$(this).attr('data-siteaction'), repo=$(this).attr('data-repo'); closeAllPopovers(); if(a==='devtools') openDevTools(repo); else if(a==='backups') openBackups(repo); else if(a==='servers') openServers(repo); else if(a==='devcopy') openDevCopy(repo); else openInfo(a, repo); });
+
+  // domain right-click context menu
+  $(document).on('contextmenu', '#svnApp .host', function(e){
+    var $rr = $(this).closest('[data-repo],[data-cardrepo]');
+    var repo = $rr.attr('data-repo') || $rr.attr('data-cardrepo') || $(this).text().trim();
+    if(!repo || REPOS.indexOf(repo)===-1) return;   // fall back to the browser menu if not a known repo
+    e.preventDefault();
+    openDomainCtx(repo, e.clientX, e.clientY);
+  });
+  $(document).on('click', '#svnApp .svnctx-item', function(e){
+    e.stopPropagation();
+    if($(this).hasClass('svnctx-pending') || $(this).hasClass('svnctx-disabled')) return;
+    var act=$(this).attr('data-ctx'); var repo=$(this).closest('.svnctx').attr('data-ctxrepo');
+    var admin=knownAdminUrl(repo)||''; var x=e.clientX, y=e.clientY;
+    if(act==='copy-domain')      ctxCopy(repo, x, y, 'domain');
+    else if(act==='copy-url')    ctxCopy(domainFullUrl(repo), x, y, 'full URL');
+    else if(act==='copy-admin'){ if(!admin) return; ctxCopy(adminPathFromUrl(admin), x, y, 'admin path'); }
+    else if(act==='open-url')    window.open(domainFullUrl(repo), '_blank', 'noopener');
+    else if(act==='open-admin'){ if(!admin) return; window.open(admin, '_blank', 'noopener'); }
+    closeCtxMenu();
+  });
 
   // diff
   $(document).on('click', '.vdiff', function(){ openDiff($(this).attr('data-diff-repo'), $(this).attr('data-diff-file')); });
