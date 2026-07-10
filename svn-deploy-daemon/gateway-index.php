@@ -43,7 +43,8 @@
 	    $resp = socket_read($sock, 16384);
 	    if (preg_match('/SayuSvn daemon ready.../',$resp)) {
 		if (socket_write($sock, $request . "\n")) {
-		    $resp = socket_read($sock, 16384);
+		    $resp = "";
+			while (($chunk = socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
 		    if (preg_match('/\+OK /', $resp)) echo "Resumed normal operation. Server response is: $resp";
 		    else echo "Client-Server talking error: $resp";
 		}
@@ -68,7 +69,8 @@
 		$resp = socket_read($sock, 16384);
 		if (preg_match('/SayuSvn daemon ready.../',$resp)) {
 		    if (socket_write($sock, $request . "\n")) {
-			$resp = socket_read($sock, 16384);
+			$resp = "";
+			while (($chunk = socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
 			if (preg_match('/\+OK /', $resp)) echo "Resumed normal operation. Server response is: $resp";
 			else echo "Client-Server talking error: $resp";
 		    }
@@ -83,7 +85,8 @@
 		$resp = socket_read($sock, 16384);
 		if (preg_match('/SayuSvn daemon ready.../', $resp)) {
 		    if (socket_write($sock, $request . "\n")) {
-			$resp = socket_read($sock, 16384);
+			$resp = "";
+			while (($chunk = socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
 			if (preg_match('/\+OK /', $resp)) echo "Resumed normal operation. Server response is: $resp";
 			else echo "Client-Server talking error: $resp";
 		    }
