@@ -1865,10 +1865,19 @@ function logGroupCat(g){
   return 'other';
 }
 // Flatten parsed groups into display order with a category attached to each.
+// Order: severity category first (fatal > database > warning > notice > deprecated > other),
+// then most recent occurrence, then hit count.
+var LOG_CAT_RANK={fatal:0,database:1,warning:2,notice:3,deprecated:4,other:5};
 function logGroupsFlat(p){
   var arr=[];
   p.order.forEach(function(k){ var g=p.groups[k]; arr.push({g:g, cat:logGroupCat(g), kind:'php'}); });
   p.gorder.forEach(function(k){ var g=p.generic[k]; arr.push({g:g, cat:logGroupCat(g), kind:'generic'}); });
+  arr.sort(function(a,b){
+    var r=(LOG_CAT_RANK[a.cat]!==undefined?LOG_CAT_RANK[a.cat]:9)-(LOG_CAT_RANK[b.cat]!==undefined?LOG_CAT_RANK[b.cat]:9);
+    if(r!==0) return r;
+    var t=(b.g.ts||0)-(a.g.ts||0);
+    return t!==0?t:((b.g.count||0)-(a.g.count||0));
+  });
   return arr;
 }
 function logItemHtml(it){
