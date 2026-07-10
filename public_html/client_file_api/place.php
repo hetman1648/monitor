@@ -13,11 +13,22 @@
 	    {
 	      "domain":  "puregusto.co.uk",
 	      "db_name": "puregusto",                 // accepted, never used (files only)
+	      "kind":    "content-assets",             // or "microsite" — selects the validation ruleset
 	      "subpath": "content-assets/1722",       // relative to the client web root
 	      "mode":    "pull",                       // only "pull" is supported
 	      "purge":   true,                         // wipe the subpath first (idempotent re-publish)
 	      "files":   [ { "name": "x.js", "url": "https://copilot.sayu.co.uk/media/imported/1722/x.js" }, … ]
 	    }
+
+	Microsite mode (kind:"microsite") — standalone micro-pages at a web-root path
+	(e.g. https://www.puregusto.co.uk/coffee-report/). Differs from the default only in:
+	  - subpath is a SINGLE web-root slug (^[a-z0-9][a-z0-9-]{0,63}$), depth 1, no slashes/dots;
+	    reserved names (admin, images, includes, … — anything platform-critical) are rejected.
+	  - .html/.htm/.webmanifest are additionally allowed (still forbidden in content-assets mode).
+	  - a .sayu-microsite marker file is dropped in the directory on create; a target directory
+	    that already exists WITHOUT that marker is never touched (422) — so purge/re-publish is
+	    idempotent for our own dirs but can't clobber a pre-existing web-root folder.
+	Contract doc on the Copilot side: docs/client-file-placement-api.md → "Microsite mode".
 	Returns:
 	    { "ok": true,
 	      "base_url": "https://www.puregusto.co.uk/content-assets/1722/",   // the REAL public URL (REQUIRED)
@@ -28,9 +39,10 @@
 	  - sites mapped in svn/svn_hosts.php -> written on their own server over SSH (monitor's key, tema+sudo).
 
 	Safety (see validation below): bearer token (constant-time) + optional IP allowlist; subpath
-	allowlist content-assets/<digits> only; basename + extension allowlist; fetch host pinned to
-	copilot.sayu.co.uk with no redirects (SSRF guard); per-file and total size caps; purge only ever
-	deletes inside the validated subpath; the client database is never touched.
+	allowlist content-assets/<digits> (or, in microsite mode, a single reserved-name-checked slug);
+	basename + extension allowlist; fetch host pinned to copilot.sayu.co.uk with no redirects (SSRF
+	guard); per-file and total size caps; purge only ever deletes inside the validated subpath (and,
+	for microsites, only marker-bearing dirs); the client database is never touched.
 */
 
 // -------- config + shared helpers/auth --------
@@ -45,6 +57,19 @@ $CFA_EXT_ALLOW    = array(
 	'svg','png','jpg','jpeg','gif','webp','avif','ico','bmp',
 	'woff','woff2','ttf','otf','eot','pdf',
 );
+// Markup types a standalone micro-page needs — allowed in microsite mode ONLY.
+$CFA_MS_EXT_EXTRA = array('html','htm','webmanifest');
+// Web-root slugs a microsite must never shadow: platform/app dirs (ViArt layout: admin, images,
+// includes, js, payments, templates, …) plus the generic web-critical names from the contract.
+// Defence in depth — a pre-existing directory is refused anyway via the .sayu-microsite marker.
+$CFA_MS_RESERVED  = array(
+	'content-assets','admin','administrator','cgi-bin','includes','system','var','vendor',
+	'wp-admin','wp-content','wp-includes','api','assets','images','img','css','js','fonts',
+	'media','uploads','files','attachments','downloads','download','blocks','classes','db',
+	'dist','editor','messages','payments','previews','shipping','styles','swf','templates',
+	'ckeditor','tinymce','fancybox','widgets','scripts','secure','stats','cache','temp','tmp',
+	'kbase','manual','install','forum','blog','help','search','login','logout','error',
+);
 
 // -------- 1) method + auth --------
 if (cfa_g($_SERVER,'REQUEST_METHOD','GET') !== 'POST') cfa_fail('POST only.', 405);
@@ -57,12 +82,15 @@ $req = json_decode($raw, true);
 if (!is_array($req)) cfa_fail('Invalid JSON body.');
 
 $domain  = strtolower(trim((string)cfa_g($req,'domain','')));
+$kind    = strtolower(trim((string)cfa_g($req,'kind','content-assets')));
 $subpath = trim((string)cfa_g($req,'subpath',''));
 $mode    = strtolower(trim((string)cfa_g($req,'mode','pull')));
 $purge   = !empty($req['purge']);
 $files   = cfa_g($req,'files',array());
 
 if ($mode !== 'pull') cfa_fail('Unsupported mode (only "pull").');
+if ($kind !== 'content-assets' && $kind !== 'microsite') cfa_fail('Unsupported kind (only "content-assets" or "microsite").');
+$microsite = ($kind === 'microsite');
 
 // domain: a bare hostname, no path/scheme/traversal.
 if ($domain === '' || strlen($domain) > 253 || !preg_match('/^[a-z0-9.-]+$/', $domain)
@@ -70,15 +98,29 @@ if ($domain === '' || strlen($domain) > 253 || !preg_match('/^[a-z0-9.-]+$/', $d
 	cfa_fail('Invalid domain.');
 }
 
-// subpath: content-assets/<digits> ONLY. No leading slash, no .., no backslashes.
-if (!preg_match('#^content-assets/[0-9]+$#', $subpath)) {
-	cfa_fail('Invalid subpath (allowed: content-assets/<number>).');
+if ($microsite) {
+	// microsite subpath: ONE safe web-root slug — no slash, dot, .., backslash or NUL possible by
+	// construction of the pattern, so the target is a depth-1 child of the web root.
+	if (!preg_match('/^[a-z0-9][a-z0-9-]{0,63}$/', $subpath)) {
+		cfa_fail('Invalid subpath (microsite: a single lower-case slug, e.g. "coffee-report").');
+	}
+	if (in_array($subpath, $GLOBALS['CFA_MS_RESERVED'], true)) {
+		cfa_fail('Reserved subpath: ' . $subpath, 422);
+	}
+} else {
+	// subpath: content-assets/<digits> ONLY. No leading slash, no .., no backslashes.
+	if (!preg_match('#^content-assets/[0-9]+$#', $subpath)) {
+		cfa_fail('Invalid subpath (allowed: content-assets/<number>).');
+	}
 }
 
 if (!is_array($files) || !count($files)) cfa_fail('No files given.');
 if (count($files) > $GLOBALS['CFA_MAX_FILES']) cfa_fail('Too many files (max ' . $GLOBALS['CFA_MAX_FILES'] . ').');
 
 // Validate every file entry up front (basename, extension, fetch-host) before touching anything.
+$ext_allow = $microsite
+	? array_merge($GLOBALS['CFA_EXT_ALLOW'], $GLOBALS['CFA_MS_EXT_EXTRA'])
+	: $GLOBALS['CFA_EXT_ALLOW'];
 $clean = array();
 foreach ($files as $f) {
 	$name = trim((string)cfa_g($f,'name',''));
@@ -90,7 +132,7 @@ foreach ($files as $f) {
 	}
 	$dot = strrpos($name, '.');
 	$ext = $dot === false ? '' : strtolower(substr($name, $dot + 1));
-	if (!in_array($ext, $GLOBALS['CFA_EXT_ALLOW'], true)) cfa_fail('Disallowed file type: ' . $name);
+	if (!in_array($ext, $ext_allow, true)) cfa_fail('Disallowed file type: ' . $name);
 	// url: https on the pinned host only (SSRF guard). We also forbid redirects when fetching.
 	$pu = parse_url($url);
 	if (!$pu || strtolower(cfa_g($pu,'scheme','')) !== 'https'
@@ -155,12 +197,21 @@ if (!count($placed)) {
 // -------- 5) place the staged files into the web root (local or remote) --------
 $placeErr = '';
 if ($host) {
-	$placeErr = cfa_place_remote($host, $webroot, $subpath, $stage, $placed, $purge);
+	$placeErr = cfa_place_remote($host, $webroot, $subpath, $stage, $placed, $purge, $microsite);
 } else {
-	$placeErr = cfa_place_local($webroot, $subpath, $stage, $placed, $purge);
+	$placeErr = cfa_place_local($webroot, $subpath, $stage, $placed, $purge, $microsite);
 }
 cfa_rmtree($stage);
-if ($placeErr !== '') cfa_fail('Placement failed: ' . $placeErr, 500, array('failed' => $failed));
+if ($placeErr !== '') {
+	// The placement script refused a web-root dir that exists but wasn't created by us.
+	if (strpos($placeErr, 'CFA_NOT_MICROSITE') !== false) {
+		cfa_fail('target exists and is not a Sayu microsite: ' . $subpath, 422, array('failed' => $failed));
+	}
+	cfa_fail('Placement failed: ' . $placeErr, 500, array('failed' => $failed));
+}
+error_log('client_file_api/place: ' . $kind . ' ' . $domain . '/' . $subpath
+	. ' placed=' . count($placed) . ' failed=' . count($failed)
+	. ' purge=' . ($purge ? '1' : '0') . ' from ' . cfa_g($_SERVER, 'REMOTE_ADDR', '?'));
 
 // -------- 6) the public base URL (the one field Copilot truly depends on) --------
 // If the site's server declares a public_base (it's served via something other than its own domain,
@@ -183,20 +234,30 @@ cfa_out(array(
 
 // Build a bash snippet that purges (optional) then copies the named files from $stage into
 // $webroot/$subpath. Shared by both backends; every value is single-quote escaped for the shell.
-function cfa_place_script($webroot, $subpath, $stage, $placed, $purge, $do_chown) {
+// $microsite: the target is a web-root dir — refuse one that exists without our .sayu-microsite
+// marker (a symlink counts as foreign too), and (re)create the marker after placing.
+function cfa_place_script($webroot, $subpath, $stage, $placed, $purge, $do_chown, $microsite = false) {
 	$q = function ($s) { return "'" . str_replace("'", "'\\''", $s) . "'"; };
 	$s  = "set -e\n";
 	$s .= "WR=" . $q($webroot) . "\n";
-	$s .= "T=\"\$WR/" . $subpath . "\"\n";                 // $subpath is already validated content-assets/<digits>
+	$s .= "T=\"\$WR/" . $subpath . "\"\n";                 // $subpath is already validated (content-assets/<digits> or a microsite slug)
 	$s .= "STAGE=" . $q($stage) . "\n";
 	// Re-assert the target stays under the web root (defence in depth; PHP already validated).
 	$s .= "case \"\$T\" in \"\$WR/\"*) : ;; *) echo 'path escape'; exit 9;; esac\n";
+	if ($microsite) {
+		$s .= "if [ -L \"\$T\" ]; then echo CFA_NOT_MICROSITE; exit 8; fi\n";
+		$s .= "if [ -e \"\$T\" ] && [ ! -f \"\$T/.sayu-microsite\" ]; then echo CFA_NOT_MICROSITE; exit 8; fi\n";
+	}
 	if ($purge) $s .= "rm -rf -- \"\$T\"\n";
 	$s .= "mkdir -p -- \"\$T\"\n";
 	foreach ($placed as $p) {
 		$n = $q($p['name']);
 		$s .= "cp -f -- \"\$STAGE\"/" . $n . " \"\$T\"/" . $n . "\n";
 		$s .= "chmod 644 \"\$T\"/" . $n . "\n";
+	}
+	if ($microsite) {
+		$s .= "touch \"\$T\"/.sayu-microsite\n";
+		$s .= "chmod 644 \"\$T\"/.sayu-microsite\n";
 	}
 	$s .= "chmod 755 \"\$T\"\n";
 	if ($do_chown) {
@@ -210,7 +271,7 @@ function cfa_place_script($webroot, $subpath, $stage, $placed, $purge, $do_chown
 
 // web1-local placement: run the script as the site's unix user via the monitor_runas sudo wrapper
 // (the same wrapper the SVN cron tool uses). Files end up owned by the site user automatically.
-function cfa_place_local($webroot, $subpath, $stage, $placed, $purge) {
+function cfa_place_local($webroot, $subpath, $stage, $placed, $purge, $microsite = false) {
 	if (!is_dir($webroot)) return 'web root not found: ' . $webroot;
 	$owner = '';
 	if (function_exists('posix_getpwuid')) {
@@ -219,7 +280,7 @@ function cfa_place_local($webroot, $subpath, $stage, $placed, $purge) {
 	}
 	if ($owner === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $owner)) return 'could not determine site user for ' . $webroot;
 
-	$script = cfa_place_script($webroot, $subpath, $stage, $placed, $purge, false);
+	$script = cfa_place_script($webroot, $subpath, $stage, $placed, $purge, false, $microsite);
 	$cmd = 'sudo -n /usr/local/bin/monitor_runas ' . escapeshellarg($owner);
 	$descr = array(0 => array('pipe', 'r'), 1 => array('pipe', 'w'), 2 => array('pipe', 'w'));
 	$p = proc_open($cmd, $descr, $pipes);
@@ -236,7 +297,7 @@ function cfa_place_local($webroot, $subpath, $stage, $placed, $purge) {
 
 // Off-web1 placement: rsync the staged files to a temp dir on the site's server, then run the
 // placement script there as root (tema has passwordless sudo) and chown the result to the site user.
-function cfa_place_remote($host, $webroot, $subpath, $stage, $placed, $purge) {
+function cfa_place_remote($host, $webroot, $subpath, $stage, $placed, $purge, $microsite = false) {
 	$key   = '/mnt/drive2/vhosts/monitor.sayu.co.uk/.ssh/id_ed25519';
 	$known = '/mnt/drive2/vhosts/monitor.sayu.co.uk/.ssh/known_hosts';
 	$sshopts = '-i ' . escapeshellarg($key)
@@ -256,7 +317,7 @@ function cfa_place_remote($host, $webroot, $subpath, $stage, $placed, $purge) {
 
 	// 2) place on the remote server as root (STAGE = the remote temp dir), chown to the site user,
 	//    then clean the temp up.
-	$script  = cfa_place_script($webroot, $subpath, $rtmp, $placed, $purge, true);
+	$script  = cfa_place_script($webroot, $subpath, $rtmp, $placed, $purge, true, $microsite);
 	$remote  = 'sudo bash -c ' . escapeshellarg($script) . '; rc=$?; rm -rf -- ' . escapeshellarg($rtmp) . '; exit $rc';
 
 	$o2 = array(); $rc2 = 0;
