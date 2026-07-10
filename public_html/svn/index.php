@@ -1312,7 +1312,7 @@ function openActionsPop(repo, anchor){
 
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); } BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; GCRIT=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
+function closeModal(){ $(document).off('keydown.updDone'); if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); } BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; GCRIT=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
 
 // Styled confirm dialog (replaces window.confirm); layers above any open modal.
 var UICONFIRM_CB = null;
@@ -1373,7 +1373,15 @@ function runBatchUpdate(repos){
       + '<div style="flex:1;display:flex;align-items:center;font-size:13.5px;color:var(--ink-soft);line-height:1.4">'+(fail?'Failed sites kept their previous revision — open their error log and retry.':'Every selected site is now live on the latest revision.')+'</div></div>' : '';
     modal('<div class="modal"><div class="modal-head">'+head+(done?'<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button>':'')+'</div>'
       + '<div class="modal-body">'+summary+repos.map(rowHtml).join('')+'</div>'
-      + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" '+(done?'':'disabled')+' data-close-modal="1">'+(done?'Done':'Please wait…')+'</button></div></div>');
+      + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" id="updDoneBtn" '+(done?'':'disabled')+' data-close-modal="1">'+(done?'Done':'Please wait…')+'</button></div></div>');
+    if(done){
+      // Finished: let ENTER dismiss the popup — focus the Done button (native Enter=click) and
+      // add a one-shot Enter handler in case focus drifts off it.
+      setTimeout(function(){ $('#updDoneBtn').focus(); }, 0);
+      $(document).off('keydown.updDone').on('keydown.updDone', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); $(document).off('keydown.updDone'); closeModal(); }
+      });
+    }
   }
   render(false);
   var i = 0;
