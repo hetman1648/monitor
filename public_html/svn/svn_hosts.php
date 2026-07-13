@@ -141,6 +141,26 @@ function svn_host_for_path($path) {
 	return null;
 }
 
+/**
+ * Shared "common" repositories that are checked out on MULTIPLE servers besides web1
+ * (e.g. the Common8 shared library) and must be fanned out to each on deploy. web1 is
+ * always updated via the normal gateway; this lists the ADDITIONAL off-web1 working copies.
+ * Returns array of array('key'=>server key in svn_host_servers(), 'wc'=>absolute WC path).
+ *
+ * NB: the Common8 WC lives at /var/vhosts/Common8 on every dedicated box (NOT under the
+ * per-server wc_base), so the path is given explicitly. rubberduck has no Common8 WC.
+ */
+function svn_shared_repo_deploys($repo) {
+	$map = array(
+		'Common8' => array(
+			array('key' => 'rss',       'wc' => '/var/vhosts/Common8'),
+			array('key' => 'puregusto', 'wc' => '/var/vhosts/Common8'),
+			array('key' => 'web2',      'wc' => '/var/vhosts/Common8'),
+		),
+	);
+	return isset($map[$repo]) ? $map[$repo] : array();
+}
+
 /** SSH command prefix for a resolved host config (uses the monitor user's key). */
 function svn_host_ssh($host) {
 	$key   = "/mnt/drive2/vhosts/monitor.sayu.co.uk/.ssh/id_ed25519";
