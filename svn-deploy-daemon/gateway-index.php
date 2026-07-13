@@ -43,8 +43,12 @@
 	    $resp = socket_read($sock, 16384);
 	    if (preg_match('/SayuSvn daemon ready.../',$resp)) {
 		if (socket_write($sock, $request . "\n")) {
-		    $resp = "";
-			while (($chunk = socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
+		    $resp = socket_read($sock, 16384);
+			if ($resp === false) $resp = "";
+			else {
+				socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>5, "usec"=>0));
+				while (($chunk = @socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
+			}
 		    if (preg_match('/\+OK /', $resp)) echo "Resumed normal operation. Server response is: $resp";
 		    else echo "Client-Server talking error: $resp";
 		}
@@ -69,8 +73,12 @@
 		$resp = socket_read($sock, 16384);
 		if (preg_match('/SayuSvn daemon ready.../',$resp)) {
 		    if (socket_write($sock, $request . "\n")) {
-			$resp = "";
-			while (($chunk = socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
+			$resp = socket_read($sock, 16384);
+			if ($resp === false) $resp = "";
+			else {
+				socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>5, "usec"=>0));
+				while (($chunk = @socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
+			}
 			if (preg_match('/\+OK /', $resp)) echo "Resumed normal operation. Server response is: $resp";
 			else echo "Client-Server talking error: $resp";
 		    }
@@ -85,8 +93,12 @@
 		$resp = socket_read($sock, 16384);
 		if (preg_match('/SayuSvn daemon ready.../', $resp)) {
 		    if (socket_write($sock, $request . "\n")) {
-			$resp = "";
-			while (($chunk = socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
+			$resp = socket_read($sock, 16384);
+			if ($resp === false) $resp = "";
+			else {
+				socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>5, "usec"=>0));
+				while (($chunk = @socket_read($sock, 16384)) !== false && $chunk !== "") { $resp .= $chunk; }
+			}
 			if (preg_match('/\+OK /', $resp)) echo "Resumed normal operation. Server response is: $resp";
 			else echo "Client-Server talking error: $resp";
 		    }
