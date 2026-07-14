@@ -943,6 +943,10 @@ function maybeOpenPendingReview(repo){
 }
 function enqueueScan(repos, force){
   repos.forEach(function(r){
+    // Never queue a blank repo: on a cold first load the scope can resolve a moment late, and an
+    // empty value here would POST repository='' to svn_site_status.php → a spurious "Scan failed /
+    // No repository specified." row that only clears on refresh. Skip empties defensively.
+    if(!r || !String(r).trim()) return;
     var s = ensureSite(r);
     if(force || s.scanState==='idle' || s.scanState==='error'){
       s.scanState='queued';
