@@ -16,8 +16,17 @@
 	  - if the commit fails, the local propset is reverted, so the WC is not left dirty (a
 	    locally-modified dir would show as update-list noise — worse than the original problem).
 
+	untrack=1 extends this to files that ARE tracked (generated artefacts that were committed by
+	mistake — e.g. a nightly-rebuilt feed, or a committed file since replaced by a symlink, which
+	shows as "~ Type changed"). svn:ignore alone does nothing to a tracked file, so it first runs
+	`svn rm --keep-local` (stops tracking it, leaves the file/symlink untouched on the live site)
+	and commits that together with the property. Same recipe as the runtime/compiled cleanup.
+	NB: the commit removes it from the REPO, so other working copies / dev copies drop their copy
+	on their next update — which is the point for generated files, but worth stating in the UI.
+
 	@param repository
 	@param file        path relative to the WC root, e.g. public_html/js/gdpr-cookie.js
+	@param untrack     1 = the file is tracked: svn rm --keep-local it first, then ignore
 	@param pattern     optional glob to ignore INSTEAD of the exact filename, applied to the
 	                   directory of `file` — e.g. "*.css" or "*_nbn.css" for a folder full of
 	                   generated backups. svn:ignore patterns are per-directory, so it must not
@@ -77,9 +86,11 @@ if ($pattern !== '') {
 	$base = $pattern;
 }
 $is_mask = ($pattern !== '');
+// Untracking only makes sense for one specific tracked file, not for a glob.
+$untrack = (!$is_mask && GetParam("untrack")) ? true : false;
 $msg = $is_mask
 	? ('ignore ' . $pattern . ' in ' . $dir . ' (via monitor)')
-	: ('ignore ' . $file . ' (via monitor)');
+	: (($untrack ? 'stop tracking + ignore ' : 'ignore ') . $file . ' (via monitor)');
 
 // Built for the site user's shell, run from the WC root.
 $inner = "cd " . escapeshellarg($wc) . " || exit 1\n";
@@ -89,12 +100,21 @@ $inner = "cd " . escapeshellarg($wc) . " || exit 1\n";
 // else (M/A/D/…) means it IS tracked — refuse, since svn:ignore is a no-op on tracked files.
 // A mask isn't a single file, so this check doesn't apply to it (and svn:ignore still can't
 // affect whatever is versioned in that directory).
+$inner .= "TRACKED=0\n";
 if (!$is_mask) {
+	// '' = tracked & clean, 'M' = edited on live, '~' = type changed (obstructed, e.g. the
+	// committed file was replaced by a symlink), '!' = missing on live. All of those ARE
+	// tracked, so svn:ignore alone would be a silent no-op — they need svn rm --keep-local
+	// first, which only untrack=1 authorises.
+	$tracked_action = $untrack
+		? "TRACKED=1"
+		: "echo '>> " . $base . " is tracked in SVN — svn:ignore has no effect on it. Use Stop tracking to untrack + ignore.'; exit 0";
 	$inner .= "ST=\$(svn status " . escapeshellarg($file) . " 2>&1 | head -1)\n"
 		. "case \"\$ST\" in\n"
 		. "  '?'*) ;;\n"
 		. "  'I'*) echo '>> " . $base . " is already ignored — nothing to do'; exit 0 ;;\n"
-		. "  '') echo '>> " . $base . " is already tracked — leaving it alone'; exit 0 ;;\n"
+		. "  ''|'M'*|'~'*|'!'*) " . $tracked_action . " ;;\n"
+		. "  svn:*) echo \">> cannot read svn status for " . $file . ": \$ST\"; exit 8 ;;\n"
 		. "  *) echo \">> refusing: unexpected svn status: \$ST\"; exit 8 ;;\n"
 		. "esac\n";
 }
@@ -109,18 +129,42 @@ $inner .= "svn info " . escapeshellarg($dir) . " >/dev/null 2>&1 || { echo '>> p
 	// change the working copy's sticky depth.
 	. "UP=\$(svn update --depth empty " . escapeshellarg($dir) . " " . $auth . " 2>&1) || { echo \"\$UP\"; echo '>> could not sync " . $dir . " before setting the property'; exit 4; }\n"
 	. "CUR=\$(svn propget svn:ignore " . escapeshellarg($dir) . " 2>/dev/null)\n"
-	. "if printf '%s\\n' \"\$CUR\" | grep -qxF " . escapeshellarg($base) . "; then echo '>> already in svn:ignore'; exit 0; fi\n"
-	// Append, preserving existing order; drop blank lines.
-	. "TF=\$(mktemp) || exit 1\n"
-	. "printf '%s\\n' \"\$CUR\" | sed '/^[[:space:]]*\$/d' > \"\$TF\"\n"
-	. "printf '%s\\n' " . escapeshellarg($base) . " >> \"\$TF\"\n"
-	. "svn propset svn:ignore -F \"\$TF\" " . escapeshellarg($dir) . " || { rm -f \"\$TF\"; echo '>> propset failed'; exit 7; }\n"
-	. "rm -f \"\$TF\"\n"
-	// --depth empty: commit ONLY this directory's property change, not anything inside it.
-	. "OUT=\$(svn commit --depth empty " . escapeshellarg($dir) . " -m " . escapeshellarg($msg) . " " . $auth . " 2>&1); rc=\$?\n"
+	// Already listed? Nothing more to do — UNLESS we still have to untrack the file (svn:ignore
+	// can be present yet useless while the file is still versioned).
+	. "NEEDPROP=1\n"
+	. "if printf '%s\\n' \"\$CUR\" | grep -qxF " . escapeshellarg($base) . "; then\n"
+	. "  if [ \"\$TRACKED\" != 1 ]; then echo '>> already in svn:ignore'; exit 0; fi\n"
+	. "  NEEDPROP=0\n"
+	. "fi\n"
+	// Untrack first: --keep-local leaves the file/symlink exactly as it is on the live site and
+	// only stops SVN tracking it.
+	. "if [ \"\$TRACKED\" = 1 ]; then\n"
+	. "  svn rm --keep-local --force " . escapeshellarg($file) . " || { echo '>> svn rm --keep-local failed'; exit 7; }\n"
+	. "fi\n"
+	// Append to svn:ignore, preserving existing order; drop blank lines.
+	. "if [ \"\$NEEDPROP\" = 1 ]; then\n"
+	. "  TF=\$(mktemp) || exit 1\n"
+	. "  printf '%s\\n' \"\$CUR\" | sed '/^[[:space:]]*\$/d' > \"\$TF\"\n"
+	. "  printf '%s\\n' " . escapeshellarg($base) . " >> \"\$TF\"\n"
+	. "  svn propset svn:ignore -F \"\$TF\" " . escapeshellarg($dir) . " || { rm -f \"\$TF\"; echo '>> propset failed'; exit 7; }\n"
+	. "  rm -f \"\$TF\"\n"
+	. "fi\n"
+	// --depth empty: commit ONLY the directory's own property change and (when untracking) the
+	// file's own deletion — never anything else sitting modified inside that directory.
+	. "if [ \"\$TRACKED\" = 1 ]; then\n"
+	. "  OUT=\$(svn commit --depth empty " . escapeshellarg($dir) . " " . escapeshellarg($file) . " -m " . escapeshellarg($msg) . " " . $auth . " 2>&1); rc=\$?\n"
+	. "else\n"
+	. "  OUT=\$(svn commit --depth empty " . escapeshellarg($dir) . " -m " . escapeshellarg($msg) . " " . $auth . " 2>&1); rc=\$?\n"
+	. "fi\n"
 	. "echo \"\$OUT\"\n"
-	. "if [ \$rc -ne 0 ]; then echo '>> commit failed — reverting the local property change'; svn revert --depth empty " . escapeshellarg($dir) . " >/dev/null 2>&1; exit \$rc; fi\n"
-	. "echo \">> ignored " . $base . " in " . $dir . "\"\n";
+	. "if [ \$rc -ne 0 ]; then\n"
+	. "  echo '>> commit failed — undoing the local changes'\n"
+	. "  svn revert --depth empty " . escapeshellarg($dir) . " >/dev/null 2>&1\n"
+	. "  [ \"\$TRACKED\" = 1 ] && svn revert " . escapeshellarg($file) . " >/dev/null 2>&1\n"
+	. "  exit \$rc\n"
+	. "fi\n"
+	. "if [ \"\$TRACKED\" = 1 ]; then echo \">> stopped tracking " . $base . " (kept on disk) and ignored it in " . $dir . "\"; "
+	. "else echo \">> ignored " . $base . " in " . $dir . "\"; fi\n";
 
 // Run it as the working copy's owner.
 $output = ''; $rc = 0;
@@ -147,12 +191,15 @@ if ($host) {
 }
 if (function_exists('ensure_utf8')) $output = ensure_utf8($output);
 
-$already   = (bool) preg_match('/already in svn:ignore|already ignored|already tracked/i', $output);
+$already   = (bool) preg_match('/already in svn:ignore|already ignored/i', $output);
 $committed = (bool) preg_match('/Committed revision\s+\d+/i', $output);
-$done      = ($already || $committed);
+$blocked   = (bool) preg_match('/is tracked in SVN/i', $output);   // needs untrack=1
+$done      = (($already || $committed) && !$blocked);
 
 ig_json(array(
 	'ok' => $done, 'repository' => $repository, 'file' => $file, 'pattern' => $pattern,
-	'already' => $already, 'committed' => $committed, 'output' => trim($output),
-	'error' => $done ? '' : 'Could not ignore the ' . ($is_mask ? 'pattern' : 'file') . ' — see the output.',
+	'untracked' => $untrack, 'already' => $already, 'committed' => $committed, 'output' => trim($output),
+	'error' => $done ? '' : ($blocked
+		? 'That file is tracked in SVN — ignoring it needs Stop tracking.'
+		: 'Could not ignore the ' . ($is_mask ? 'pattern' : 'file') . ' — see the output.'),
 ));

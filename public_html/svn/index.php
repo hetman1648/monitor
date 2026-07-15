@@ -293,6 +293,8 @@ html.dark-mode{
 /* Ignore action on untracked ("Not in SVN") file rows */
 #svnApp .fignore{ display:inline-flex; align-items:center; gap:4px; color:var(--muted); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid var(--line); border-radius:7px; cursor:pointer; transition:.12s; }
 #svnApp .fignore:hover{ color:var(--err); border-color:var(--err); background:var(--err-bg); }
+#svnApp .funtrack{ display:inline-flex; align-items:center; gap:4px; margin-left:8px; color:var(--muted); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid var(--line); border-radius:7px; cursor:pointer; transition:.12s; }
+#svnApp .funtrack:hover{ color:var(--warn); border-color:var(--warn); background:var(--warn-bg); }
 #svnApp .fdel{ display:inline-flex; align-items:center; gap:4px; margin-left:8px; color:var(--muted-2); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid transparent; border-radius:7px; cursor:pointer; transition:.12s; }
 #svnApp .fdel:hover{ color:var(--err); border-color:var(--err); background:var(--err-bg); }
 #svnApp .col-diff{ white-space:nowrap; }
@@ -1264,7 +1266,11 @@ function renderTable(){
         var untracked = (f.kind === '?');
         var lastCell = (untracked
           ? '<button class="fignore" data-ig-repo="'+esc(r)+'" data-ig-file="'+esc(rel)+'" title="Add to svn:ignore so this file stops showing here">'+icon('x',12)+' Ignore</button>'
-          : '<button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(rel)+'">View diff</button>')
+          : '<button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(rel)+'">View diff</button>'
+            // Tracked file: svn:ignore is a no-op on it, so offer untrack+ignore instead —
+            // the fix for generated artefacts that were committed by mistake.
+            + '<button class="funtrack" data-ut-repo="'+esc(r)+'" data-ut-file="'+esc(rel)+'" data-ut-kind="'+esc(f.kind||'')+'"'
+            + ' title="Stop SVN tracking this file (it stays on the live site) and ignore it — for generated files">'+icon('x',12)+' Stop tracking</button>')
           + '<button class="fdel" data-del-repo="'+esc(r)+'" data-del-file="'+esc(rel)+'" data-del-kind="'+esc(f.kind||'')+'"'
           + ' title="'+(untracked?'Delete this file from the live site (permanent — it is not in SVN)':'Delete this file from SVN and the live site')+'">'+icon('trash',12)+' Delete</button>';
         rows += '<tr class="file-row">'
@@ -2214,7 +2220,9 @@ function ignorePeers(repo, file, pattern){
   });
 }
 // Run the ignore across repos in sequence, reporting per-site, then rescan the ones that changed.
-function ignoreRun(repos, file, pattern, $status, done){
+// opts: {pattern:'<glob>', untrack:true}  — untrack = the file is tracked, svn rm --keep-local it.
+function ignoreRun(repos, file, opts, $status, done){
+  opts = opts || {};
   var i = 0, okList = [], failList = [];
   (function next(){
     if(i >= repos.length){
@@ -2223,12 +2231,43 @@ function ignoreRun(repos, file, pattern, $status, done){
       return;
     }
     var r = repos[i++];
-    if($status) $status.html('<span class="spin"></span> Ignoring on <span class="mono">'+esc(r)+'</span>… ('+i+'/'+repos.length+')');
-    $.post('svn_ignore.php', {repository:r, file:file, pattern:pattern||''}, function(d){
+    if($status) $status.html('<span class="spin"></span> Working on <span class="mono">'+esc(r)+'</span>… ('+i+'/'+repos.length+')');
+    $.post('svn_ignore.php', {repository:r, file:file, pattern:opts.pattern||'', untrack:opts.untrack?1:''}, function(d){
       if(d && d.ok) okList.push(r); else failList.push({repo:r, error:(d&&(d.error||d.output))||'failed'});
       next();
     }, 'json').fail(function(){ failList.push({repo:r, error:'request failed'}); next(); });
   })();
+}
+// Tracked file (a generated artefact committed by mistake): svn:ignore alone is a no-op on it,
+// so untrack it with --keep-local (file stays on the live site) and ignore it, in one commit.
+function doUntrack(repo, file, kind){
+  if(!repo || !file) return;
+  var base = file.split('/').pop(), dir = igDirOf(file);
+  var why = (kind === '~')
+      ? 'This is versioned as a regular file but on disk it is now something else (a symlink or directory). That “Type changed” state also blocks <span class="mono">svn update</span> for this path.'
+    : (kind === '!')
+      ? 'This is tracked in SVN but missing from the live site.'
+      : 'This is tracked in SVN but keeps changing on the live site.';
+  uiConfirm({icon:'x', danger:true, title:'Stop tracking '+base+'?', confirmLabel:'Stop tracking',
+    bodyHtml: why
+      + '<br><br>Runs <span class="mono">svn rm --keep-local</span> and adds <b>'+esc(base)+'</b> to <span class="mono">svn:ignore</span> on <span class="mono">'+esc(dir)+'</span>, in one commit.'
+      + '<br><br><b>The file itself is not touched — it stays on the live site exactly as it is</b> (symlink included). Only SVN stops tracking it, so it drops off this list for good.'
+      + '<br><br>It is removed from the repository, so other working copies and dev copies drop their copy on their next update — which is the point for generated files. Earlier revisions remain in SVN history.'},
+    function(){
+      $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('x',21)+'</div>'
+        + '<div style="min-width:0"><h3>Stop tracking '+esc(base)+'</h3><p class="mono" style="font-size:12px">'+esc(repo)+' · '+esc(file)+'</p></div>'
+        + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
+        + '<div class="modal-body"><div id="igBody"><span class="spin"></span> Untracking &amp; ignoring…</div></div>'
+        + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
+      ignoreRun([repo], file, {untrack:true}, $('#igBody'), function(okList, failList){
+        if(!okList.length){
+          $('#igBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((failList[0]&&failList[0].error)||'Could not stop tracking the file.')+'</div>');
+          return;
+        }
+        $('#igBody').html('<div class="svn-modal-message">Stopped tracking <span class="mono">'+esc(base)+'</span> and ignored it in <span class="mono">'+esc(dir)+'</span>. '
+          + 'The file is still on the live site; it drops off the list on the next scan.</div>');
+      });
+    });
 }
 function doIgnore(repo, file){
   if(!repo || !file) return;
@@ -2264,7 +2303,7 @@ function doIgnore(repo, file){
         + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
         + '<div class="modal-body"><div id="igBody"><span class="spin"></span> Setting svn:ignore…</div></div>'
         + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
-      ignoreRun([repo], file, usePattern?pat:'', $('#igBody'), function(okList, failList){
+      ignoreRun([repo], file, {pattern: usePattern?pat:''}, $('#igBody'), function(okList, failList){
         if(!okList.length){
           $('#igBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((failList[0]&&failList[0].error)||'Could not ignore.')+'</div>');
           return;
@@ -2279,7 +2318,7 @@ function doIgnore(repo, file){
         $('#igAll').off('click').on('click', function(){
           $(this).prop('disabled', true);
           var $st = $('<div style="margin-top:10px"></div>').appendTo('#igBody');
-          ignoreRun(peers, file, usePattern?pat:'', $st, function(ok2, fail2){
+          ignoreRun(peers, file, {pattern: usePattern?pat:''}, $st, function(ok2, fail2){
             $st.html('<div class="svn-modal-message">Ignored on '+ok2.length+' of '+peers.length+' site'+(peers.length!==1?'s':'')+'.'
               + (fail2.length ? ' <span style="color:var(--err)">Failed: '+fail2.map(function(f){return esc(f.repo);}).join(', ')+'</span>' : '')+'</div>');
           });
@@ -3049,6 +3088,7 @@ $(function(){
   $(document).on('click', '[data-refresh]', function(e){ e.stopPropagation(); enqueueScan([$(this).attr('data-refresh')], true); });
   $(document).on('click', '.fignore', function(e){ e.stopPropagation(); doIgnore($(this).attr('data-ig-repo'), $(this).attr('data-ig-file')); });
   $(document).on('click', '.fdel', function(e){ e.stopPropagation(); doDelete($(this).attr('data-del-repo'), $(this).attr('data-del-file'), $(this).attr('data-del-kind')); });
+  $(document).on('click', '.funtrack', function(e){ e.stopPropagation(); doUntrack($(this).attr('data-ut-repo'), $(this).attr('data-ut-file'), $(this).attr('data-ut-kind')); });
   $(document).on('click', '#scanAllBtn, #scanBar #scanStop', function(){ if(this.id==='scanStop'){ stopScan(); } else { autoSelectUpdates=false; enqueueScan(visibleRepos(), false); } });
   $(document).on('click', '[data-actions]', function(e){ e.stopPropagation(); $(this).addClass('on'); openActionsPop($(this).attr('data-actions'), this); });
   $(document).on('click', '[data-addgroup]', function(e){ e.stopPropagation(); $(this).addClass('on'); openAddGroupPop($(this).attr('data-addgroup'), this); });
