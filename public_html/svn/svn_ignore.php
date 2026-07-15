@@ -100,6 +100,14 @@ if (!$is_mask) {
 }
 
 $inner .= "svn info " . escapeshellarg($dir) . " >/dev/null 2>&1 || { echo '>> parent directory " . $dir . " is not versioned — cannot set svn:ignore'; exit 6; }\n"
+	// SVN refuses to commit a property on a directory whose node is behind HEAD
+	// ("E160028: Directory '/x' is out of date"). That is the NORMAL case here: these live
+	// working copies routinely lag the repo (exactly what the updater exists to show), and any
+	// earlier ignore commit in a child directory also bumps this directory's node. So sync just
+	// this directory node first. --depth empty touches ONLY the directory's own metadata — never
+	// its children or files — so it cannot deploy anything to the live site, and it does not
+	// change the working copy's sticky depth.
+	. "UP=\$(svn update --depth empty " . escapeshellarg($dir) . " " . $auth . " 2>&1) || { echo \"\$UP\"; echo '>> could not sync " . $dir . " before setting the property'; exit 4; }\n"
 	. "CUR=\$(svn propget svn:ignore " . escapeshellarg($dir) . " 2>/dev/null)\n"
 	. "if printf '%s\\n' \"\$CUR\" | grep -qxF " . escapeshellarg($base) . "; then echo '>> already in svn:ignore'; exit 0; fi\n"
 	// Append, preserving existing order; drop blank lines.
