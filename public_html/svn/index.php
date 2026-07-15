@@ -189,6 +189,11 @@ html.dark-mode{
 #svnApp .fchip{ padding:7px 12px; border-radius:8px; font-size:13px; font-weight:700; color:var(--muted); border:1px solid transparent; }
 #svnApp .fchip:hover{ background:var(--hover); color:var(--ink-soft); }
 #svnApp .fchip.on{ background:var(--hover-2); color:var(--ink); border-color:var(--line-strong); }
+/* independent "hide edited on live" toggle — set apart from the status chips */
+#svnApp .fchip-toggle{ display:inline-flex; align-items:center; gap:5px; margin-left:8px; border-left:1px solid var(--line); border-radius:8px; padding-left:12px; }
+#svnApp .fchip-toggle svg{ opacity:.55; }
+#svnApp .fchip-toggle.on{ background:var(--warn-bg); color:var(--warn); border-color:transparent; }
+#svnApp .fchip-toggle.on svg{ opacity:1; }
 
 #svnApp .vtoggle{ display:flex; background:var(--raise); border:1px solid var(--line-strong); border-radius:9px; padding:3px; gap:2px; }
 #svnApp .vtoggle button{ width:36px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--muted); }
@@ -852,8 +857,18 @@ var STATE = {
   collapsed: {},            // repo -> true (collapsed)
   view: 'list',
   filter: 'all',
-  query: ''
+  query: '',
+  hideEdited: false         // hide "Edited on live" (M) file rows — a noise toggle, remembered
 };
+var HIDE_EDITED_KEY = 'svn_hide_edited';
+try { STATE.hideEdited = (localStorage.getItem(HIDE_EDITED_KEY) === '1'); } catch(e){}
+function saveHideEdited(){ try { localStorage.setItem(HIDE_EDITED_KEY, STATE.hideEdited ? '1' : '0'); } catch(e){} }
+// The files to SHOW for a site. "Edited on live" (M) means someone changed the file directly on
+// the server; it isn't an incoming change, so it's noise when you're reviewing what to deploy.
+function siteFiles(s){
+  var files = (s && s.files) || [];
+  return STATE.hideEdited ? files.filter(function(f){ return f.kind !== 'M'; }) : files;
+}
 var RECENT_KEY = 'svn_recent_repos', MAX_RECENT = 8;
 var LAST_SCOPE_KEY = 'svn_last_scope';
 function saveScope(id){ try{ if(id && id!=='__none') localStorage.setItem(LAST_SCOPE_KEY, String(id)); }catch(e){} }
@@ -991,7 +1006,9 @@ function pumpScan(){
           // Only auto-select if the repo is still in the current scope: a scan enqueued under a
           // previous (multi-site) scope can finish after the user has navigated to a single site,
           // and selecting it here would inflate the apply-bar count with an off-screen straggler.
-          if(autoSelectUpdates && site.status==='update' && scopedRepos().indexOf(repo)!==-1){ STATE.sel[repo]=true; }
+          // ...and don't auto-select a site whose only changes are hidden live edits — it would
+          // sit invisibly in the apply bar with nothing to actually deploy.
+          if(autoSelectUpdates && site.status==='update' && scopedRepos().indexOf(repo)!==-1 && siteFiles(site).length>0){ STATE.sel[repo]=true; }
         } else {
           site.status='error'; site.errorMsg=(data&&data.error)||'Scan failed'; site.scanState='error';
         }
@@ -1130,7 +1147,7 @@ function reviewBtnHtml(repo){
   var s = STATE.sites[repo], st = s ? s.scanState : 'idle';
   var attrs = 'class="btn grad" id="finderReview" data-repo="'+esc(repo)+'"';
   if(st==='queued' || st==='scanning') return '<button '+attrs+' disabled><span class="spin"></span> Loading changes…</button>';
-  if(s && st==='done' && s.status==='update')  return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update'+(s.behind?' ('+s.behind+')':'')+'</button>';
+  if(s && st==='done' && s.status==='update'){ var n=siteFiles(s).length; return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update'+(n?' ('+n+')':'')+'</button>'; }
   if(s && st==='done' && s.status==='current') return '<button '+attrs+' disabled>'+icon('check',16)+' Up to date</button>';
   if(s && st==='error')                        return '<button '+attrs+' disabled>'+icon('alert',16)+' Scan failed</button>';
   return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update</button>'; // idle/not scanned: kicks off the scan
@@ -1144,6 +1161,11 @@ function refreshFinderReview(){
 var FILTERS = [['all','All'],['update','Updates'],['current','Current'],['error','Errors']];
 function renderFilterChips(){
   var html = FILTERS.map(function(f){ return '<button class="fchip'+(STATE.filter===f[0]?' on':'')+'" data-filter="'+f[0]+'">'+f[1]+'</button>'; }).join('');
+  // Independent noise toggle (not one of the mutually-exclusive status chips above): hides
+  // files someone changed directly on the live site, which aren't incoming changes to deploy.
+  html += '<button class="fchip fchip-toggle'+(STATE.hideEdited?' on':'')+'" id="hideEditedChip"'
+        + ' title="Hide files changed directly on the live site (they are not incoming changes)">'
+        + icon(STATE.hideEdited?'checkSm':'x', 12, 2.6) + 'Edited on live</button>';
   $('#filterChips').html(html);
 }
 
@@ -1157,6 +1179,9 @@ function visibleRepos(){
       if(!s || s.scanState!=='done' && !(STATE.filter==='error' && s && s.status==='error')) continue;
       if(s.status!==STATE.filter) continue;
     }
+    // Hiding live edits: a site whose ONLY changes were live edits has nothing left to show or
+    // deploy, so drop it from the list entirely rather than leaving an empty row.
+    if(STATE.hideEdited && s && s.scanState==='done' && s.status==='update' && siteFiles(s).length===0) continue;
     out.push(r);
   }
   return out;
@@ -1170,7 +1195,7 @@ function statusBadge(s){
   return '<span class="sbadge '+cls+'"><span class="sd"></span>'+(map[s.status]||'Unknown')+'</span>';
 }
 
-function sitesWithFiles(){ return visibleRepos().filter(function(r){ var s=STATE.sites[r]; return s && (s.files||[]).length>0; }); }
+function sitesWithFiles(){ return visibleRepos().filter(function(r){ return siteFiles(STATE.sites[r]).length>0; }); }
 function updateCollapseAllBtn(){
   var $b=$('#collapseAll'), sw=sitesWithFiles();
   if(STATE.view!=='list' || sw.length===0){ $b.hide(); return; }
@@ -1190,7 +1215,7 @@ function renderTable(){
   var rows = '';
   repos.forEach(function(r){
     var s = ensureSite(r);
-    var files = s.files||[];
+    var files = siteFiles(s);
     var hasFiles = files.length>0;
     var isCol = !!STATE.collapsed[r];
     var selectable = s.scanState==='done' && s.status==='update';
@@ -1201,7 +1226,7 @@ function renderTable(){
         + '<button class="site-collapse" data-collapse="'+esc(r)+'" '+(hasFiles?'':'disabled')+' title="'+(isCol?'Show files':'Hide files')+'">'+icon('chevron',16,1.8,(isCol?'transform:rotate(-90deg)':''))+'</button>'
         + '<span class="host">'+esc(r)+'</span>'
         + statusBadge(s)
-        + (s.scanState==='done'&&s.status==='update' ? '<span class="behind">'+icon('up',13)+s.behind+' change'+(s.behind!==1?'s':'')+(s.headRev?' <span class="rev mono">r'+esc(s.headRev)+'</span>':'')+'</span>' : '')
+        + (s.scanState==='done'&&s.status==='update' ? '<span class="behind">'+icon('up',13)+files.length+' change'+(files.length!==1?'s':'')+(s.headRev?' <span class="rev mono">r'+esc(s.headRev)+'</span>':'')+'</span>' : '')
         + (s.lastBy||s.lastAt ? '<span class="site-meta">'+(s.lastBy?icon('user',12)+' '+esc(s.lastBy):'')+(s.lastBy&&s.lastAt?' <span class="mdot"></span> ':'')+(s.lastAt?icon('clock',12)+' '+esc(s.lastAt):'')+'</span>' : '')
         + '<span class="sh-spacer"></span>'
         + '<span class="file-count">'+(hasFiles?(files.length+' file'+(files.length!==1?'s':'')):(s.scanState==='done'?(s.status==='current'?'Up to date':'—'):''))+'</span>'
@@ -1270,13 +1295,14 @@ function renderCards(){
   if(!repos.length){ $('#tableHost').html('<div class="empty"><div class="e-ico">'+icon('grid',34)+'</div><div class="e-t">'+emptyMsg()+'</div></div>'); return; }
   var cards = repos.map(function(r){
     var s = ensureSite(r); var seld = !!STATE.sel[r]; var selectable = s.scanState==='done'&&s.status==='update';
+    var nchg = siteFiles(s).length;
     return '<div class="scard'+(seld?' sel':'')+'" data-cardrepo="'+esc(r)+'">'
       + '<div class="scard-top"><div><div class="host">'+esc(r)+'</div>'
         + '<div class="meta">'+(s.lastBy?esc(s.lastBy):'')+(s.lastBy&&s.lastAt?' · ':'')+(s.lastAt?esc(s.lastAt):'')+'</div></div>'
         + '<input type="checkbox" class="chk row-chk" '+(seld?'checked':'')+' '+(selectable?'':'disabled')+' data-repo="'+esc(r)+'"></div>'
       + statusBadge(s)
       + '<div class="scard-foot">'
-        + (s.scanState==='done'&&s.status==='update' ? '<span class="behind">'+icon('up',14)+s.behind+' behind</span>' : '<span class="behind none">'+(s.status==='error'?'Needs attention':(s.scanState==='done'?'Up to date':'Not scanned'))+'</span>')
+        + (s.scanState==='done'&&s.status==='update' ? '<span class="behind">'+icon('up',14)+nchg+' behind</span>' : '<span class="behind none">'+(s.status==='error'?'Needs attention':(s.scanState==='done'?'Up to date':'Not scanned'))+'</span>')
         + '<button class="btn ghost tiny" data-refresh="'+esc(r)+'">Scan '+icon('refresh',13)+'</button>'
       + '</div></div>';
   }).join('');
@@ -1448,8 +1474,8 @@ function openConfirmUpdate(){
   var upd = selUpdatable();
   var skip = selRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.status==='error'; });
   if(!upd.length){ return; }
-  var rows = upd.map(function(r){ var s=STATE.sites[r];
-    return '<div class="prow">'+icon('branch',16,1.8,'color:var(--muted)')+'<div class="phost"><div class="h">'+esc(r)+'</div><div class="s">'+s.behind+' change'+(s.behind!==1?'s':'')+(s.headRev?' · r'+esc(s.headRev):'')+'</div></div></div>';
+  var rows = upd.map(function(r){ var s=STATE.sites[r], n=siteFiles(s).length;
+    return '<div class="prow">'+icon('branch',16,1.8,'color:var(--muted)')+'<div class="phost"><div class="h">'+esc(r)+'</div><div class="s">'+n+' change'+(n!==1?'s':'')+(s.headRev?' · r'+esc(s.headRev):'')+'</div></div></div>';
   }).join('');
   var skipHtml = skip.length ? '<div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--err-bg);color:var(--err);font-size:13px"><b>'+skip.length+' site'+(skip.length>1?'s':'')+' skipped</b> — '+esc(skip.join(', '))+' '+(skip.length>1?'have':'has')+' errors and must be resolved first.</div>' : '';
   modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('refresh',21)+'</div>'
@@ -2933,7 +2959,20 @@ $(function(){
   function openSingle(repo){ $('#finderInput').val(repo); renderFinderMatch(); saveRecent(repo); pickScope('__one:'+repo, {}); }
 
   // filter / search / view
-  $(document).on('click', '#filterChips .fchip', function(){ STATE.filter=$(this).attr('data-filter'); renderFilterChips(); renderTable(); });
+  // [data-filter] only — #hideEditedChip is also a .fchip but is an independent toggle, and
+  // would otherwise set STATE.filter to undefined and break the list.
+  $(document).on('click', '#filterChips .fchip[data-filter]', function(){ STATE.filter=$(this).attr('data-filter'); renderFilterChips(); renderTable(); });
+  $(document).on('click', '#hideEditedChip', function(){
+    STATE.hideEdited = !STATE.hideEdited; saveHideEdited();
+    // Drop any selection that now has nothing left to deploy, so the apply bar can't count
+    // sites the list no longer shows.
+    if(STATE.hideEdited){
+      Object.keys(STATE.sel).forEach(function(r){
+        if(STATE.sel[r] && siteFiles(STATE.sites[r]).length===0) delete STATE.sel[r];
+      });
+    }
+    renderFilterChips(); renderTable(); renderApplyBar();
+  });
   $('#filterInput').on('input', function(){ STATE.query=$(this).val(); renderTable(); renderApplyBar(); });
   $('#viewToggle button').on('click', function(){ STATE.view=$(this).attr('data-view'); $('#viewToggle button').removeClass('on'); $(this).addClass('on'); renderTable(); });
   $(document).on('click', '#collapseAll', function(){
