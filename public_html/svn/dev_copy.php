@@ -20,6 +20,7 @@ $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
 include ("./svn_backups_support.php");
+include_once ("./svn_repo_support.php");
 
 header("Content-Type: application/json");
 
@@ -62,6 +63,14 @@ $want_files  = GetParam("files")  ? true : false;
 $want_db     = GetParam("db")     ? true : false;
 $want_images = GetParam("images") ? true : false;
 $php8        = GetParam("php8")   ? true : false;
+
+// Shared library repo (Common8/Common): svn only. It has no DB backup, no images and no
+// public_html to serve, so force files-only — otherwise the DB step would hard-fail on
+// "No nightly DB backup found" and the web step would add a vhost Alias to a dir that
+// doesn't exist. The popup already hides those options; this is the server-side guard.
+$is_lib = svn_is_library_repo($repository);
+if ($is_lib) { $want_files = true; $want_db = false; $want_images = false; $php8 = false; }
+
 if (!$want_files && !$want_db && !$want_images) dc_fail("Nothing selected to copy.");
 
 // Developer settings of the logged-in user (slayer user = svn_login).
@@ -76,8 +85,11 @@ if ($login === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $login)) {
 // Files and the dev URL use the domain; the DB name uses the backup's slug — i.e. the dump
 // filename prefix (e.g. cgolfer-2026-06-23.dump.bz2 -> artem_cgolfer), which is how the
 // existing dev databases are named.
+// ~/projects/<repo> is also exactly where a library repo must land: the sites' relative include
+// (public_html/includes/../../../<repo>/...) resolves to the sibling of the site copies.
 $proj = "/home/staff/" . $login . "/projects/" . $repository;
-$devurl = $subdomain !== '' ? ('https://' . $subdomain . ($php8 ? '8' : '') . '.sayuconnect.com/' . $repository) : '';
+// A library isn't served over the dev subdomain — it's included from disk by the site copies.
+$devurl = (!$is_lib && $subdomain !== '') ? ('https://' . $subdomain . ($php8 ? '8' : '') . '.sayuconnect.com/' . $repository) : '';
 
 $dumpfile = ''; $dbname = ''; $dump_latest = ''; $dump_downgraded = false;
 if ($want_db) {
@@ -149,7 +161,9 @@ if ($want_files) {
 	// conf-naming), plus a RedirectMatch so the bare /<repo> (no trailing slash) 301s to
 	// /<repo>/ — otherwise the slash-less URL 404s (the Alias only matches with the slash).
 	// Then config-test and reload. Needs sudo (devs have it on slayer).
-	$host = $subdomain !== '' ? ($subdomain . ($php8 ? '8' : '') . '.sayuconnect.com') : '';
+	// Libraries are included from disk by the site copies, never served — skip the vhost Alias
+	// (there is no public_html to point it at, so it would only add a dead alias).
+	$host = (!$is_lib && $subdomain !== '') ? ($subdomain . ($php8 ? '8' : '') . '.sayuconnect.com') : '';
 	if ($host !== '') {
 		$webcmd = 'host=' . escapeshellarg($host) . '; repo=' . escapeshellarg($repository) . '; login=' . escapeshellarg($login) . '; '
 			. 'hre=$(printf "%s" "$host" | sed "s/[.]/\\\\./g"); '
@@ -166,7 +180,8 @@ if ($want_files) {
 	// Adapt the checked-out site to run under the dev URL: rewrite the framework DB config,
 	// patch the common.php site_url override, and enable the .htaccess DEV friendly-URL block.
 	// Self-guarding & idempotent — no-ops on older ViArt sites that don't have those files.
-	$cfg_tpl = @file_get_contents(dirname(__FILE__) . "/dev_copy_configure.php");
+	// A library has no site config (no var_definition.php / config/database / .htaccess) — nothing to adapt.
+	$cfg_tpl = $is_lib ? false : @file_get_contents(dirname(__FILE__) . "/dev_copy_configure.php");
 	if ($cfg_tpl !== false) {
 		$cfg_php = strtr($cfg_tpl, array('__PROJ__' => $proj, '__LOGIN__' => $login, '__DBNAME__' => $dbname));
 		$run .= "echo '>> Config: adapt site to the dev URL'\n";

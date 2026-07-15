@@ -3,6 +3,7 @@
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+include_once ("./svn_repo_support.php");
 
 // Getting available repositories list from the SVN gateway
 $path = "https://web1.sayu.co.uk/svn/";
@@ -823,6 +824,9 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 // ---------------- state ----------------
 var REPOS = [<?php echo $repositories_typehead; ?>];
 var DEV_SUBDOMAIN = <?php echo json_encode($dev_subdomain); ?>;
+// Shared library repos (Common8/Common): svn-only, no DB/images/dev-URL — see svn_repo_support.php.
+var LIB_REPOS = <?php echo json_encode(array_values(svn_library_repos())); ?>;
+function isLibRepo(r){ return LIB_REPOS.indexOf(String(r)) !== -1; }
 var STATE = {
   groups: [],
   activeGroup: '__none',    // '__none' | '__all' | '__one:<repo>' | groupId(number as string)
@@ -2331,23 +2335,35 @@ function openDevCopy(repo){
   // Persist the open popup in the URL so it survives a page refresh.
   var nh = scopeToHash(STATE.activeGroup) + '~dc=' + encodeURIComponent(repo);
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
-  modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('copy',21)+'</div>'
-    + '<div style="min-width:0"><h3>Dev copy</h3><p>Set up a dev copy on slayer under your account · <span class="mono">'+esc(repo)+'</span></p></div>'
+  var lib = isLibRepo(repo);
+  // A shared library (Common8/Common) is svn-only: no DB, no images, no dev URL. Show what it
+  // actually does — a checkout/update into ~/projects/<repo>, the sibling path the site copies
+  // include via ../../../<repo>/… — and drop the options that don't apply.
+  var lede = lib
+    ? '<p style="color:var(--muted);font-size:13px;margin:0 0 14px">Shared library — not a website: no database, images or dev URL. '
+      + 'Runs <span class="mono">svn checkout/update</span> into <span class="mono">~/projects/'+esc(repo)+'</span> on slayer, '
+      + 'alongside your site copies so their <span class="mono">…/includes/../../../'+esc(repo)+'/…</span> include resolves.</p>'
+    : '<p style="color:var(--muted);font-size:13px;margin:0 0 14px">Creates <span class="mono">~/projects/'+esc(repo)+'</span> on slayer, served at your <span class="mono">…sayuconnect.com</span> subdomain, with a <span class="mono">&lt;you&gt;_'+esc(repo.split(".")[0])+'</span> database.</p>';
+  var opts = lib
+    ? '<div class="checkbox-group"><input type="checkbox" id="dcFiles" checked disabled><label for="dcFiles">Update files (svn checkout/update)</label></div>'
+    : '<div class="checkbox-group"><input type="checkbox" id="dcFiles" checked><label for="dcFiles">Copy files (svn checkout)</label></div>'
+      + '<div class="checkbox-group"><input type="checkbox" id="dcDB" checked><label for="dcDB">Copy database (latest nightly backup)</label></div>'
+      + '<div class="checkbox-group"><input type="checkbox" id="dcImg" checked><label for="dcImg">Copy images<span class="dc-img-note" id="dcImgNote"></span></label></div>'
+      + '<div class="checkbox-group"><input type="checkbox" id="dcPhp8"><label for="dcPhp8">PHP 8 site (use ab8.sayuconnect.com)</label></div>';
+  modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon(lib?'branch':'copy',21)+'</div>'
+    + '<div style="min-width:0"><h3>Dev copy</h3><p>'+(lib?'Update the shared library in your slayer projects':'Set up a dev copy on slayer under your account')+' · <span class="mono">'+esc(repo)+'</span></p></div>'
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body">'
-    + '<p style="color:var(--muted);font-size:13px;margin:0 0 14px">Creates <span class="mono">~/projects/'+esc(repo)+'</span> on slayer, served at your <span class="mono">…sayuconnect.com</span> subdomain, with a <span class="mono">&lt;you&gt;_'+esc(repo.split(".")[0])+'</span> database.</p>'
+    + lede
     + '<div class="dc-status" id="dcStatus"></div>'
-    + '<div class="checkbox-group"><input type="checkbox" id="dcFiles" checked><label for="dcFiles">Copy files (svn checkout)</label></div>'
-    + '<div class="checkbox-group"><input type="checkbox" id="dcDB" checked><label for="dcDB">Copy database (latest nightly backup)</label></div>'
-    + '<div class="checkbox-group"><input type="checkbox" id="dcImg" checked><label for="dcImg">Copy images<span class="dc-img-note" id="dcImgNote"></span></label></div>'
-    + '<div class="checkbox-group"><input type="checkbox" id="dcPhp8"><label for="dcPhp8">PHP 8 site (use ab8.sayuconnect.com)</label></div>'
+    + opts
     + '<div id="dcImgWrap" style="display:none;margin-top:14px"><div class="dc-img-head"><span>'+icon('copy',14)+' Images</span><span class="dc-img-pct" id="dcImgPct"></span></div>'
     + '<div class="dc-bar"><div class="dc-bar-fill" id="dcImgFill"></div></div><div class="dc-img-sub" id="dcImgSub"></div></div>'
     + '<div id="dcProg" style="display:none;margin-top:14px"><div class="dc-log" id="dcLog"></div></div>'
     + '<div class="alert" id="dcAlert"></div></div>'
     + '<div class="modal-foot"><div class="mf-grow" id="dcFoot"></div>'
     + '<button type="button" class="btn ghost" id="dcStopBtn" style="display:none">Stop</button>'
-    + '<button class="btn solid" id="dcStart" data-repo="'+esc(repo)+'">Start dev copy</button></div></div>');
+    + '<button class="btn solid" id="dcStart" data-repo="'+esc(repo)+'">'+(lib?'Update library':'Start dev copy')+'</button></div></div>');
   dcRestoreState(repo);
   dcLoadStatus(repo);
 }
@@ -2363,7 +2379,7 @@ function dcRestoreState(repo){
       dcStopPoll(); dcPoll(); DC_POLL=setInterval(dcPoll, 1500);
     }
   }, 'json');
-  dcStartImgPoll(repo, false);
+  if(!isLibRepo(repo)) dcStartImgPoll(repo, false);   // libraries have no images folder to poll
 }
 // ---- dev-copy status panel (link to the dev site + files/db/images summary) ----
 function devSiteUrl(repo, php8){ if(!DEV_SUBDOMAIN) return ''; return 'https://'+DEV_SUBDOMAIN+(php8?'8':'')+'.sayuconnect.com/'+repo+'/'; }
@@ -2389,12 +2405,15 @@ function dcDevLinkHtml(repo, adminPath, adminQuery){
 function dcStatusRow(ic, label, val){ return '<div class="dcs-row"><span class="dcs-ic">'+icon(ic,15)+'</span><span class="dcs-label">'+label+'</span><span class="dcs-val">'+val+'</span></div>'; }
 function dcRenderStatus(d, repo){
   var $s=$('#dcStatus'); if(!$s.length) return;
+  var lib=isLibRepo(repo);
   var ap=(d&&d.admin_path)||'', aq=(d&&d.admin_query)||'';
   $s.data('adminPath', ap).data('adminQuery', aq);   // stash so the PHP 8 toggle can rebuild the admin href
-  var head='<div class="dcs-head"><span class="dcs-title">Current dev copy</span>'+dcDevLinkHtml(repo, ap, aq)+'</div>';
-  if(!d || !d.ok){ $s.html(head+'<div class="dcs-empty">Could not read dev-copy status.</div>'); return; }
-  if(!d.exists){ $s.html(head+'<div class="dcs-empty">No dev copy on slayer yet — start one below.</div>'); return; }
+  var head='<div class="dcs-head"><span class="dcs-title">'+(lib?'Current library copy':'Current dev copy')+'</span>'+(lib?'':dcDevLinkHtml(repo, ap, aq))+'</div>';
+  if(!d || !d.ok){ $s.html(head+'<div class="dcs-empty">Could not read '+(lib?'library':'dev-copy')+' status.</div>'); return; }
+  if(!d.exists){ $s.html(head+'<div class="dcs-empty">'+(lib?'Not checked out on slayer yet — run it below.':'No dev copy on slayer yet — start one below.')+'</div>'); return; }
   var filesVal=(d.rev?'<b>r'+esc(d.rev)+'</b>':'—')+(d.files_mtime?' · updated '+esc(dcRelTime(d.files_mtime)):'');
+  // A library has no DB/images — just show where it is and which revision it's on.
+  if(lib){ $s.html(head + dcStatusRow('branch','Files',filesVal) + dcStatusRow('folder','Path','<span class="mono">~/projects/'+esc(repo)+'</span>')); return; }
   var dbVal;
   if(d.db_name){
     var imp=dcDbEpoch(d.db_create), upd=dcDbEpoch(d.db_update);
@@ -2408,7 +2427,9 @@ function dcRenderStatus(d, repo){
 }
 function dcLoadStatus(repo){
   var $s=$('#dcStatus'); if(!$s.length) return;
-  $s.html('<div class="dcs-head"><span class="dcs-title">Current dev copy</span>'+dcDevLinkHtml(repo)+'</div><div class="dcs-empty"><span class="spin"></span> Checking dev copy…</div>');
+  var lib=isLibRepo(repo);
+  $s.html('<div class="dcs-head"><span class="dcs-title">'+(lib?'Current library copy':'Current dev copy')+'</span>'+(lib?'':dcDevLinkHtml(repo))+'</div>'
+    + '<div class="dcs-empty"><span class="spin"></span> Checking '+(lib?'library':'dev copy')+'…</div>');
   $.post('dev_copy_info.php', {repository:repo}, function(d){ if(DC_OPEN_REPO===repo) dcRenderStatus(d, repo); }, 'json')
     .fail(function(){ if(DC_OPEN_REPO===repo) dcRenderStatus(null, repo); });
 }

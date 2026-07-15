@@ -431,6 +431,22 @@ function svn_history_truncate_message($s, $max = 200) {
 	return $s;
 }
 
+/**
+ * Shared LIBRARY repositories (Common8 / Common) — plain PHP libraries, not servable sites.
+ * Their repo root is just tags/ + trunk/: there is no public_html, no database and no images,
+ * and no client record. Sites pull them in as a SIBLING of the site directory, e.g.
+ *   <site>/public_html/includes/../../../Common8/tags/1.1.0/vendor/autoload.php
+ * which resolves to /mnt/drive2/vhosts/Common8 live, and to ~/projects/Common8 on slayer
+ * (next to the dev site copies). So a "dev copy" of one is ONLY an svn checkout/update into
+ * ~/projects/<repo> — no DB import, no images, no vhost alias, no site config rewrite.
+ */
+function svn_library_repos() {
+	return array('Common8', 'Common');
+}
+function svn_is_library_repo($repo) {
+	return in_array((string) $repo, svn_library_repos(), true);
+}
+
 // Build a one-click admin auto-login URL for a site (mirrors create_client.php's logic).
 // Shared by svn_site_status.php and site_admin.php.
 function svn_build_admin_url($web_address, $admin_web_address, $login, $password) {
