@@ -293,6 +293,9 @@ html.dark-mode{
 /* Ignore action on untracked ("Not in SVN") file rows */
 #svnApp .fignore{ display:inline-flex; align-items:center; gap:4px; color:var(--muted); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid var(--line); border-radius:7px; cursor:pointer; transition:.12s; }
 #svnApp .fignore:hover{ color:var(--err); border-color:var(--err); background:var(--err-bg); }
+#svnApp .fdel{ display:inline-flex; align-items:center; gap:4px; margin-left:8px; color:var(--muted-2); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid transparent; border-radius:7px; cursor:pointer; transition:.12s; }
+#svnApp .fdel:hover{ color:var(--err); border-color:var(--err); background:var(--err-bg); }
+#svnApp .col-diff{ white-space:nowrap; }
 #svnApp .ig-mask{ margin-top:14px; }
 #svnApp .ig-mask-lbl{ display:block; font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); margin-bottom:5px; }
 #svnApp #igMask{ width:100%; padding:8px 10px; border:1px solid var(--line-strong); border-radius:8px; background:var(--card-2); color:var(--ink); font-size:13.5px; }
@@ -834,7 +837,8 @@ var ICONS = {
   terminal:'M4 5h16v14H4zM7 9l3 2.5L7 14M12.5 14.5H16',
   server:'M4 4h16v6H4zM4 14h16v6H4zM7.5 7h.01M7.5 17h.01M12 7h4M12 17h4',
   cpu:'M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2M6 6h12v12H6zM10 10h4v4h-4z',
-  gauge:'M12 13l4-4M7 18a7 7 0 1 1 10 0M12 3v0'
+  gauge:'M12 13l4-4M7 18a7 7 0 1 1 10 0M12 3v0',
+  trash:'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'
 };
 function icon(name, s, w, style){
   s = s || 18; w = w || 1.8; style = style || '';
@@ -1258,9 +1262,11 @@ function renderTable(){
         // Untracked ("? Not in SVN") files have nothing to diff — offer Ignore instead, which
         // svn:ignores them so they stop cluttering the update list.
         var untracked = (f.kind === '?');
-        var lastCell = untracked
+        var lastCell = (untracked
           ? '<button class="fignore" data-ig-repo="'+esc(r)+'" data-ig-file="'+esc(rel)+'" title="Add to svn:ignore so this file stops showing here">'+icon('x',12)+' Ignore</button>'
-          : '<button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(rel)+'">View diff</button>';
+          : '<button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(rel)+'">View diff</button>')
+          + '<button class="fdel" data-del-repo="'+esc(r)+'" data-del-file="'+esc(rel)+'" data-del-kind="'+esc(f.kind||'')+'"'
+          + ' title="'+(untracked?'Delete this file from the live site (permanent — it is not in SVN)':'Delete this file from SVN and the live site')+'">'+icon('trash',12)+' Delete</button>';
         rows += '<tr class="file-row">'
           + '<td class="col-chk"></td>'
           + '<td class="fp-dir mono">'+esc(dir)+'</td>'
@@ -2305,6 +2311,41 @@ function doIgnore(repo, file){
   igUpd();
 }
 
+// ---------------- delete a file (disk, or svn rm + commit) ----------------
+// Destructive, and the two cases differ completely — say which one this is, plainly.
+function doDelete(repo, file, kind){
+  if(!repo || !file) return;
+  var base = file.split('/').pop();
+  var untracked = (kind === '?' || kind === 'I');
+  var body = untracked
+    ? 'Deletes <span class="mono">'+esc(file)+'</span> from the live site <span class="mono">'+esc(repo)+'</span>.'
+      + '<br><br><b>This file is not in SVN, so there is no copy to restore — the deletion is permanent and cannot be undone.</b>'
+    : 'Runs <span class="mono">svn rm</span> + commit on <span class="mono">'+esc(repo)+'</span>. '
+      + '<span class="mono">'+esc(file)+'</span> is removed from the repository <b>and</b> from the live site, and will disappear from every other working copy and dev copy on their next update.'
+      + '<br><br>It remains in SVN history, so it can be restored from an earlier revision.';
+  uiConfirm({icon:'trash', danger:true, title:'Delete '+base+'?', confirmLabel:'Delete file', bodyHtml:body},
+    function(){
+      $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('trash',21)+'</div>'
+        + '<div style="min-width:0"><h3>Delete '+esc(base)+'</h3><p class="mono" style="font-size:12px">'+esc(repo)+' · '+esc(file)+'</p></div>'
+        + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
+        + '<div class="modal-body"><div id="delBody"><span class="spin"></span> Deleting…</div></div>'
+        + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
+      $.post('svn_delete.php', {repository:repo, file:file}, function(d){
+        if(d && d.ok){
+          $('#delBody').html('<div class="svn-modal-message">'
+            + (d.mode==='disk'
+                ? 'Deleted <span class="mono">'+esc(base)+'</span> from the live site. It was not in SVN, so there is no copy to restore.'
+                : 'Removed <span class="mono">'+esc(base)+'</span> from SVN and the live site'+(d.committed?' — committed':'')+'. It stays in SVN history if you need it back.')
+            + '</div>');
+          enqueueScan([repo], true);
+        } else {
+          $('#delBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&(d.error||d.output))||'Could not delete the file.')+'</div>'
+            + ((d&&d.output)?'<div class="info-pre mono" style="margin-top:10px;white-space:pre-wrap">'+esc(d.output)+'</div>':''));
+        }
+      }, 'json').fail(function(){ $('#delBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
+    });
+}
+
 function doRevert(repo, rev){
   if(!repo || !rev) return;
   uiConfirm({icon:'undo', danger:true, title:'Revert '+repo+' to r'+rev+'?', confirmLabel:'Revert to r'+rev,
@@ -3007,6 +3048,7 @@ $(function(){
   $(document).on('click', '[data-collapse]', function(){ var r=$(this).attr('data-collapse'); if(STATE.collapsed[r]) delete STATE.collapsed[r]; else STATE.collapsed[r]=true; renderTable(); });
   $(document).on('click', '[data-refresh]', function(e){ e.stopPropagation(); enqueueScan([$(this).attr('data-refresh')], true); });
   $(document).on('click', '.fignore', function(e){ e.stopPropagation(); doIgnore($(this).attr('data-ig-repo'), $(this).attr('data-ig-file')); });
+  $(document).on('click', '.fdel', function(e){ e.stopPropagation(); doDelete($(this).attr('data-del-repo'), $(this).attr('data-del-file'), $(this).attr('data-del-kind')); });
   $(document).on('click', '#scanAllBtn, #scanBar #scanStop', function(){ if(this.id==='scanStop'){ stopScan(); } else { autoSelectUpdates=false; enqueueScan(visibleRepos(), false); } });
   $(document).on('click', '[data-actions]', function(e){ e.stopPropagation(); $(this).addClass('on'); openActionsPop($(this).attr('data-actions'), this); });
   $(document).on('click', '[data-addgroup]', function(e){ e.stopPropagation(); $(this).addClass('on'); openAddGroupPop($(this).attr('data-addgroup'), this); });
