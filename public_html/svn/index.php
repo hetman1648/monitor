@@ -2197,6 +2197,10 @@ function doIgnore(repo, file){
   var chips = [['This file', base]];
   if(ext !== base) chips.push(['All '+ext, ext]);
   chips.push(['Everything here', '*']);
+  // uiConfirm's handler calls closeConfirm() (which empties #confirmHost) BEFORE our callback
+  // runs — so the input is gone by then. Keep the current pattern in this closure instead of
+  // reading it back out of the dialog.
+  var curPat = def;
   uiConfirm({icon:'x', title:'Ignore in '+dir, confirmLabel:'Ignore', cancelLabel:'Cancel',
     bodyHtml:'Adds a pattern to <span class="mono">svn:ignore</span> on <span class="mono">'+esc(dir)+'</span> and commits it, so matching files stop showing here — and for everyone else (dev copies, plain svn). '
       + 'The files themselves are <b>not</b> touched, and anything already tracked in SVN stays tracked.'
@@ -2206,7 +2210,7 @@ function doIgnore(repo, file){
       +   '<div class="ig-match" id="igMatch"></div>'
       + '</div>'},
     function(){
-      var pat = String($('#igMask').val()||'').trim();
+      var pat = curPat;                                       // read from the closure, not the (already removed) dialog
       if(pat === '') return;
       var usePattern = (pat !== base);                        // exact filename => plain file mode
       var peers = ignorePeers(repo, file, usePattern ? pat : '');
@@ -2242,11 +2246,19 @@ function doIgnore(repo, file){
   // so a too-broad pattern is obvious before it gets committed.
   function igUpd(){
     var pat = String($('#igMask').val()||'').trim();
-    if(pat === ''){ $('#igMatch').html('<span class="ig-warn">Enter a pattern.</span>'); return; }
+    curPat = pat;
+    function bad(msg){ $('#igMatch').html('<span class="ig-warn">'+msg+'</span>'); $('#uiConfirmYes').prop('disabled', true); }
+    if(pat === ''){ bad('Enter a pattern.'); return; }
     var re, hit;
-    try { re = globToRe(pat); } catch(e){ $('#igMatch').html('<span class="ig-warn">Invalid pattern.</span>'); return; }
+    try { re = globToRe(pat); } catch(e){ bad('Invalid pattern.'); return; }
     hit = sibs.filter(function(n){ return re.test(n); });
-    if(!hit.length){ $('#igMatch').html('<span class="ig-warn">Matches none of the '+sibs.length+' untracked file'+(sibs.length!==1?'s':'')+' listed here.</span>'); return; }
+    $('#uiConfirmYes').prop('disabled', false);
+    if(!hit.length){
+      // Still allowed — the pattern may legitimately target files not in this scan (e.g. future
+      // generated ones) — but say so plainly.
+      $('#igMatch').html('<span class="ig-warn">Matches none of the '+sibs.length+' untracked file'+(sibs.length!==1?'s':'')+' listed here.</span>');
+      return;
+    }
     $('#igMatch').html('Matches <b>'+hit.length+'</b> of the '+sibs.length+' untracked file'+(sibs.length!==1?'s':'')+' listed in this folder'
       + '<div class="ig-sample mono">'+hit.slice(0,4).map(esc).join('<br>')+(hit.length>4?'<br>+'+(hit.length-4)+' more…':'')+'</div>');
   }
