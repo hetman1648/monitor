@@ -287,6 +287,17 @@ html.dark-mode{
 /* Ignore action on untracked ("Not in SVN") file rows */
 #svnApp .fignore{ display:inline-flex; align-items:center; gap:4px; color:var(--muted); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid var(--line); border-radius:7px; cursor:pointer; transition:.12s; }
 #svnApp .fignore:hover{ color:var(--err); border-color:var(--err); background:var(--err-bg); }
+#svnApp .ig-mask{ margin-top:14px; }
+#svnApp .ig-mask-lbl{ display:block; font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); margin-bottom:5px; }
+#svnApp #igMask{ width:100%; padding:8px 10px; border:1px solid var(--line-strong); border-radius:8px; background:var(--card-2); color:var(--ink); font-size:13.5px; }
+#svnApp #igMask:focus{ outline:none; border-color:var(--acc-solid); }
+#svnApp .ig-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+#svnApp .ig-chip{ font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:999px; border:1px solid var(--line); background:var(--raise); color:var(--muted); cursor:pointer; transition:.12s; }
+#svnApp .ig-chip:hover{ border-color:var(--acc-solid); color:var(--acc-solid); }
+#svnApp .ig-match{ margin-top:9px; font-size:12px; color:var(--muted); }
+#svnApp .ig-match b{ color:var(--ink); }
+#svnApp .ig-warn{ color:var(--warn); }
+#svnApp .ig-sample{ margin-top:5px; font-size:11.5px; color:var(--muted-2); line-height:1.6; }
 #svnApp .ig-peers{ margin-top:14px; border-top:1px solid var(--line); padding-top:12px; }
 #svnApp .ig-peers-head{ font-size:12px; color:var(--muted); margin-bottom:7px; }
 #svnApp .ig-peers-list{ font-size:12.5px; color:var(--ink-soft); line-height:1.7; max-height:150px; overflow:auto; margin-bottom:11px; }
@@ -2122,20 +2133,44 @@ function renderHistory(data, repo){
 // ---------------- ignore an untracked file (svn:ignore + commit) ----------------
 // Other sites in the current scope where the SAME path is also untracked. Computed from the
 // scan results already in memory — no extra requests.
-function ignorePeers(repo, file){
+function igDirOf(rel){ return rel.indexOf('/')!==-1 ? rel.replace(/\/[^\/]*$/,'') : '.'; }
+// svn:ignore globs are fnmatch-style: * and ? and [chars]. Turn one into a regex for previewing
+// which of the listed untracked files it would cover.
+function globToRe(p){
+  var re = String(p).replace(/[.+^${}()|\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
+  return new RegExp('^' + re + '$');
+}
+// Untracked file names the scan listed in one directory of a repo.
+function igDirUntracked(repo, dir){
+  var s = STATE.sites[repo], out = [];
+  if(!s || !s.files) return out;
+  s.files.forEach(function(f){
+    if(f.kind !== '?') return;
+    var rel = f.rel_path || ((f.file_path||'')+f.file_name);
+    if(igDirOf(rel) === dir) out.push(rel.split('/').pop());
+  });
+  return out;
+}
+// Other sites in scope that would be covered by the same ignore — matched on the exact path,
+// or (mask mode) on any untracked file in the same directory matching the pattern.
+function ignorePeers(repo, file, pattern){
+  var dir = igDirOf(file), re = pattern ? globToRe(pattern) : null;
   return scopedRepos().filter(function(r){
     if(r === repo) return false;
     var s = STATE.sites[r];
     if(!s || !s.files || !s.files.length) return false;
     for(var i=0;i<s.files.length;i++){
       var f = s.files[i];
-      if(f.kind === '?' && (f.rel_path || ((f.file_path||'')+f.file_name)) === file) return true;
+      if(f.kind !== '?') continue;
+      var rel = f.rel_path || ((f.file_path||'')+f.file_name);
+      if(re){ if(igDirOf(rel) === dir && re.test(rel.split('/').pop())) return true; }
+      else if(rel === file) return true;
     }
     return false;
   });
 }
 // Run the ignore across repos in sequence, reporting per-site, then rescan the ones that changed.
-function ignoreRun(repos, file, $status, done){
+function ignoreRun(repos, file, pattern, $status, done){
   var i = 0, okList = [], failList = [];
   (function next(){
     if(i >= repos.length){
@@ -2145,7 +2180,7 @@ function ignoreRun(repos, file, $status, done){
     }
     var r = repos[i++];
     if($status) $status.html('<span class="spin"></span> Ignoring on <span class="mono">'+esc(r)+'</span>… ('+i+'/'+repos.length+')');
-    $.post('svn_ignore.php', {repository:r, file:file}, function(d){
+    $.post('svn_ignore.php', {repository:r, file:file, pattern:pattern||''}, function(d){
       if(d && d.ok) okList.push(r); else failList.push({repo:r, error:(d&&(d.error||d.output))||'failed'});
       next();
     }, 'json').fail(function(){ failList.push({repo:r, error:'request failed'}); next(); });
@@ -2153,26 +2188,42 @@ function ignoreRun(repos, file, $status, done){
 }
 function doIgnore(repo, file){
   if(!repo || !file) return;
-  var base = file.split('/').pop(), dir = file.indexOf('/')!==-1 ? file.replace(/\/[^\/]*$/,'') : '.';
-  var peers = ignorePeers(repo, file);
-  uiConfirm({icon:'x', title:'Ignore '+base+'?', confirmLabel:'Ignore file',
-    bodyHtml:'Adds <b>'+esc(base)+'</b> to <span class="mono">svn:ignore</span> on <span class="mono">'+esc(dir)+'</span> and commits that property, so it stops showing here — and for everyone else (dev copies, plain svn).'
-      + '<br><br>The file itself is <b>not</b> touched: it stays on the live site exactly as it is.'
-      + (peers.length ? '<br><br><span style="color:var(--muted)">'+peers.length+' other site'+(peers.length!==1?'s':'')+' in this scope also have it untracked — you\'ll be offered those next.</span>' : '')},
+  var base = file.split('/').pop(), dir = igDirOf(file);
+  var sibs = igDirUntracked(repo, dir);                       // untracked names listed in this folder
+  var ext  = (base.indexOf('.')!==-1) ? ('*.'+base.split('.').pop()) : '*';
+  // Several untracked files in the same folder (e.g. a backup dir of generated css) => a mask
+  // is almost certainly what's wanted; a lone stray file => just that file.
+  var def  = (sibs.length > 1) ? ext : base;
+  var chips = [['This file', base]];
+  if(ext !== base) chips.push(['All '+ext, ext]);
+  chips.push(['Everything here', '*']);
+  uiConfirm({icon:'x', title:'Ignore in '+dir, confirmLabel:'Ignore', cancelLabel:'Cancel',
+    bodyHtml:'Adds a pattern to <span class="mono">svn:ignore</span> on <span class="mono">'+esc(dir)+'</span> and commits it, so matching files stop showing here — and for everyone else (dev copies, plain svn). '
+      + 'The files themselves are <b>not</b> touched, and anything already tracked in SVN stays tracked.'
+      + '<div class="ig-mask"><label class="ig-mask-lbl">Ignore pattern</label>'
+      +   '<input type="text" class="svn-in mono" id="igMask" value="'+esc(def)+'" spellcheck="false">'
+      +   '<div class="ig-chips">'+chips.map(function(c){ return '<button type="button" class="ig-chip" data-pat="'+esc(c[1])+'">'+esc(c[0])+'</button>'; }).join('')+'</div>'
+      +   '<div class="ig-match" id="igMatch"></div>'
+      + '</div>'},
     function(){
+      var pat = String($('#igMask').val()||'').trim();
+      if(pat === '') return;
+      var usePattern = (pat !== base);                        // exact filename => plain file mode
+      var peers = ignorePeers(repo, file, usePattern ? pat : '');
+      var what = usePattern ? pat : base;
       $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('x',21)+'</div>'
-        + '<div style="min-width:0"><h3>Ignore '+esc(base)+'</h3><p class="mono" style="font-size:12px">'+esc(repo)+'</p></div>'
+        + '<div style="min-width:0"><h3>Ignore '+esc(what)+'</h3><p class="mono" style="font-size:12px">'+esc(repo)+' · '+esc(dir)+'</p></div>'
         + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
         + '<div class="modal-body"><div id="igBody"><span class="spin"></span> Setting svn:ignore…</div></div>'
         + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
-      ignoreRun([repo], file, $('#igBody'), function(okList, failList){
+      ignoreRun([repo], file, usePattern?pat:'', $('#igBody'), function(okList, failList){
         if(!okList.length){
-          $('#igBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((failList[0]&&failList[0].error)||'Could not ignore the file.')+'</div>');
+          $('#igBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((failList[0]&&failList[0].error)||'Could not ignore.')+'</div>');
           return;
         }
-        var h = '<div class="svn-modal-message">Ignored <span class="mono">'+esc(base)+'</span> on <span class="mono">'+esc(repo)+'</span> — it will drop off the list on the next scan.</div>';
+        var h = '<div class="svn-modal-message">Ignored <span class="mono">'+esc(what)+'</span> in <span class="mono">'+esc(dir)+'</span> on <span class="mono">'+esc(repo)+'</span> — matching files drop off the list on the next scan.</div>';
         if(peers.length){
-          h += '<div class="ig-peers"><div class="ig-peers-head">Same untracked file on '+peers.length+' other site'+(peers.length!==1?'s':'')+' in this scope:</div>'
+          h += '<div class="ig-peers"><div class="ig-peers-head">'+peers.length+' other site'+(peers.length!==1?'s':'')+' in this scope have untracked files matching <span class="mono">'+esc(what)+'</span> in <span class="mono">'+esc(dir)+'</span>:</div>'
             + '<div class="ig-peers-list mono">'+peers.map(esc).join('<br>')+'</div>'
             + '<button class="btn grad" id="igAll">Ignore on all '+peers.length+'</button></div>';
         }
@@ -2180,13 +2231,28 @@ function doIgnore(repo, file){
         $('#igAll').off('click').on('click', function(){
           $(this).prop('disabled', true);
           var $st = $('<div style="margin-top:10px"></div>').appendTo('#igBody');
-          ignoreRun(peers, file, $st, function(ok2, fail2){
+          ignoreRun(peers, file, usePattern?pat:'', $st, function(ok2, fail2){
             $st.html('<div class="svn-modal-message">Ignored on '+ok2.length+' of '+peers.length+' site'+(peers.length!==1?'s':'')+'.'
               + (fail2.length ? ' <span style="color:var(--err)">Failed: '+fail2.map(function(f){return esc(f.repo);}).join(', ')+'</span>' : '')+'</div>');
           });
         });
       });
     });
+  // Live preview: exactly which of the untracked files listed in this folder the mask covers,
+  // so a too-broad pattern is obvious before it gets committed.
+  function igUpd(){
+    var pat = String($('#igMask').val()||'').trim();
+    if(pat === ''){ $('#igMatch').html('<span class="ig-warn">Enter a pattern.</span>'); return; }
+    var re, hit;
+    try { re = globToRe(pat); } catch(e){ $('#igMatch').html('<span class="ig-warn">Invalid pattern.</span>'); return; }
+    hit = sibs.filter(function(n){ return re.test(n); });
+    if(!hit.length){ $('#igMatch').html('<span class="ig-warn">Matches none of the '+sibs.length+' untracked file'+(sibs.length!==1?'s':'')+' listed here.</span>'); return; }
+    $('#igMatch').html('Matches <b>'+hit.length+'</b> of the '+sibs.length+' untracked file'+(sibs.length!==1?'s':'')+' listed in this folder'
+      + '<div class="ig-sample mono">'+hit.slice(0,4).map(esc).join('<br>')+(hit.length>4?'<br>+'+(hit.length-4)+' more…':'')+'</div>');
+  }
+  $('#igMask').on('input', igUpd);
+  $('.ig-chip').on('click', function(){ $('#igMask').val($(this).attr('data-pat')); igUpd(); });
+  igUpd();
 }
 
 function doRevert(repo, rev){

@@ -18,8 +18,13 @@
 
 	@param repository
 	@param file        path relative to the WC root, e.g. public_html/js/gdpr-cookie.js
+	@param pattern     optional glob to ignore INSTEAD of the exact filename, applied to the
+	                   directory of `file` — e.g. "*.css" or "*_nbn.css" for a folder full of
+	                   generated backups. svn:ignore patterns are per-directory, so it must not
+	                   contain a slash. Versioned files are never affected by svn:ignore, so a
+	                   broad mask can't accidentally untrack anything.
 
-	Returns { ok, repository, file, already, committed, output, error }
+	Returns { ok, repository, file, pattern, already, committed, output, error }
 */
 
 $root_inc_path = "../";
@@ -60,21 +65,41 @@ if ($host) {
 $dir  = dirname($file);
 if ($dir === '' || $dir === '.') $dir = '.';
 $base = basename($file);
-$msg  = 'ignore ' . $file . ' (via monitor)';
+
+// Optional glob mask: ignore a pattern in $file's directory rather than just this one file.
+// svn:ignore patterns are per-directory, so a slash is invalid.
+$pattern = trim((string) GetParam("pattern"));
+if ($pattern !== '') {
+	if (strpos($pattern, '/') !== false || strpos($pattern, "\0") !== false || strpos($pattern, '..') !== false
+		|| strlen($pattern) > 100 || !preg_match('#^[A-Za-z0-9._*?\[\]\-]+$#', $pattern)) {
+		ig_json(array('ok' => false, 'error' => 'Invalid pattern.'));
+	}
+	$base = $pattern;
+}
+$is_mask = ($pattern !== '');
+$msg = $is_mask
+	? ('ignore ' . $pattern . ' in ' . $dir . ' (via monitor)')
+	: ('ignore ' . $file . ' (via monitor)');
 
 // Built for the site user's shell, run from the WC root.
-$inner = "cd " . escapeshellarg($wc) . " || exit 1\n"
-	// Only act on genuinely untracked files. Unversioned => "? <path>"; an explicitly-queried
-	// already-ignored file => "I <path>"; tracked-and-clean => empty. Anything else (M/A/D/…)
-	// means it IS tracked — refuse, since svn:ignore would be a silent no-op on it.
-	. "ST=\$(svn status " . escapeshellarg($file) . " 2>&1 | head -1)\n"
-	. "case \"\$ST\" in\n"
-	. "  '?'*) ;;\n"
-	. "  'I'*) echo '>> " . $base . " is already ignored — nothing to do'; exit 0 ;;\n"
-	. "  '') echo '>> " . $base . " is already tracked — leaving it alone'; exit 0 ;;\n"
-	. "  *) echo \">> refusing: unexpected svn status: \$ST\"; exit 8 ;;\n"
-	. "esac\n"
-	. "svn info " . escapeshellarg($dir) . " >/dev/null 2>&1 || { echo '>> parent directory " . $dir . " is not versioned — cannot set svn:ignore'; exit 6; }\n"
+$inner = "cd " . escapeshellarg($wc) . " || exit 1\n";
+
+// Single-file mode: only act on genuinely untracked files. Unversioned => "? <path>"; an
+// explicitly-queried already-ignored file => "I <path>"; tracked-and-clean => empty. Anything
+// else (M/A/D/…) means it IS tracked — refuse, since svn:ignore is a no-op on tracked files.
+// A mask isn't a single file, so this check doesn't apply to it (and svn:ignore still can't
+// affect whatever is versioned in that directory).
+if (!$is_mask) {
+	$inner .= "ST=\$(svn status " . escapeshellarg($file) . " 2>&1 | head -1)\n"
+		. "case \"\$ST\" in\n"
+		. "  '?'*) ;;\n"
+		. "  'I'*) echo '>> " . $base . " is already ignored — nothing to do'; exit 0 ;;\n"
+		. "  '') echo '>> " . $base . " is already tracked — leaving it alone'; exit 0 ;;\n"
+		. "  *) echo \">> refusing: unexpected svn status: \$ST\"; exit 8 ;;\n"
+		. "esac\n";
+}
+
+$inner .= "svn info " . escapeshellarg($dir) . " >/dev/null 2>&1 || { echo '>> parent directory " . $dir . " is not versioned — cannot set svn:ignore'; exit 6; }\n"
 	. "CUR=\$(svn propget svn:ignore " . escapeshellarg($dir) . " 2>/dev/null)\n"
 	. "if printf '%s\\n' \"\$CUR\" | grep -qxF " . escapeshellarg($base) . "; then echo '>> already in svn:ignore'; exit 0; fi\n"
 	// Append, preserving existing order; drop blank lines.
@@ -119,7 +144,7 @@ $committed = (bool) preg_match('/Committed revision\s+\d+/i', $output);
 $done      = ($already || $committed);
 
 ig_json(array(
-	'ok' => $done, 'repository' => $repository, 'file' => $file,
+	'ok' => $done, 'repository' => $repository, 'file' => $file, 'pattern' => $pattern,
 	'already' => $already, 'committed' => $committed, 'output' => trim($output),
-	'error' => $done ? '' : 'Could not ignore the file — see the output.',
+	'error' => $done ? '' : 'Could not ignore the ' . ($is_mask ? 'pattern' : 'file') . ' — see the output.',
 ));
