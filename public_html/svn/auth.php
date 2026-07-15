@@ -7,9 +7,22 @@ date_default_timezone_set("Europe/London");
 
 $user_id = GetSessionParam("UserID");
 if($user_id == "") {
-	// Pass the originating URL so that after re-login (incl. the silent remember-me auto-login
-	// in login.php) the user is returned here — not bounced to /index.php. The browser carries
-	// the #...~dc=... fragment along the redirects, so the dev-copy popup restores on return.
+	// An AJAX call must NOT be bounced through the login redirect. The browser follows a 302 on
+	// a POST as a GET *with no body*, so after login.php's silent remember-me re-login sends it
+	// back to ret_page the endpoint re-runs — now authenticated but with none of its parameters.
+	// That surfaced as bogus errors like "No repository specified." / "Scan failed" that cleared
+	// on refresh (the refresh has a session, so no redirect and the POST survives).
+	// Answer XHR with 401 + JSON instead and let the page re-auth itself with a full reload.
+	if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strcasecmp($_SERVER['HTTP_X_REQUESTED_WITH'], 'XMLHttpRequest') === 0) {
+		header("HTTP/1.1 401 Unauthorized");
+		header("Content-Type: application/json; charset=utf-8");
+		echo json_encode(array('ok' => false, 'reauth' => true, 'error' => 'Your session expired.'));
+		exit;
+	}
+	// Full page load: pass the originating URL so that after re-login (incl. the silent
+	// remember-me auto-login in login.php) the user is returned here — not bounced to
+	// /index.php. The browser carries the #...~dc=... fragment along the redirects, so the
+	// dev-copy popup restores on return.
 	header("Location: ../login.php?querystring=" . ToURL(getenv("QUERY_STRING")) . "&ret_page=" . ToURL(getenv("REQUEST_URI")));
 	exit;
 }

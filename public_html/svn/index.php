@@ -185,6 +185,7 @@ html.dark-mode{
 #svnApp .chk.partial::after{ content:''; position:absolute; left:3.5px; top:7.5px; width:9px; height:0; border-top:2.2px solid #fff; transform:none; border-right:none; }
 #svnApp .chk[disabled]{ opacity:.4; cursor:not-allowed; }
 
+#svnApp .reauth-note{ position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:99; display:flex; align-items:center; gap:7px; padding:9px 15px; border-radius:9px; background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn); font-size:13px; font-weight:700; box-shadow:var(--shadow); }
 #svnApp .fchips{ display:flex; gap:6px; }
 #svnApp .fchip{ padding:7px 12px; border-radius:8px; font-size:13px; font-weight:700; color:var(--muted); border:1px solid transparent; }
 #svnApp .fchip:hover{ background:var(--hover); color:var(--ink-soft); }
@@ -842,6 +843,17 @@ function icon(name, s, w, style){
   return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round" style="'+style+'">'+paths+'</svg>';
 }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Session expired: auth.php answers XHR with 401 rather than redirecting to login (a 302 on a
+// POST is followed as a bodyless GET, which used to re-run endpoints with no params). Re-auth
+// with a full page load — that follows the normal login redirect and comes back to this hash.
+var REAUTHING = false;
+$(document).ajaxError(function(e, xhr){
+  if(!xhr || xhr.status !== 401 || REAUTHING) return;
+  REAUTHING = true;
+  $('#svnApp').prepend('<div class="reauth-note">'+icon('refresh',14)+' Your session expired — signing you back in…</div>');
+  location.reload();
+});
 
 // ---------------- state ----------------
 var REPOS = [<?php echo $repositories_typehead; ?>];
