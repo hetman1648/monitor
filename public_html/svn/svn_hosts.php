@@ -149,6 +149,7 @@ function svn_host_for_path($path) {
  *
  * NB: the Common8 WC lives at /var/vhosts/Common8 on every dedicated box (NOT under the
  * per-server wc_base), so the path is given explicitly. rubberduck has no Common8 WC.
+ * Common (the older library) is only checked out on rss besides web1.
  */
 function svn_shared_repo_deploys($repo) {
 	$map = array(
@@ -156,6 +157,9 @@ function svn_shared_repo_deploys($repo) {
 			array('key' => 'rss',       'wc' => '/var/vhosts/Common8'),
 			array('key' => 'puregusto', 'wc' => '/var/vhosts/Common8'),
 			array('key' => 'web2',      'wc' => '/var/vhosts/Common8'),
+		),
+		'Common' => array(
+			array('key' => 'rss',       'wc' => '/var/vhosts/Common'),
 		),
 	);
 	return isset($map[$repo]) ? $map[$repo] : array();
