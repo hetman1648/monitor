@@ -887,6 +887,17 @@ function siteFiles(s){
   var files = (s && s.files) || [];
   return STATE.hideEdited ? files.filter(function(f){ return f.kind !== 'M'; }) : files;
 }
+// How many of a site's changes are live edits (hidden by the toggle).
+function siteHiddenCount(s){ return ((s && s.files) || []).length - siteFiles(s).length; }
+// The status to SHOW for a site. "M" means edited locally, NOT out of date ("*" is out of date),
+// so a site whose only changes are live edits has nothing incoming to deploy — it IS up to date
+// with the repo. It only reads as "update available" because the scan counts every status line
+// as a change. With live edits hidden, call it what it is instead of "Update available · 0".
+function siteStatus(s){
+  if(!s) return '';
+  if(STATE.hideEdited && s.status === 'update' && siteFiles(s).length === 0) return 'current';
+  return s.status;
+}
 var RECENT_KEY = 'svn_recent_repos', MAX_RECENT = 8;
 var LAST_SCOPE_KEY = 'svn_last_scope';
 function saveScope(id){ try{ if(id && id!=='__none') localStorage.setItem(LAST_SCOPE_KEY, String(id)); }catch(e){} }
@@ -993,7 +1004,7 @@ function maybeOpenPendingReview(repo){
   var s = STATE.sites[repo];
   if(!s || s.scanState==='scanning' || s.scanState==='queued') return; // still working
   pendingReviewRepo = null;
-  if(s.scanState==='done' && s.status==='update'){ STATE.sel[repo]=true; renderApplyBar(); openConfirmUpdate(); }
+  if(s.scanState==='done' && siteStatus(s)==='update'){ STATE.sel[repo]=true; renderApplyBar(); openConfirmUpdate(); }
 }
 function enqueueScan(repos, force){
   repos.forEach(function(r){
@@ -1026,7 +1037,7 @@ function pumpScan(){
           // and selecting it here would inflate the apply-bar count with an off-screen straggler.
           // ...and don't auto-select a site whose only changes are hidden live edits — it would
           // sit invisibly in the apply bar with nothing to actually deploy.
-          if(autoSelectUpdates && site.status==='update' && scopedRepos().indexOf(repo)!==-1 && siteFiles(site).length>0){ STATE.sel[repo]=true; }
+          if(autoSelectUpdates && siteStatus(site)==='update' && scopedRepos().indexOf(repo)!==-1 && siteFiles(site).length>0){ STATE.sel[repo]=true; }
         } else {
           site.status='error'; site.errorMsg=(data&&data.error)||'Scan failed'; site.scanState='error';
         }
@@ -1137,7 +1148,7 @@ function pickScope(id, opts){
   // enqueueScan only (re)scans idle/error sites, so any group site that was already scanned
   // (e.g. during a prior "all sites" pass) would never get auto-selected — leaving the apply
   // bar empty even though it has updates. Select those already-known updatable sites now.
-  repos.forEach(function(r){ var s=STATE.sites[r]; if(s && s.scanState==='done' && s.status==='update') STATE.sel[r]=true; });
+  repos.forEach(function(r){ var s=STATE.sites[r]; if(s && s.scanState==='done' && siteStatus(s)==='update') STATE.sel[r]=true; });
   renderTable(); renderApplyBar();
 }
 
@@ -1165,8 +1176,8 @@ function reviewBtnHtml(repo){
   var s = STATE.sites[repo], st = s ? s.scanState : 'idle';
   var attrs = 'class="btn grad" id="finderReview" data-repo="'+esc(repo)+'"';
   if(st==='queued' || st==='scanning') return '<button '+attrs+' disabled><span class="spin"></span> Loading changes…</button>';
-  if(s && st==='done' && s.status==='update'){ var n=siteFiles(s).length; return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update'+(n?' ('+n+')':'')+'</button>'; }
-  if(s && st==='done' && s.status==='current') return '<button '+attrs+' disabled>'+icon('check',16)+' Up to date</button>';
+  if(s && st==='done' && siteStatus(s)==='update'){ var n=siteFiles(s).length; return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update'+(n?' ('+n+')':'')+'</button>'; }
+  if(s && st==='done' && siteStatus(s)==='current') return '<button '+attrs+' disabled>'+icon('check',16)+' Up to date</button>';
   if(s && st==='error')                        return '<button '+attrs+' disabled>'+icon('alert',16)+' Scan failed</button>';
   return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update</button>'; // idle/not scanned: kicks off the scan
 }
@@ -1195,11 +1206,11 @@ function visibleRepos(){
     if(STATE.query && r.toLowerCase().indexOf(STATE.query.toLowerCase())===-1) continue;
     if(STATE.filter!=='all'){
       if(!s || s.scanState!=='done' && !(STATE.filter==='error' && s && s.status==='error')) continue;
-      if(s.status!==STATE.filter) continue;
+      if(siteStatus(s)!==STATE.filter) continue;
     }
-    // Hiding live edits: a site whose ONLY changes were live edits has nothing left to show or
-    // deploy, so drop it from the list entirely rather than leaving an empty row.
-    if(STATE.hideEdited && s && s.scanState==='done' && s.status==='update' && siteFiles(s).length===0) continue;
+    // NB: hiding live edits must never drop a SITE from the list — the group's sites are how you
+    // see and navigate it. Only the file rows are hidden; such a site simply reads as up to date
+    // (it has nothing to deploy) with a note saying how many live edits are hidden.
     out.push(r);
   }
   return out;
@@ -1209,8 +1220,9 @@ function statusBadge(s){
   if(!s || s.scanState==='idle' || s.scanState==='queued') return '<span class="sbadge idle"><span class="sd"></span>Not scanned</span>';
   if(s.scanState==='scanning') return '<span class="sbadge scanning"><span class="spin"></span>Scanning…</span>';
   var map = { update:'Update available', current:'Up to date', error:'Error' };
-  var cls = s.status||'idle';
-  return '<span class="sbadge '+cls+'"><span class="sd"></span>'+(map[s.status]||'Unknown')+'</span>';
+  var st2 = siteStatus(s);
+  var cls = st2||'idle';
+  return '<span class="sbadge '+cls+'"><span class="sd"></span>'+(map[st2]||'Unknown')+'</span>';
 }
 
 function sitesWithFiles(){ return visibleRepos().filter(function(r){ return siteFiles(STATE.sites[r]).length>0; }); }
@@ -1236,7 +1248,7 @@ function renderTable(){
     var files = siteFiles(s);
     var hasFiles = files.length>0;
     var isCol = !!STATE.collapsed[r];
-    var selectable = s.scanState==='done' && s.status==='update';
+    var selectable = s.scanState==='done' && siteStatus(s)==='update';
     var seld = !!STATE.sel[r];
     rows += '<tr class="site-row'+(seld?' sel':'')+'" data-repo="'+esc(r)+'">'
       + '<td class="col-chk"><input type="checkbox" class="chk row-chk" '+(seld?'checked':'')+' '+(selectable?'':'disabled')+' data-repo="'+esc(r)+'" title="'+(selectable?'Select for update':'Nothing to update')+'"></td>'
@@ -1244,10 +1256,10 @@ function renderTable(){
         + '<button class="site-collapse" data-collapse="'+esc(r)+'" '+(hasFiles?'':'disabled')+' title="'+(isCol?'Show files':'Hide files')+'">'+icon('chevron',16,1.8,(isCol?'transform:rotate(-90deg)':''))+'</button>'
         + '<span class="host">'+esc(r)+'</span>'
         + statusBadge(s)
-        + (s.scanState==='done'&&s.status==='update' ? '<span class="behind">'+icon('up',13)+files.length+' change'+(files.length!==1?'s':'')+(s.headRev?' <span class="rev mono">r'+esc(s.headRev)+'</span>':'')+'</span>' : '')
+        + (s.scanState==='done'&&siteStatus(s)==='update' ? '<span class="behind">'+icon('up',13)+files.length+' change'+(files.length!==1?'s':'')+(s.headRev?' <span class="rev mono">r'+esc(s.headRev)+'</span>':'')+'</span>' : '')
         + (s.lastBy||s.lastAt ? '<span class="site-meta">'+(s.lastBy?icon('user',12)+' '+esc(s.lastBy):'')+(s.lastBy&&s.lastAt?' <span class="mdot"></span> ':'')+(s.lastAt?icon('clock',12)+' '+esc(s.lastAt):'')+'</span>' : '')
         + '<span class="sh-spacer"></span>'
-        + '<span class="file-count">'+(hasFiles?(files.length+' file'+(files.length!==1?'s':'')):(s.scanState==='done'?(s.status==='current'?'Up to date':'—'):''))+'</span>'
+        + '<span class="file-count">'+(hasFiles?(files.length+' file'+(files.length!==1?'s':'')):(s.scanState==='done'?(siteStatus(s)==='current'?'Up to date':'—'):''))+'</span>'
         + (s.adminUrl ? '<a class="site-btn site-admin" href="'+esc(s.adminUrl)+'" target="_blank" rel="noopener" title="Admin login ('+esc(r)+')">'+icon('login',15)+'</a>'
             : (s.clientId ? '<a class="site-btn site-admin" href="../create_client.php?client_id='+esc(s.clientId)+'" target="_blank" rel="noopener" title="Open client record">'+icon('login',15)+'</a>' : ''))
         + '<button class="site-btn" data-refresh="'+esc(r)+'" title="Re-scan this site">'+icon('refresh',15)+'</button>'
@@ -1284,8 +1296,13 @@ function renderTable(){
         + '</tr>';
       });
     }
-    if(!isCol && !hasFiles && s.scanState==='done' && s.status==='current'){
-      rows += '<tr class="note-row first-note"><td class="col-chk"></td><td colspan="5"><span class="up-note">Working copy is up to date — nothing to deploy.</span></td></tr>';
+    if(!isCol && !hasFiles && s.scanState==='done' && siteStatus(s)==='current'){
+      // Say WHY there's nothing listed: genuinely clean, or its changes are live edits we're hiding.
+      var hid = siteHiddenCount(s);
+      rows += '<tr class="note-row first-note"><td class="col-chk"></td><td colspan="5"><span class="up-note">'
+        + (hid ? 'Nothing to deploy — '+hid+' live edit'+(hid!==1?'s':'')+' hidden by the “Edited on live” filter.'
+               : 'Working copy is up to date — nothing to deploy.')
+        + '</span></td></tr>';
     }
     if(!isCol && (s.scanState==='idle'||s.scanState==='queued')){
       rows += '<tr class="note-row first-note"><td class="col-chk"></td><td colspan="5"><span class="scan-note">'+(s.scanState==='queued'?'<span class="spin"></span> Queued for scan…':('Not scanned yet. <button class="btn tiny" data-refresh="'+esc(r)+'">Scan this site</button>'))+'</span></td></tr>';
@@ -1318,7 +1335,7 @@ function renderCards(){
   var repos = visibleRepos();
   if(!repos.length){ $('#tableHost').html('<div class="empty"><div class="e-ico">'+icon('grid',34)+'</div><div class="e-t">'+emptyMsg()+'</div></div>'); return; }
   var cards = repos.map(function(r){
-    var s = ensureSite(r); var seld = !!STATE.sel[r]; var selectable = s.scanState==='done'&&s.status==='update';
+    var s = ensureSite(r); var seld = !!STATE.sel[r]; var selectable = s.scanState==='done'&&siteStatus(s)==='update';
     var nchg = siteFiles(s).length;
     return '<div class="scard'+(seld?' sel':'')+'" data-cardrepo="'+esc(r)+'">'
       + '<div class="scard-top"><div><div class="host">'+esc(r)+'</div>'
@@ -1326,7 +1343,7 @@ function renderCards(){
         + '<input type="checkbox" class="chk row-chk" '+(seld?'checked':'')+' '+(selectable?'':'disabled')+' data-repo="'+esc(r)+'"></div>'
       + statusBadge(s)
       + '<div class="scard-foot">'
-        + (s.scanState==='done'&&s.status==='update' ? '<span class="behind">'+icon('up',14)+nchg+' behind</span>' : '<span class="behind none">'+(s.status==='error'?'Needs attention':(s.scanState==='done'?'Up to date':'Not scanned'))+'</span>')
+        + (s.scanState==='done'&&siteStatus(s)==='update' ? '<span class="behind">'+icon('up',14)+nchg+' behind</span>' : '<span class="behind none">'+(s.status==='error'?'Needs attention':(s.scanState==='done'?'Up to date':'Not scanned'))+'</span>')
         + '<button class="btn ghost tiny" data-refresh="'+esc(r)+'">Scan '+icon('refresh',13)+'</button>'
       + '</div></div>';
   }).join('');
@@ -1338,13 +1355,13 @@ function renderCards(){
 // Selections are scoped to the active group/site: an entry left in STATE.sel for a repo outside
 // the current scope (e.g. a late scan callback) is never counted in the apply bar nor updated.
 function selRepos(){ var sc=scopedRepos(); return Object.keys(STATE.sel).filter(function(r){ return STATE.sel[r] && sc.indexOf(r)!==-1; }); }
-function selUpdatable(){ return selRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.status==='update'; }); }
+function selUpdatable(){ return selRepos().filter(function(r){ var s=STATE.sites[r]; return s&&siteStatus(s)==='update'; }); }
 function renderApplyBar(){
   var sel = selRepos(), upd = selUpdatable();
   $('#abCount').text(sel.length);
   $('#abCountLbl').text('site'+(sel.length!==1?'s':'')+' selected');
   if(upd.length){
-    var total = upd.reduce(function(a,r){ return a + (STATE.sites[r].behind||0); }, 0);
+    var total = upd.reduce(function(a,r){ return a + siteFiles(STATE.sites[r]).length; }, 0);
     $('#abSub').css('color','').text(upd.length+' with updates · '+total+' changes total');
   } else {
     $('#abSub').css('color','var(--muted)').text(sel.length?'None of the selected sites need updating':'');
@@ -1354,7 +1371,7 @@ function renderApplyBar(){
   refreshFinderReview();
 }
 function syncSelAll(){
-  var vis = visibleRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.scanState==='done'&&s.status==='update'; });
+  var vis = visibleRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.scanState==='done'&&siteStatus(s)==='update'; });
   var allSel = vis.length>0 && vis.every(function(r){ return STATE.sel[r]; });
   var someSel = vis.some(function(r){ return STATE.sel[r]; });
   var $a = $('#selAll');
@@ -1989,7 +2006,7 @@ var LOG_CATS=[
   {key:'deprecated', label:'Deprecated'},
   {key:'other',      label:'Other'}
 ];
-var LOG_WINDOWS=[ {min:0,label:'All time'}, {min:1440,label:'24h'}, {min:120,label:'2h'}, {min:30,label:'30m'} ];
+var LOG_WINDOWS=[ {min:0,label:'All time'}, {min:1440,label:'24h'}, {min:720,label:'12h'}, {min:360,label:'6h'}, {min:120,label:'2h'}, {min:30,label:'30m'} ];
 var LOG_FILTER={}, LOG_WINDOW=0;   // LOG_FILTER: cat->bool (absent = shown); LOG_WINDOW: minutes, 0 = all
 function logFilterReset(){ LOG_FILTER={}; LOG_WINDOW=0; }
 function logCatOn(cat){ return LOG_FILTER[cat]!==false; }
@@ -3075,9 +3092,9 @@ $(function(){
 
   // selection
   $(document).on('change', '.row-chk', function(e){ e.stopPropagation(); var r=$(this).attr('data-repo'); if(this.checked) STATE.sel[r]=true; else delete STATE.sel[r]; renderTable(); renderApplyBar(); });
-  $(document).on('click', '[data-cardrepo]', function(e){ if($(e.target).is('input,button') || $(e.target).closest('button').length) return; var r=$(this).attr('data-cardrepo'); var s=STATE.sites[r]; if(s&&s.status==='update'){ if(STATE.sel[r]) delete STATE.sel[r]; else STATE.sel[r]=true; renderTable(); renderApplyBar(); } });
+  $(document).on('click', '[data-cardrepo]', function(e){ if($(e.target).is('input,button') || $(e.target).closest('button').length) return; var r=$(this).attr('data-cardrepo'); var s=STATE.sites[r]; if(s&&siteStatus(s)==='update'){ if(STATE.sel[r]) delete STATE.sel[r]; else STATE.sel[r]=true; renderTable(); renderApplyBar(); } });
   $('#selAll').on('change', function(){
-    var vis = visibleRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.scanState==='done'&&s.status==='update'; });
+    var vis = visibleRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.scanState==='done'&&siteStatus(s)==='update'; });
     if(this.checked) vis.forEach(function(r){ STATE.sel[r]=true; });
     else vis.forEach(function(r){ delete STATE.sel[r]; });
     renderTable(); renderApplyBar();
