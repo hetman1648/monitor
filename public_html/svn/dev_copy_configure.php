@@ -88,7 +88,14 @@ if (is_file($hf)) {
 		foreach ($lines as $ln) {
 			if (strpos($ln, '# DEV server friendly URLs') !== false) { $dev = true; $out[] = $ln; continue; }
 			if ($dev && trim($ln) === '') { $dev = false; $out[] = $ln; continue; }
-			if ($dev && preg_match('/^#(RewriteCond|RewriteRule)/', $ln)) { $out[] = preg_replace('/^#/', '', $ln); $changed = true; continue; }
+			if ($dev && preg_match('/^#(RewriteCond|RewriteRule)/', $ln)) {
+				$u = preg_replace('/^#/', '', $ln);
+				// Apache has no end-of-line comments — a trailing " # note" on a directive is a
+				// syntax error (500 on every request) once uncommented. Some sites' dev blocks
+				// carry one (e.g. m6beds' REQUEST_URI condition), so strip it.
+				$u = preg_replace('/\s+#.*$/', '', $u);
+				$out[] = $u; $changed = true; continue;
+			}
 			if (preg_match('#^RewriteRule \. /friendly_url\.php \[L\]#', $ln)) { $out[] = '#' . $ln; $changed = true; continue; }
 			$out[] = $ln;
 		}
