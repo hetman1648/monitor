@@ -60,6 +60,13 @@ if ($host) {
 	if ($wc === '') del_json(array('ok' => false, 'error' => 'Working copy not found for ' . $repository . '.'));
 }
 
+// Library WCs (Common/Common8) are root-owned — there is no site user to run as, and deleting
+// from a shared library deserves a human on the server anyway. (Ignore DOES work for them —
+// svn_ignore.php commits the property from a scratch checkout.)
+if (!$host && svn_is_library_repo($repository) && @fileowner($wc) === 0) {
+	del_json(array('ok' => false, 'error' => 'Delete is not available for the shared library repositories — their working copies are root-owned.'));
+}
+
 $dir = dirname($file);
 if ($dir === '' || $dir === '.') $dir = '.';
 $msg = 'delete ' . $file . ' (via monitor)';

@@ -7,6 +7,16 @@
 	Runs as the working copy's unix owner: web1 via the monitor_runas root wrapper, off-web1
 	over SSH (tema has passwordless sudo there) — same dual path as revert_repository.php.
 
+	Shared LIBRARY repos (Common/Common8) are the exception: their working copies are
+	root-owned everywhere and monitor_runas rightly refuses root. But those WCs are
+	world-readable and svn:ignore is a REPOSITORY property, so for them the whole change is
+	made as the monitor web user itself: read the file's status and the directory URL from
+	the live WC, commit the property from a scratch --depth empty checkout of just that
+	directory, then sync the live WCs through the root gateway daemon + the shared fan-out
+	(exactly what the Update button runs) so the scan stops listing the file at once.
+	Stop tracking (untrack=1) is NOT offered there: after a repo-side svn rm, the next
+	update would delete an unmodified file from the live disk instead of keeping it.
+
 	Safety:
 	  - refuses unless the file is genuinely unversioned ("?"); svn:ignore has no effect on a
 	    tracked file, so ignoring one would be a silent no-op.
@@ -71,6 +81,13 @@ if ($host) {
 	if ($wc === '') ig_json(array('ok' => false, 'error' => 'Working copy not found for ' . $repository . '.'));
 }
 
+// Root-owned library WC on web1 (Common/Common8) -> the scratch-checkout path (see header).
+$lib_as_self = false;
+if (!$host && svn_is_library_repo($repository)) {
+	$uid = @fileowner($wc);
+	if ($uid === 0) $lib_as_self = true;
+}
+
 $dir  = dirname($file);
 if ($dir === '' || $dir === '.') $dir = '.';
 $base = basename($file);
@@ -88,6 +105,10 @@ if ($pattern !== '') {
 $is_mask = ($pattern !== '');
 // Untracking only makes sense for one specific tracked file, not for a glob.
 $untrack = (!$is_mask && GetParam("untrack")) ? true : false;
+// Untrack needs a run as the WC owner (root here) — not available on library repos (see header).
+if ($lib_as_self && $untrack) {
+	ig_json(array('ok' => false, 'error' => 'Stop tracking is not available for the shared library repositories — their working copies are root-owned.'));
+}
 $msg = $is_mask
 	? ('ignore ' . $pattern . ' in ' . $dir . ' (via monitor)')
 	: (($untrack ? 'stop tracking + ignore ' : 'ignore ') . $file . ' (via monitor)');
@@ -166,6 +187,42 @@ $inner .= "svn info " . escapeshellarg($dir) . " >/dev/null 2>&1 || { echo '>> p
 	. "if [ \"\$TRACKED\" = 1 ]; then echo \">> stopped tracking " . $base . " (kept on disk) and ignored it in " . $dir . "\"; "
 	. "else echo \">> ignored " . $base . " in " . $dir . "\"; fi\n";
 
+// Library repo: replace the script with the scratch-checkout flow (see header). The live WC is
+// root-owned but world-readable, so status/URL are read from it directly; the property change is
+// committed from a throwaway --depth empty checkout of JUST this directory (no files come down),
+// owned by the web user. A fresh checkout is at HEAD, so no E160028 sync dance is needed.
+if ($lib_as_self) {
+	$absd = rtrim($wc . '/' . ($dir === '.' ? '' : $dir), '/');
+	$absf = $wc . '/' . $file;
+	$inner = "";
+	if (!$is_mask) {
+		$inner .= "ST=\$(svn status " . escapeshellarg($absf) . " 2>&1 | head -1)\n"
+			. "case \"\$ST\" in\n"
+			. "  '?'*) ;;\n"
+			. "  'I'*) echo '>> " . $base . " is already ignored — nothing to do'; exit 0 ;;\n"
+			. "  ''|'M'*|'~'*|'!'*) echo '>> " . $base . " is tracked in SVN — svn:ignore has no effect on it.'; exit 0 ;;\n"
+			. "  svn:*) echo \">> cannot read svn status for " . $file . ": \$ST\"; exit 8 ;;\n"
+			. "  *) echo \">> refusing: unexpected svn status: \$ST\"; exit 8 ;;\n"
+			. "esac\n";
+	}
+	$inner .= "URL=\$(svn info " . escapeshellarg($absd) . " 2>/dev/null | sed -n 's/^URL: //p')\n"
+		. "[ -n \"\$URL\" ] || { echo '>> parent directory " . $dir . " is not versioned — cannot set svn:ignore'; exit 6; }\n"
+		. "T=\$(mktemp -d) || exit 1\n"
+		. "trap 'rm -rf \"\$T\"' EXIT\n"
+		. "CO=\$(svn checkout --depth empty \"\$URL\" \"\$T/wc\" " . $auth . " 2>&1) || { echo \"\$CO\"; echo '>> scratch checkout failed'; exit 4; }\n"
+		. "CUR=\$(svn propget svn:ignore \"\$T/wc\" 2>/dev/null)\n"
+		. "if printf '%s\\n' \"\$CUR\" | grep -qxF " . escapeshellarg($base) . "; then echo '>> already in svn:ignore'; exit 0; fi\n"
+		. "TF=\$(mktemp) || exit 1\n"
+		. "printf '%s\\n' \"\$CUR\" | sed '/^[[:space:]]*\$/d' > \"\$TF\"\n"
+		. "printf '%s\\n' " . escapeshellarg($base) . " >> \"\$TF\"\n"
+		. "svn propset svn:ignore -F \"\$TF\" \"\$T/wc\" || { rm -f \"\$TF\"; echo '>> propset failed'; exit 7; }\n"
+		. "rm -f \"\$TF\"\n"
+		. "OUT=\$(svn commit \"\$T/wc\" -m " . escapeshellarg($msg) . " " . $auth . " 2>&1); rc=\$?\n"
+		. "echo \"\$OUT\"\n"
+		. "if [ \$rc -ne 0 ]; then echo '>> commit failed'; exit \$rc; fi\n"
+		. "echo \">> ignored " . $base . " in " . $dir . "\"\n";
+}
+
 // Run it as the working copy's owner.
 $output = ''; $rc = 0;
 if ($host) {
@@ -176,10 +233,16 @@ if ($host) {
 	@exec(svn_host_ssh($host) . ' ' . escapeshellarg($remote), $out, $rc);
 	$output = implode("\n", $out);
 } else {
-	$uid = @fileowner($wc); $user = '';
-	if ($uid !== false && function_exists('posix_getpwuid')) { $pw = @posix_getpwuid($uid); if ($pw && !empty($pw['name'])) $user = $pw['name']; }
-	if ($user === '' || $user === 'root') ig_json(array('ok' => false, 'error' => 'Could not determine the unix user for ' . $repository . '.'));
-	$cmd = 'sudo -n /usr/local/bin/monitor_runas ' . escapeshellarg($user);
+	if ($lib_as_self) {
+		// Scratch flow: touches nothing root-owned, so run as ourselves (the monitor web
+		// user), bounded by the same timeout the runas wrapper applies.
+		$cmd = 'timeout --signal=TERM --kill-after=10s 120s /bin/bash';
+	} else {
+		$uid = @fileowner($wc); $user = '';
+		if ($uid !== false && function_exists('posix_getpwuid')) { $pw = @posix_getpwuid($uid); if ($pw && !empty($pw['name'])) $user = $pw['name']; }
+		if ($user === '' || $user === 'root') ig_json(array('ok' => false, 'error' => 'Could not determine the unix user for ' . $repository . '.'));
+		$cmd = 'sudo -n /usr/local/bin/monitor_runas ' . escapeshellarg($user);
+	}
 	$desc = array(0 => array('pipe', 'r'), 1 => array('pipe', 'w'), 2 => array('pipe', 'w'));
 	$proc = proc_open($cmd, $desc, $pipes);
 	if (!is_resource($proc)) ig_json(array('ok' => false, 'error' => 'Could not start the ignore helper.'));
@@ -188,6 +251,27 @@ if ($host) {
 	$err = stream_get_contents($pipes[2]); fclose($pipes[2]);
 	$rc = proc_close($proc);
 	if (trim($output) === '' && trim($err) !== '') $output = trim($err);
+}
+
+// Library repo: the property now lives in the REPO, but the live root-owned WCs still carry the
+// old directory node, so the daemon's status would keep listing the file. Sync them the same way
+// the Update button does — web1 through the root gateway daemon, then the shared fan-out servers.
+// A library WC sits at HEAD, so this deploys nothing beyond the property itself. Also runs when
+// the pattern was already committed but the live WC hadn't picked it up yet.
+if ($lib_as_self && preg_match('/Committed revision|already in svn:ignore/i', $output)) {
+	$res = get_page($svn_path . "index.php?action=checkout&username=" . $svn_login . "&password=" . $svn_password . "&repository=" . $repository);
+	$output .= "\n--- syncing live working copies ---\nweb1: " . trim(strip_tags((string) $res));
+	$servers = svn_host_servers();
+	foreach (svn_shared_repo_deploys($repository) as $s) {
+		if (!isset($servers[$s['key']])) continue;
+		$h = $servers[$s['key']];
+		$sync = 'cd ' . escapeshellarg($s['wc']) . ' && sudo svn update --force ' . $auth . ' 2>&1';
+		$out2 = array();
+		@exec(svn_host_ssh($h) . ' ' . escapeshellarg($sync) . ' 2>&1', $out2);
+		$tail = trim(implode("\n", $out2));
+		if (preg_match('/(Updated to revision \d+\.|At revision \d+\.|svn:.*)/', $tail, $mm)) $tail = $mm[1];
+		$output .= "\n" . $h['ssh_host'] . ": " . ($tail === '' ? 'no response' : $tail);
+	}
 }
 if (function_exists('ensure_utf8')) $output = ensure_utf8($output);
 
