@@ -1132,6 +1132,10 @@ function pickScope(id, opts){
   // on load) doesn't linger and update the wrong repo. The bottom apply bar is the review
   // control for multi-site scopes.
   if(String(id).indexOf('__one:')!==0){ $('#finderInput').val(''); $('#finderMatch').hide().empty(); }
+  // The "Filter sites…" box narrows the CURRENT list by name, so carrying it into a new scope
+  // hides sites for a reason that is no longer on screen — at its worst it filtered out the one
+  // site of a single-site scope, leaving a bare "No matching site." Reset it with the scope.
+  if(STATE.query){ STATE.query=''; $('#filterInput').val(''); }
   renderGroupTrigger();
   var repos = scopedRepos();
   // auto-scan for groups & single site; manual for very large "all sites"
@@ -1325,6 +1329,10 @@ function renderTable(){
 
 function emptyMsg(){
   if(STATE.activeGroup==='__none') return 'Find a site above, or pick a saved group to get started.';
+  // Name it: an empty list is otherwise indistinguishable from "nothing here", when in fact a
+  // filter the user may have typed some time ago is doing the hiding.
+  if(STATE.query) return 'Nothing matches “'+esc(STATE.query)+'” — clear the filter box to see '
+    + (STATE.activeGroup.indexOf('__one:')===0 ? esc(STATE.activeGroup.slice(6)) : 'these sites') + '.';
   if(STATE.filter!=='all') return 'No '+STATE.filter+' sites match these filters.';
   if(STATE.activeGroup.indexOf('__one:')===0) return 'No matching site.';
   if(STATE.activeGroup!=='__all' && !scopedRepos().length) return 'This group has no sites yet. Add sites with the folder + button on a row.';
