@@ -1390,6 +1390,21 @@ function syncSelAll(){
 // ---------------- popovers ----------------
 function closeAllPopovers(){ $('#svnApp .pop-backdrop, #svnApp .pop').remove(); $('#svnApp .site-btn.on').removeClass('on'); if(typeof closeCtxMenu==='function') closeCtxMenu(); closeGroupMenu(); $('#finderDd').removeClass('show'); }
 
+// Keep a popover inside the window. It hangs below its button by default, which runs off the
+// bottom for rows low in the page — and since it is position:fixed there is nothing to scroll to
+// reach the rest, so the "New group with this site" button became unclickable once enough groups
+// existed. Flip it above the button when there is more room there, and cap its height to the
+// space actually available so a long group list scrolls inside the popover instead.
+function placePop($p, rect){
+  var M=12, GAP=6, vh=window.innerHeight;
+  var below=vh-rect.bottom-GAP-M, above=rect.top-GAP-M;
+  if($p.outerHeight()<=below || below>=above){
+    $p.css({top:(rect.bottom+GAP)+'px', bottom:'auto', maxHeight:Math.max(140,below)+'px'});
+  } else {
+    $p.css({top:'auto', bottom:(vh-rect.top+GAP)+'px', maxHeight:Math.max(140,above)+'px'});
+  }
+}
+
 function openAddGroupPop(repo, anchor){
   closeAllPopovers();
   var rect = anchor.getBoundingClientRect();
@@ -1406,6 +1421,7 @@ function openAddGroupPop(repo, anchor){
   html += '<div class="rail-sep"></div><button class="btn ghost grp-new" data-newgroup-repo="'+esc(repo)+'">'+icon('folderPlus',16)+' New group with this site</button>';
   html += '</div>';
   $('#svnApp').append(html);
+  placePop($('#svnApp .pop').last(), rect);
 }
 
 function openActionsPop(repo, anchor){
@@ -1429,6 +1445,7 @@ function openActionsPop(repo, anchor){
   });
   html += '</div>';
   $('#svnApp').append(html);
+  placePop($('#svnApp .pop').last(), rect);   // same overflow problem: 8 actions off a bottom row
 }
 
 // ---------------- domain right-click context menu ----------------
