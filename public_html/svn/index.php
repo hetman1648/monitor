@@ -2579,6 +2579,11 @@ function openDevTools(repo){
 // Dev copy: set up a full working copy of a site on the dev server (slayer) under the
 // developer's own account — files (svn checkout), database (from nightly backup) and images.
 var DC_JOB=null, DC_POLL=null, DC_OPEN_REPO=null, DC_IMG_POLL=null, DC_IMG_SEEN=false, DC_IMG_GRACE=0;
+// "PHP 8 site" is pre-ticked from the LIVE site's PHP version once the status call returns, but
+// only until the developer touches it — after that their choice wins (DC_PHP8_TOUCHED). The
+// auto-tick re-uses the change handler to refresh the dev links, so DC_PHP8_SILENT marks that
+// programmatic trigger as "not the user".
+var DC_PHP8_TOUCHED=false, DC_PHP8_SILENT=false;
 function dcStopPoll(){ if(DC_POLL){ clearInterval(DC_POLL); DC_POLL=null; } }
 function dcStopImgPoll(){ if(DC_IMG_POLL){ clearInterval(DC_IMG_POLL); DC_IMG_POLL=null; } }
 function dcBytes(n){ n=+n||0; if(n>=1073741824) return (n/1073741824).toFixed(1)+' GB'; if(n>=1048576) return (n/1048576).toFixed(0)+' MB'; if(n>=1024) return (n/1024).toFixed(0)+' KB'; return n+' B'; }
@@ -2645,7 +2650,7 @@ function openDevCopy(repo){
     : '<div class="checkbox-group"><input type="checkbox" id="dcFiles" checked><label for="dcFiles">Copy files (svn checkout)</label></div>'
       + '<div class="checkbox-group"><input type="checkbox" id="dcDB" checked><label for="dcDB">Copy database (latest nightly backup)</label></div>'
       + '<div class="checkbox-group"><input type="checkbox" id="dcImg" checked><label for="dcImg">Copy images<span class="dc-img-note" id="dcImgNote"></span></label></div>'
-      + '<div class="checkbox-group"><input type="checkbox" id="dcPhp8"><label for="dcPhp8">PHP 8 site (use ab8.sayuconnect.com)</label></div>';
+      + '<div class="checkbox-group"><input type="checkbox" id="dcPhp8"><label for="dcPhp8">PHP 8 site (use ab8.sayuconnect.com)<span class="dc-img-note" id="dcPhp8Note"></span></label></div>';
   modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon(lib?'branch':'copy',21)+'</div>'
     + '<div style="min-width:0"><h3>Dev copy</h3><p>'+(lib?'Update the shared library in your slayer projects':'Set up a dev copy on slayer under your account')+' · <span class="mono">'+esc(repo)+'</span></p></div>'
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
@@ -2660,8 +2665,24 @@ function openDevCopy(repo){
     + '<div class="modal-foot"><div class="mf-grow" id="dcFoot"></div>'
     + '<button type="button" class="btn ghost" id="dcStopBtn" style="display:none">Stop</button>'
     + '<button class="btn solid" id="dcStart" data-repo="'+esc(repo)+'">'+(lib?'Update library':'Start dev copy')+'</button></div></div>');
+  DC_PHP8_TOUCHED=false;   // fresh popup: let the live PHP version decide again
   dcRestoreState(repo);
   dcLoadStatus(repo);
+}
+// Pre-tick "PHP 8 site" to match the live site, and say where that came from. Silent about it when
+// the version couldn't be read (leave the box alone) or on a library repo (no dev vhost at all).
+function dcApplyLivePhp(d, repo){
+  var $c=$('#dcPhp8'), $n=$('#dcPhp8Note');
+  if(!$c.length || isLibRepo(repo)) return;
+  if(!d || !d.ok || !d.live_php){ $n.text(''); return; }
+  $n.text(' live site runs PHP '+d.live_php);
+  if(DC_PHP8_TOUCHED) return;
+  var want=!!d.live_php8;
+  if($c.is(':checked')!==want){
+    DC_PHP8_SILENT=true;
+    $c.prop('checked', want).trigger('change');   // trigger: keeps the dev-site/admin links in step
+    DC_PHP8_SILENT=false;
+  }
 }
 // On open (incl. after a page refresh): resume a still-running dev-copy job and reflect any
 // in-progress image copy (progress bar + the "Copy images" box disabled so we don't start a 2nd).
@@ -2701,6 +2722,7 @@ function dcDevLinkHtml(repo, adminPath, adminQuery){
 function dcStatusRow(ic, label, val){ return '<div class="dcs-row"><span class="dcs-ic">'+icon(ic,15)+'</span><span class="dcs-label">'+label+'</span><span class="dcs-val">'+val+'</span></div>'; }
 function dcRenderStatus(d, repo){
   var $s=$('#dcStatus'); if(!$s.length) return;
+  dcApplyLivePhp(d, repo);   // before the markup below, so the dev links are built with the right host
   var lib=isLibRepo(repo);
   var ap=(d&&d.admin_path)||'', aq=(d&&d.admin_query)||'';
   $s.data('adminPath', ap).data('adminQuery', aq);   // stash so the PHP 8 toggle can rebuild the admin href
@@ -3355,6 +3377,7 @@ $(function(){
   });
   // Keep the "Open dev site" / "Open admin" links in step with the PHP 8 toggle (-> <subdomain>8.sayuconnect.com).
   $(document).on('change', '#dcPhp8', function(){
+    if(!DC_PHP8_SILENT) DC_PHP8_TOUCHED=true;   // a manual choice is never overridden afterwards
     if(!DC_OPEN_REPO) return;
     var php8=$(this).is(':checked'), $s=$('#dcStatus');
     $s.find('.dcs-site').attr('href', devSiteUrl(DC_OPEN_REPO, php8));

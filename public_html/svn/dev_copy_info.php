@@ -18,6 +18,8 @@
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+include_once ("./svn_repo_support.php");
+include_once ("./svn_hosts.php");
 
 header("Content-Type: application/json");
 function dcinfo_json($a) { echo json_encode($a); exit; }
@@ -125,10 +127,16 @@ $exists = ($g('exists') === '1');
 
 $dev_url = ($subdomain !== '') ? ('https://' . $subdomain . '.sayuconnect.com/' . $repository . '/') : '';
 
+// Which PHP the LIVE site runs on, so the popup can pre-tick "PHP 8 site" instead of making the
+// developer know (and remember) it. '' = couldn't tell, and the box is left as the user set it.
+$live_php = svn_live_php_version($repository);
+
 dcinfo_json(array(
 	"ok"          => true,
 	"exists"      => $exists,
 	"dev_url"     => $dev_url,
+	"live_php"    => $live_php,
+	"live_php8"   => ($live_php !== '' && version_compare($live_php, '8.0', '>=')),
 	"admin_path"  => $admin_path,
 	"admin_query" => $admin_query,
 	"rev"         => $g('rev'),

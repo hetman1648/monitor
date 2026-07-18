@@ -507,3 +507,55 @@ function svn_site_admin(&$db, $repository) {
 	}
 	return array('clientId' => $cid, 'adminUrl' => $url);
 }
+
+/**
+ * Which PHP version the LIVE site actually runs on, e.g. "8.1" (or '' if it can't be told).
+ *
+ * The authoritative answer is which FPM pool the webserver hands .php files to. The mere
+ * EXISTENCE of a socket proves nothing — most sites have pools provisioned for both 5.6 and
+ * 8.1 — and neither does the presence of a version string in the vhost: watches.co.uk carries
+ * its old 5.6 SetHandler commented out above the live 8.1 one. So only lines that are actually
+ * in force count, hence the "no # before the directive" match.
+ *
+ * web1 serves with Apache (SetHandler "proxy:unix:/run/php/php8.1-<site>-fpm.sock|…"); the
+ * dedicated boxes serve with nginx (fastcgi_pass unix:/run/php/phpX.Y-…) — except rubberduck,
+ * where nginx proxies to a local Apache, so no PHP version appears in its nginx conf at all.
+ * There the per-box CLI version is the honest answer (these boxes run a single PHP).
+ *
+ * Best-effort by design: anything unreadable or ambiguous yields '' and callers carry on.
+ */
+function svn_live_php_version($repo) {
+	if ($repo === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $repo) || strpos($repo, '..') !== false) return '';
+	// Uncommented handler lines only: optional leading whitespace, then the directive itself.
+	$re_apache = '^[[:space:]]*SetHandler[^#]*php[0-9]+\\.[0-9]+';
+	$re_nginx  = '^[[:space:]]*fastcgi_pass[^#]*php[0-9]+\\.[0-9]+';
+	$host = svn_host_for($repo);   // non-null => off-web1
+	$out  = array();
+	if ($host) {
+		$rq = escapeshellarg($repo);
+		$remote = 'sudo grep -rhE ' . escapeshellarg($re_nginx) . ' /etc/nginx/sites-enabled/ 2>/dev/null;'
+			. ' sudo grep -rhE ' . escapeshellarg($re_apache) . ' /etc/apache2/sites-enabled/' . $rq . '* 2>/dev/null';
+		@exec(svn_host_ssh($host) . ' ' . escapeshellarg($remote) . ' 2>/dev/null', $out);
+		if (!svn_php_version_from_lines($out)) {
+			// nginx→Apache proxy (rubberduck): nothing names a version. Ask the box itself.
+			$out = array();
+			@exec(svn_host_ssh($host) . ' ' . escapeshellarg('php -v 2>/dev/null | head -1') . ' 2>/dev/null', $out);
+			if ($out && preg_match('/PHP\s+([0-9]+\.[0-9]+)/', implode(' ', $out), $m)) return $m[1];
+			return '';
+		}
+	} else {
+		// The site's own vhosts only — never the whole tree, or a neighbour would answer for it.
+		@exec('grep -rhE ' . escapeshellarg($re_apache) . ' /etc/apache2/sites-enabled/' . escapeshellarg($repo) . '-*.conf 2>/dev/null', $out);
+	}
+	return svn_php_version_from_lines($out);
+}
+
+/** Highest phpX.Y named across already-filtered handler lines, or '' if none. */
+function svn_php_version_from_lines($lines) {
+	$best = '';
+	foreach ((array) $lines as $line) {
+		if (!preg_match_all('/php([0-9]+\.[0-9]+)/', $line, $mm)) continue;
+		foreach ($mm[1] as $v) { if ($best === '' || version_compare($v, $best, '>')) $best = $v; }
+	}
+	return $best;
+}
