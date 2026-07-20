@@ -883,9 +883,11 @@ try { STATE.hideEdited = (localStorage.getItem(HIDE_EDITED_KEY) === '1'); } catc
 function saveHideEdited(){ try { localStorage.setItem(HIDE_EDITED_KEY, STATE.hideEdited ? '1' : '0'); } catch(e){} }
 // The files to SHOW for a site. "Edited on live" (M) means someone changed the file directly on
 // the server; it isn't an incoming change, so it's noise when you're reviewing what to deploy.
+// But a file that is edited on live AND out of date (f.incoming) has a real pending deploy — keep
+// it, or the filter would hide the very update the site is behind on (it read as "Up to date").
 function siteFiles(s){
   var files = (s && s.files) || [];
-  return STATE.hideEdited ? files.filter(function(f){ return f.kind !== 'M'; }) : files;
+  return STATE.hideEdited ? files.filter(function(f){ return f.kind !== 'M' || f.incoming; }) : files;
 }
 // How many of a site's changes are live edits (hidden by the toggle).
 function siteHiddenCount(s){ return ((s && s.files) || []).length - siteFiles(s).length; }

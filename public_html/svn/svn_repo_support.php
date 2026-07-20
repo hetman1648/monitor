@@ -345,7 +345,11 @@ function svn_status_parse_line($row) {
 	if ($status === '') {
 		return null; // nothing actionable on this line
 	}
-	return array($status, $rev, $fullpath);
+	// A line can be BOTH — e.g. "M * 618": edited on the live site AND a newer revision waiting in
+	// SVN. The local letter wins for $status (it describes the file on disk), but the "*" is the
+	// thing the updater exists to surface: there is a deploy to do. Carry it separately so it isn't
+	// lost, otherwise an M-and-out-of-date file reads as a mere live edit and its update goes unseen.
+	return array($status, $rev, $fullpath, $out_of_date);
 }
 
 /**
@@ -372,15 +376,28 @@ function svn_status_parse_files($res) {
 			continue;
 		}
 		list($code, $version, $fullpath) = $parsed;
+		$out_of_date = !empty($parsed[3]);
 		$fullpath = str_replace('\\', '/', $fullpath);
 		$file_name = basename($fullpath);
 		$dir = dirname($fullpath);
 		$file_path = ($dir === '.' || $dir === '') ? '' : $dir . '/';
+		$label = isset($maps['labels'][$code]) ? $maps['labels'][$code] : $code;
+		$tip   = isset($maps['tips'][$code]) ? $maps['tips'][$code] : '';
+		$badge = isset($maps['slugs'][$code]) ? $maps['slugs'][$code] : 'default';
+		// out-of-date AND a local change ("M *"): it's deployable, so present it as out of date
+		// (the actionable state) while still naming the live edit, and badge it as an incoming
+		// change so the "Edited on live" filter never hides a pending deploy.
+		if ($out_of_date && $code !== '*') {
+			$label = 'Out of date · ' . strtolower($label);
+			$tip   = 'A newer version is waiting in SVN — updating deploys it. The live file also has local changes, which the update will merge in.';
+			$badge = 'not-on-server';
+		}
 		$files[] = array(
 			'kind'         => $code,
-			'status'       => isset($maps['labels'][$code]) ? $maps['labels'][$code] : $code,
-			'status_tip'   => isset($maps['tips'][$code]) ? $maps['tips'][$code] : '',
-			'status_badge' => isset($maps['slugs'][$code]) ? $maps['slugs'][$code] : 'default',
+			'incoming'     => ($out_of_date || $code === '*'),
+			'status'       => $label,
+			'status_tip'   => $tip,
+			'status_badge' => $badge,
 			'version'      => $version,
 			'file_name'    => $file_name,
 			'file_path'    => $file_path,
