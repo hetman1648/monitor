@@ -297,6 +297,9 @@ html.dark-mode{
 #svnApp .funtrack:hover{ color:var(--warn); border-color:var(--warn); background:var(--warn-bg); }
 #svnApp .fdel{ display:inline-flex; align-items:center; gap:4px; margin-left:8px; color:var(--muted-2); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid transparent; border-radius:7px; cursor:pointer; transition:.12s; }
 #svnApp .fdel:hover{ color:var(--err); border-color:var(--err); background:var(--err-bg); }
+#svnApp .fresolve{ display:inline-flex; align-items:center; gap:4px; margin-left:8px; color:var(--warn); font-weight:700; font-size:12.5px; white-space:nowrap; padding:3px 8px; border:1px solid var(--warn); border-radius:7px; cursor:pointer; transition:.12s; }
+#svnApp .fresolve:hover{ color:#fff; background:var(--warn); }
+#svnApp .res-alt{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
 #svnApp .col-diff{ white-space:nowrap; }
 #svnApp .ig-mask{ margin-top:14px; }
 #svnApp .ig-mask-lbl{ display:block; font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); margin-bottom:5px; }
@@ -1282,7 +1285,13 @@ function renderTable(){
         // Untracked ("? Not in SVN") files have nothing to diff — offer Ignore instead, which
         // svn:ignores them so they stop cluttering the update list.
         var untracked = (f.kind === '?');
-        var lastCell = (untracked
+        var conflicted = (f.kind === 'C');
+        var lastCell = conflicted
+          // A conflicted file has svn's markers written into it (the live page is broken until this
+          // is cleared) — the one action that matters is picking a side, so lead with Resolve.
+          ? '<button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(rel)+'">View diff</button>'
+            + '<button class="fresolve" data-res-repo="'+esc(r)+'" data-res-file="'+esc(rel)+'" title="Resolve this conflict — take SVN’s version or keep the live one">'+icon('check',12)+' Resolve</button>'
+          : (untracked
           ? '<button class="fignore" data-ig-repo="'+esc(r)+'" data-ig-file="'+esc(rel)+'" title="Add to svn:ignore so this file stops showing here">'+icon('x',12)+' Ignore</button>'
           : '<button class="vdiff" data-diff-repo="'+esc(r)+'" data-diff-file="'+esc(rel)+'">View diff</button>'
             // Tracked file: svn:ignore is a no-op on it, so offer untrack+ignore instead —
@@ -2429,6 +2438,46 @@ function doDelete(repo, file, kind){
     });
 }
 
+// ---------------- resolve a conflicted file ----------------
+// A conflict has two honest outcomes; make the choice explicit rather than picking a side silently.
+function doResolve(repo, file){
+  if(!repo || !file) return;
+  var base = file.split('/').pop();
+  uiConfirm({icon:'alert', title:'Resolve conflict in '+base,
+    confirmLabel:'Take SVN’s version', cancelLabel:'Cancel',
+    foot:'or keep the live one →',
+    bodyHtml:'<span class="mono">'+esc(file)+'</span> on <span class="mono">'+esc(repo)+'</span> changed both on the live site and in SVN, so <span class="mono">svn update</span> could not merge them. It has conflict markers written into it right now, so the live page is broken until this is cleared.'
+      + '<br><br><b>Take SVN’s version</b> — the live file becomes exactly what is committed; the conflicting live edit is discarded. The path goes clean/up to date. This is the normal deploy outcome.'
+      + '<br><br><b>Keep the live version</b> — the file stays as it is on disk (the incoming change is dropped for it); it then reads as a local edit against SVN, which you can commit separately.'
+      + '<div class="res-alt"><button type="button" class="btn ghost" id="resMine">'+icon('undo',15)+' Keep the live version</button></div>'},
+    function(){ resolveRun(repo, file, 'theirs'); });
+  // The second choice lives inside the dialog; uiConfirm empties #confirmHost on click, so fire
+  // our own run and close the dialog by hand.
+  $('#resMine').off('click').on('click', function(){ closeConfirm(); resolveRun(repo, file, 'mine'); });
+}
+function resolveRun(repo, file, side){
+  var base = file.split('/').pop();
+  var mine = (side === 'mine');
+  $('#sourceHost').html('<div class="scrim scrim3" data-source-scrim="1"><div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('check',21)+'</div>'
+    + '<div style="min-width:0"><h3>Resolve '+esc(base)+'</h3><p class="mono" style="font-size:12px">'+esc(repo)+' · '+esc(file)+'</p></div>'
+    + '<button class="mh-x" data-close-source="1">'+icon('x',17)+'</button></div>'
+    + '<div class="modal-body"><div id="resBody"><span class="spin"></span> Resolving…</div></div>'
+    + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-source="1">Close</button></div></div></div>');
+  $.post('svn_resolve.php', {repository:repo, file:file, side:side}, function(d){
+    if(d && d.ok){
+      $('#resBody').html('<div class="svn-modal-message">'
+        + (mine
+            ? 'Kept the live version of <span class="mono">'+esc(base)+'</span>. It now reads as a local edit against SVN — commit it if it should go into the repository.'
+            : 'Resolved <span class="mono">'+esc(base)+'</span> to SVN’s committed version. The path is clean again.')
+        + '</div>');
+      enqueueScan([repo], true);
+    } else {
+      $('#resBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&(d.error||d.output))||'Could not resolve the conflict.')+'</div>'
+        + ((d&&d.output)?'<div class="info-pre mono" style="margin-top:10px;white-space:pre-wrap">'+esc(d.output)+'</div>':''));
+    }
+  }, 'json').fail(function(){ $('#resBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
+}
+
 function doRevert(repo, rev){
   if(!repo || !rev) return;
   uiConfirm({icon:'undo', danger:true, title:'Revert '+repo+' to r'+rev+'?', confirmLabel:'Revert to r'+rev,
@@ -3155,6 +3204,7 @@ $(function(){
   $(document).on('click', '.fignore', function(e){ e.stopPropagation(); doIgnore($(this).attr('data-ig-repo'), $(this).attr('data-ig-file')); });
   $(document).on('click', '.fdel', function(e){ e.stopPropagation(); doDelete($(this).attr('data-del-repo'), $(this).attr('data-del-file'), $(this).attr('data-del-kind')); });
   $(document).on('click', '.funtrack', function(e){ e.stopPropagation(); doUntrack($(this).attr('data-ut-repo'), $(this).attr('data-ut-file'), $(this).attr('data-ut-kind')); });
+  $(document).on('click', '.fresolve', function(e){ e.stopPropagation(); doResolve($(this).attr('data-res-repo'), $(this).attr('data-res-file')); });
   $(document).on('click', '#scanAllBtn, #scanBar #scanStop', function(){ if(this.id==='scanStop'){ stopScan(); } else { autoSelectUpdates=false; enqueueScan(visibleRepos(), false); } });
   $(document).on('click', '[data-actions]', function(e){ e.stopPropagation(); $(this).addClass('on'); openActionsPop($(this).attr('data-actions'), this); });
   $(document).on('click', '[data-addgroup]', function(e){ e.stopPropagation(); $(this).addClass('on'); openAddGroupPop($(this).attr('data-addgroup'), this); });
