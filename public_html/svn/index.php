@@ -255,6 +255,8 @@ html.dark-mode{
 #svnApp .svnctx-pending{ pointer-events:none; opacity:.6; }
 #svnApp .svnctx-pending .svnctx-ic{ color:var(--muted-2); }
 #svnApp .svnctx-disabled{ pointer-events:none; opacity:.4; }
+#svnApp .svnctx-danger:hover{ background:var(--err-bg); color:var(--err); }
+#svnApp .svnctx-danger:hover .svnctx-ic{ color:var(--err); }
 #svnApp .host{ cursor:context-menu; }
 #svnApp .svnctx-toast{ position:fixed; z-index:61; background:var(--ink); color:var(--card); font-size:12.5px; font-weight:700; padding:7px 12px; border-radius:8px; box-shadow:var(--shadow); pointer-events:none; opacity:0; transition:opacity .12s; }
 #svnApp .svnctx-toast.show{ opacity:.96; }
@@ -1490,6 +1492,17 @@ function openDomainCtx(repo, x, y){
       + (sub?'<span class="svnctx-sub mono">'+esc(sub)+'</span>':'')+'</button>';
   }
   var adminCls = pending ? ' svnctx-pending' : (admin ? '' : ' svnctx-disabled');
+  // "Remove from group" only makes sense while a real saved group is the current scope (not
+  // All sites, not a single site) and this repo is actually in it.
+  var ag = STATE.activeGroup, curG = null;
+  if(ag !== '__none' && ag !== '__all' && String(ag).indexOf('__one:') !== 0){
+    var g = groupById(ag);
+    if(g && g.siteIds.indexOf(repo) !== -1) curG = g;
+  }
+  // Already showing just this site? Then "Only this site" is a no-op — leave it out.
+  var soloed = (String(ag) === '__one:' + repo);
+  var siteItems = (soloed ? '' : item('open-single','Only this site','branch'))
+    + (curG ? item('remove-group','Remove from group','x', curG.name, ' svnctx-danger') : '');
   var html = '<div class="svnctx" data-ctxrepo="'+esc(repo)+'">'
     + '<div class="svnctx-head mono">'+esc(repo)+'</div>'
     + '<div class="svnctx-sec">Copy</div>'
@@ -1499,6 +1512,7 @@ function openDomainCtx(repo, x, y){
     + '<div class="svnctx-sec">Open</div>'
     + item('open-url','URL','link')
     + item('open-admin','Admin','login', '', adminCls)
+    + (siteItems ? '<div class="svnctx-sec">This site</div>' + siteItems : '')
     + '</div>';
   var $m = $(html).appendTo('#svnApp');
   $m.css({left:x+'px', top:y+'px'});
@@ -3232,6 +3246,21 @@ $(function(){
     else if(act==='copy-admin'){ if(!admin) return; ctxCopy(adminPathFromUrl(admin), x, y, 'admin path'); }
     else if(act==='open-url')    window.open(domainFullUrl(repo), '_blank', 'noopener');
     else if(act==='open-admin'){ if(!admin) return; window.open(admin, '_blank', 'noopener'); }
+    // Scope the page down to this one site (same as finding it by name -> #d-<repo>).
+    else if(act==='open-single'){ closeCtxMenu(); openSingle(repo); return; }
+    // Drop it from the group currently being viewed. Reversible from the folder+ popover, so no
+    // confirm — but the row vanishes from the list, so say what happened.
+    else if(act==='remove-group'){
+      var gid = STATE.activeGroup, g = groupById(gid);
+      closeCtxMenu();
+      if(!g) return;
+      groupsAction({action:'remove_site', id:gid, repository:repo}, function(){
+        delete STATE.sel[repo];
+        renderTable(); renderApplyBar();
+        ctxToast(x, y, 'Removed from “'+g.name+'”');
+      });
+      return;
+    }
     closeCtxMenu();
   });
 
