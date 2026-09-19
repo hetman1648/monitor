@@ -65,6 +65,85 @@ function svn_backup_job_base() {
 }
 
 /**
+ * Shell snippet describing an images tree, written so it can never walk a huge one.
+ *
+ * A dev copy's public_html/images is frequently a BIND MOUNT of the shared image store
+ * rather than a copy of it (a dozen of them on slayer). du/find there traverse millions
+ * of files - restaurantsupplystore.co.uk is 2.1M, ~13 minutes for the find alone - which
+ * is far past the pool's 300s request_terminate_timeout, so the request dies and the page
+ * only ever sees a 502. A mount is reported as a mount and left unmeasured; anything else
+ * is measured under `timeout`, and an expiry reports nothing rather than holding on.
+ *
+ * $dir_expr must already be shell-quoted. Emits key=value lines: img_present, img_mtime,
+ * then either img_mount=1, or img_bytes + img_count (both omitted if du ran out of time).
+ * du printing only its final total is what makes emptiness the timeout signal; the find is
+ * only reached once du has proved the tree is small enough to walk.
+ */
+function svn_images_probe_sh($dir_expr, $sudo = '', $seconds = 5) {
+	$s = (int) $seconds;
+	$pre = ($sudo !== '') ? (rtrim($sudo) . ' ') : '';
+	return 'if [ -d ' . $dir_expr . ' ]; then' . "\n"
+		. '  echo "img_present=1"' . "\n"
+		. '  echo "img_mtime=$(stat -c %Y ' . $dir_expr . ' 2>/dev/null)"' . "\n"
+		. '  if mountpoint -q ' . $dir_expr . ' 2>/dev/null; then' . "\n"
+		. '    echo "img_mount=1"' . "\n"
+		. '  else' . "\n"
+		. '    IB=$(' . $pre . 'timeout ' . $s . ' du -sb ' . $dir_expr . ' 2>/dev/null | cut -f1)' . "\n"
+		. '    if [ -n "$IB" ]; then' . "\n"
+		. '      echo "img_bytes=$IB"' . "\n"
+		. '      echo "img_count=$(' . $pre . 'timeout ' . ($s * 2) . ' find ' . $dir_expr . ' -type f 2>/dev/null | wc -l)"' . "\n"
+		. '    fi' . "\n"
+		. '  fi' . "\n"
+		. 'else' . "\n"
+		. '  echo "img_present=0"' . "\n"
+		. 'fi';
+}
+
+/**
+ * Size in bytes of a site's LIVE images tree, as the yardstick a dev copy's own images tree
+ * is measured against. du over a large tree is costly and the source barely changes, so the
+ * answer is cached for an hour beside the job state.
+ *
+ * The tree lives on whichever server hosts the site: for an off-web1 site (svn_site_host_map)
+ * web1 holds at most an empty stub - restaurantsupplystore.co.uk is 8KB here and the real tree
+ * is on rss - so sizing the local path made every such site's "of X live" figure and image-copy
+ * percentage meaningless. Measure it on the site's own host instead.
+ *
+ * Returns -1 when the size is unknown: no images folder, a bind mount (nothing of our own to
+ * measure), or du ran out of time. That answer is cached briefly too, so a slow tree doesn't
+ * cost an ssh round-trip on every poll.
+ */
+function svn_site_images_bytes($repository) {
+	$repository = (string) $repository;
+	if (!preg_match('/^[A-Za-z0-9._-]+$/', $repository) || strpos($repository, '..') !== false) return -1;
+	$cache = svn_backup_job_base() . "/imgsrc-" . md5($repository) . ".json";
+	$c = @json_decode((string) @file_get_contents($cache), true);
+	if (is_array($c) && isset($c["t"], $c["bytes"])) {
+		$ttl = ((int) $c["bytes"] < 0) ? 300 : 3600;   // unknown: retry sooner, but not every poll
+		if (time() - (int) $c["t"] < $ttl) return (int) $c["bytes"];
+	}
+
+	$host = function_exists('svn_host_for') ? svn_host_for($repository) : null;
+	if ($host) {
+		$src_dir = svn_host_wc_dir($repository) . "/public_html/images";
+		if ($src_dir === "/public_html/images") return -1;      // host known but its wc_base isn't
+		$probe = 'mountpoint -q ' . escapeshellarg($src_dir) . ' 2>/dev/null && exit 0; '
+			. 'timeout 20 du -sb ' . escapeshellarg($src_dir) . ' 2>/dev/null';
+		$cmd = svn_host_ssh($host) . " " . escapeshellarg($probe) . " 2>/dev/null";
+	} else {
+		$src_dir = "/mnt/drive2/vhosts/" . $repository . "/public_html/images";
+		if (!is_dir($src_dir)) return -1;
+		$cmd = "timeout 20 du -sb " . escapeshellarg($src_dir) . " 2>/dev/null";
+	}
+
+	$o = array();
+	@exec($cmd, $o);
+	$bytes = (count($o) && preg_match('/^(\d+)/', $o[0], $m)) ? (int) $m[1] : -1;
+	@file_put_contents($cache, json_encode(array("t" => time(), "bytes" => $bytes)));
+	return $bytes;
+}
+
+/**
  * Resolve (and validate) the directory for a restore job id.
  * Job ids are our own hex tokens, so anything else is rejected - no path tricks.
  * Returns the absolute path, or null if the id is malformed.

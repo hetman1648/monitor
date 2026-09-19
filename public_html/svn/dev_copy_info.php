@@ -4,22 +4,34 @@
 
 	One SSH round-trip (as the dev's slayer login) gathers, best-effort:
 	  - files   : svn revision + last-changed date, and the working-copy dir mtime (last checkout/update)
-	  - images  : whether the images tree exists, its size, and the newest image mtime
+	  - images  : whether the images tree exists, how many files and bytes it holds, when it was
+	              last written, and whether that amounts to a real copy of the live tree - or,
+	              when it is a bind mount of the shared image store, that it is a mount (which
+	              is left unmeasured: walking one takes minutes, see svn_images_probe_sh)
 	  - database: the dev DB name (read back from the checked-out site's own config), its size,
 	              CREATE_TIME (import) and UPDATE_TIME (last write), and table count
 
 	Everything is guarded — a missing dev copy just yields exists=0; missing pieces come back empty.
 
 	@param repository
-	Returns { ok, exists, dev_url, rev, changed, files_mtime, img_present, img_bytes, img_mtime,
-	          db_name, db_bytes, db_create, db_update, db_tables }
+	Returns { ok, exists, dev_url, rev, changed, files_mtime, img_present, img_mount, img_count,
+	          img_bytes, img_src_bytes, img_copied, img_mtime, db_name, db_bytes, db_create,
+	          db_update, db_tables }
 */
 
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+include_once ("./svn_backups_support.php");
 include_once ("./svn_repo_support.php");
 include_once ("./svn_hosts.php");
+
+// Nothing below writes to the session, and everything below is slow (ssh round-trips to slayer
+// and to the site's own host). PHP's file session handler holds an exclusive lock for the life
+// of the request, so holding it here serialises this endpoint against every other AJAX call the
+// popup makes - dev_copy_images.php would sit in exec() while this one sat in session_start(),
+// each waiting out the other's ssh. Let go of the lock now; $_SESSION stays readable.
+session_write_close();
 
 header("Content-Type: application/json");
 function dcinfo_json($a) { echo json_encode($a); exit; }
@@ -78,6 +90,10 @@ list($admin_path, $admin_query) = dcinfo_admin_parts($db, $repository);
 
 $proj = "/home/staff/" . $login . "/projects/" . $repository;
 
+// Images: mount-aware and time-bounded (see svn_images_probe_sh) - the tree is often a bind
+// mount of the shared image store, where a plain find/du runs for minutes and kills the request.
+$img_probe = svn_images_probe_sh(escapeshellarg($proj . "/public_html/images"));
+
 // Remote status script — emits key=value lines. $proj is built from a validated login + repository.
 // Base64-encoded and decoded on the far side so the nested sed/mysql quoting survives ssh intact.
 $script = <<<SH
@@ -85,14 +101,7 @@ P="{$proj}"
 if [ -d "\$P/public_html" ]; then echo "exists=1"; else echo "exists=0"; fi
 if [ -d "\$P/.svn" ]; then svn info "\$P" 2>/dev/null | sed -n "s/^Revision: /rev=/p; s/^Last Changed Date: /changed=/p"; fi
 echo "files_mtime=\$(stat -c %Y "\$P" 2>/dev/null)"
-IMG="\$P/public_html/images"
-if [ -d "\$IMG" ]; then
-  echo "img_present=1"
-  echo "img_mtime=\$(stat -c %Y "\$IMG" 2>/dev/null)"
-  echo "img_count=\$(ls -1 "\$IMG" 2>/dev/null | wc -l)"
-else
-  echo "img_present=0"
-fi
+{$img_probe}
 DBN=""
 for f in "\$P/config/database/development.php" "\$P/config/database/staging.php"; do
   if [ -f "\$f" ]; then DBN=\$(sed -n "s/.*'schema' *=> *'\\([^']*\\)'.*/\\1/p" "\$f" | head -1); [ -n "\$DBN" ] && break; fi
@@ -125,6 +134,19 @@ foreach ($out as $line) {
 $g = function ($k) use ($kv) { return isset($kv[$k]) ? $kv[$k] : ''; };
 $exists = ($g('exists') === '1');
 
+// Whether the images were really copied, which a file count on its own cannot answer: SVN
+// versions a handful of files under public_html/images (a .htaccess, a placeholder), so a
+// checkout with no copy at all still reports a non-empty folder. Weighing the tree against
+// the live one is what separates "the copy ran" from "this is just what the checkout brought".
+// Stays null when the live size is unknown, and the popup then makes no claim either way.
+// A bind mount of the shared store answers the question outright - the dev copy IS the live
+// tree - and is deliberately left unmeasured, so neither size is available to compare.
+$img_mount = ($g('img_mount') === '1');
+$img_bytes = (ctype_digit($g('img_bytes')) ? (int) $g('img_bytes') : -1);
+$img_src_bytes = $img_mount ? -1 : svn_site_images_bytes($repository);
+$img_copied = $img_mount ? true : null;
+if (!$img_mount && $img_bytes >= 0 && $img_src_bytes > 0) { $img_copied = ($img_bytes >= (int) ($img_src_bytes / 2)); }
+
 $dev_url = ($subdomain !== '') ? ('https://' . $subdomain . '.sayuconnect.com/' . $repository . '/') : '';
 
 // Which PHP the LIVE site runs on, so the popup can pre-tick "PHP 8 site" instead of making the
@@ -142,9 +164,13 @@ dcinfo_json(array(
 	"rev"         => $g('rev'),
 	"changed"     => $g('changed'),
 	"files_mtime" => ($g('files_mtime') !== '' ? (int) $g('files_mtime') : 0),
-	"img_present" => ($g('img_present') === '1'),
-	"img_count"   => ($g('img_count') !== '' ? (int) $g('img_count') : -1),
-	"img_mtime"   => ($g('img_mtime') !== '' ? (int) $g('img_mtime') : 0),
+	"img_present"   => ($g('img_present') === '1'),
+	"img_mount"     => $img_mount,
+	"img_count"     => ($g('img_count') !== '' ? (int) $g('img_count') : -1),
+	"img_bytes"     => $img_bytes,
+	"img_src_bytes" => $img_src_bytes,
+	"img_copied"    => $img_copied,
+	"img_mtime"     => ($g('img_mtime') !== '' ? (int) $g('img_mtime') : 0),
 	"db_name"     => $g('db_name'),
 	"db_bytes"    => ($g('db_bytes') !== '' ? (float) $g('db_bytes') : -1),
 	"db_create"   => $g('db_create'),

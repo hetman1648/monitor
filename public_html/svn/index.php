@@ -2697,6 +2697,9 @@ function dciPoll(repo){
   $.post('dev_copy_images.php', {repository:repo}, function(d){
     DC_IMG_BUSY=false;
     if(!d || !d.ok || DC_OPEN_REPO!==repo) return;
+    // Images are a bind mount of the shared store: no rsync will ever run for this site and
+    // there is no size to make progress against. Say so on the checkbox and stop watching.
+    if(d.mount){ $('#dcImgWrap').hide(); $('#dcImgNote').text(' — shared mount, nothing to copy'); dcStopImgPoll(); return; }
     var $w=$('#dcImgWrap'), pct=(d.pct!=null?d.pct:null);
     if(d.running){
       DC_IMG_SEEN=true; $w.show(); dcSetImgRunning(true);
@@ -2756,8 +2759,10 @@ function openDevCopy(repo){
     + '<button type="button" class="btn ghost" id="dcStopBtn" style="display:none">Stop</button>'
     + '<button class="btn solid" id="dcStart" data-repo="'+esc(repo)+'">'+(lib?'Update library':'Start dev copy')+'</button></div></div>');
   DC_PHP8_TOUCHED=false;   // fresh popup: let the live PHP version decide again
-  dcRestoreState(repo);
+  // Status first: it fills the panel the user is looking at, and both endpoints now release the
+  // session lock before their ssh work, so the image poll no longer queues in front of it.
   dcLoadStatus(repo);
+  dcRestoreState(repo);
 }
 // Pre-tick "PHP 8 site" to match the live site, and say where that came from. Silent about it when
 // the version couldn't be read (leave the box alone) or on a library repo (no dev vhost at all).
@@ -2829,8 +2834,28 @@ function dcRenderStatus(d, repo){
       + (imp?' · imported '+esc(dcRelTime(imp)):'')
       + (upd && Math.abs(upd-imp)>120?' · changed '+esc(dcRelTime(upd)):'');
   } else { dbVal='<span class="dcs-none">not imported</span>'; }
-  var imgVal=d.img_present ? ((d.img_count>=0?esc(d.img_count)+' item'+(d.img_count!==1?'s':''):'present')+(d.img_mtime?' · updated '+esc(dcRelTime(d.img_mtime)):''))
-    : '<span class="dcs-none">none</span>';
+  var imgVal;
+  if(!d.img_present){ imgVal='<span class="dcs-none">none</span>'; }
+  else if(d.img_mount){
+    // A bind mount of the shared image store: the dev copy IS the live tree, so there is
+    // nothing to copy and nothing to count — walking one runs for minutes (2.1M files on
+    // the supply-store sites), which is why the server reports the mount and measures nothing.
+    imgVal='shared mount · <span class="dcs-none">live images, nothing to copy</span>';
+  }
+  else {
+    var ip=[];
+    if(d.img_count>=0) ip.push(esc(d.img_count)+' file'+(d.img_count!==1?'s':''));
+    if(d.img_bytes>=0) ip.push(esc(dcBytes(d.img_bytes)));
+    // Both unknown means the measurement ran out of time rather than that the folder is empty.
+    var imgTxt=ip.length?ip.join(' · '):'present <span class="dcs-none">(too large to measure)</span>';
+    // img_copied false means the folder holds only what the checkout itself brought — say so,
+    // because the file count alone reads like a copy that worked.
+    if(d.img_copied===false){
+      imgVal='<span class="dcs-none">not copied</span> · '+imgTxt+(d.img_src_bytes>0?' of '+esc(dcBytes(d.img_src_bytes))+' live':'');
+    } else {
+      imgVal=imgTxt+(d.img_mtime?' · updated '+esc(dcRelTime(d.img_mtime)):'');
+    }
+  }
   $s.html(head + dcStatusRow('branch','Files',filesVal) + dcStatusRow('database','Database',dbVal) + dcStatusRow('copy','Images',imgVal));
 }
 function dcLoadStatus(repo){
