@@ -28,14 +28,17 @@ if ($shared && $svn_login !== '' && $svn_password !== '') {
 		if (!isset($servers[$s['key']])) continue;
 		$host = $servers[$s['key']];
 		$label = $host['ssh_host'];
-		$inner = 'cd ' . escapeshellarg($s['wc']) . ' && export LC_ALL=en_US.UTF-8 && '
-			. 'sudo svn update --force ' . $auth . ' 2>&1';
 		$out = array(); $rc = 0;
-		@exec(svn_host_ssh($host) . ' ' . escapeshellarg($inner) . ' 2>&1', $out, $rc);
+		@exec(svn_host_ssh($host) . ' ' . escapeshellarg(svn_shared_update_sh($s['wc'], $auth)) . ' 2>&1', $out, $rc);
 		$tail = trim(implode("\n", $out));
 		if ($tail === '') $tail = ($rc === 0) ? 'no output' : 'no response (exit ' . (int) $rc . ')';
-		// keep the response compact — the "Updated to revision N" / "At revision N" line is what matters
-		if (preg_match('/(Updated to revision \d+\.|At revision \d+\.|svn:.*)/', $tail, $mm)) $tail = $mm[1];
+		// keep the response compact: the relocate / skip notices and the "Updated to revision N" /
+		// "At revision N" / first svn error line are what matter
+		if (preg_match_all('/^(Relocated .*|SKIPPED .*|Updated to revision \d+\.|At revision \d+\.|svn: .*)$/m', $tail, $mm)) {
+			$keep = array(); $errs = 0;
+			foreach ($mm[1] as $line) { if (strpos($line, 'svn: ') === 0 && $errs++) continue; $keep[] = $line; }
+			$tail = implode('; ', $keep);
+		}
 		$res .= "\n" . $label . ": " . $tail;
 	}
 }

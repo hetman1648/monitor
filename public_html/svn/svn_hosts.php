@@ -178,6 +178,40 @@ function svn_shared_repo_deploys($repo) {
 	return isset($map[$repo]) ? $map[$repo] : array();
 }
 
+/**
+ * Shell script (run on the dedicated server, via svn_host_ssh) that updates one shared-repo working
+ * copy without ever merging into a file that was edited on that server.
+ *
+ * Every box carries its own uncommitted EnvironmentBaseParams.php (the hostname -> PRODUCTION branch
+ * that tells the shared library it's live). svn would happily merge an incoming change into such a
+ * file, and a conflict under --non-interactive is postponed: the markers land in live PHP and every
+ * site on the box goes down. So `svn status -u` runs first, and if any locally changed or conflicted
+ * path also has an incoming change the server is SKIPPED and the paths are named instead. A local edit
+ * that is already byte-identical to HEAD (a fix hand-applied on the box and then committed) is no
+ * clash: svn records it as merged, so it doesn't hold the update back.
+ *
+ * A WC still pointing at svn://localhost (no svnserve on the dedicated boxes, so every update failed)
+ * is relocated to web1's public svnserve first; relocate only rewrites the stored URL.
+ */
+function svn_shared_update_sh($wc, $auth) {
+	return 'cd ' . escapeshellarg($wc) . ' || exit 1; export LC_ALL=en_US.UTF-8; '
+		. 'root=$(sudo svn info --show-item repos-root-url . 2>&1) || { echo "$root" | head -n 1; exit 1; }; '
+		. 'case "$root" in svn://localhost/*) '
+		.   'sudo svn relocate svn://localhost/ svn://web1.sayu.co.uk/ ' . $auth . ' 2>&1 | head -n 2 && '
+		.   'echo "Relocated $root -> svn://web1.sayu.co.uk/${root#svn://localhost/}";; esac; '
+		. 'st=$(sudo svn status -u ' . $auth . ' 2>&1) || { echo "$st" | grep "^svn:" | head -n 2; exit 1; }; '
+		// col 1 = local state (M/C/R/D/!/~ = edited, conflicted, replaced, deleted, missing, obstructed),
+		// col 9 = '*' incoming; the path follows the working revision
+		. 'clash=""; while IFS= read -r p; do [ -n "$p" ] || continue; '
+		.   'if [ -f "$p" ] && [ "$(sudo svn cat -r HEAD ' . $auth . ' -- "$p" 2>/dev/null | md5sum)" = "$(sudo cat -- "$p" | md5sum)" ]; then continue; fi; '
+		.   'clash="${clash:+$clash, }$p"; '
+		. 'done <<EOF' . "\n"
+		. '$(printf "%s\n" "$st" | awk \'substr($0,1,1) ~ /[MCRD!~]/ && substr($0,9,1) == "*" { l = $0; sub(/^.{9} *[0-9-]* +/, "", l); print l }\')' . "\n"
+		. 'EOF' . "\n"
+		. 'if [ -n "$clash" ]; then echo "SKIPPED - incoming changes to files edited on this server, resolve by hand: $clash"; exit 0; fi; '
+		. 'sudo svn update --force ' . $auth . ' 2>&1';
+}
+
 /** SSH command prefix for a resolved host config (uses the monitor user's key). */
 function svn_host_ssh($host) {
 	$key   = "/mnt/drive2/vhosts/monitor.sayu.co.uk/.ssh/id_ed25519";

@@ -1580,6 +1580,16 @@ function openConfirmUpdate(){
 
 function runBatchUpdate(repos){
   var states = {}; repos.forEach(function(r){ states[r]='queued'; });
+  // Per-server lines from a shared repo's fan-out to the dedicated boxes (update_repository.php appends
+  // them after a '--- Shared repository' marker), e.g. "rss.sayu.co.uk: SKIPPED - ...". web1 itself
+  // can succeed while a box is skipped or unreachable, so those get shown and the row flagged.
+  var srvNotes = {};
+  function serverNotes(txt){
+    var i = String(txt||'').indexOf('--- Shared repository');
+    if(i === -1) return [];
+    return String(txt).slice(i).split('\n').slice(1).map(function(l){ return $.trim(l); }).filter(function(l){ return /^\S+: /.test(l); })
+      .map(function(l){ return {text:l, bad:/SKIPPED|svn: |no response|no output/.test(l)}; });
+  }
   function rowHtml(r){
     var st = states[r], s = STATE.sites[r];
     var right = '';
@@ -1587,18 +1597,20 @@ function runBatchUpdate(repos){
     else if(st==='updating') right = '<span class="pstate updating"><span class="spin"></span> Updating</span>';
     else if(st==='done') right = '<span class="pstate done"><span class="pcheck">'+icon('checkSm',12,2.4)+'</span> Done</span>';
     else if(st==='failed') right = '<span class="pstate failed"><span class="pfail">'+icon('x',11,2.4)+'</span> Failed</span>';
-    return '<div class="prow" data-prow="'+esc(r)+'"><div class="phost"><div class="h">'+esc(r)+'</div><div class="s mono">'+(s.headRev?'→ r'+esc(s.headRev):'')+'</div></div>'+right+'</div>';
+    else if(st==='partial') right = '<span class="pstate failed"><span class="pfail">'+icon('x',11,2.4)+'</span> Server skipped</span>';
+    var notes = (srvNotes[r]||[]).map(function(n){ return '<div class="s mono" style="white-space:normal;word-break:break-word;margin-top:3px;color:'+(n.bad?'var(--err)':'var(--muted)')+'">'+esc(n.text)+'</div>'; }).join('');
+    return '<div class="prow" data-prow="'+esc(r)+'"><div class="phost"><div class="h">'+esc(r)+'</div><div class="s mono">'+(s.headRev?'→ r'+esc(s.headRev):'')+'</div>'+notes+'</div>'+right+'</div>';
   }
   function render(done){
     var vals = Object.keys(states).map(function(k){return states[k];});
     var ok = vals.filter(function(v){return v==='done';}).length;
-    var fail = vals.filter(function(v){return v==='failed';}).length;
+    var fail = vals.filter(function(v){return v==='failed'||v==='partial';}).length;
     var head = done
       ? '<div class="mh-ico">'+icon('check',22)+'</div><div><h3>'+(fail?'Finished with errors':'All updates applied')+'</h3><p>'+ok+' succeeded'+(fail?' · '+fail+' failed':'')+'</p></div>'
       : '<div class="mh-ico"><span class="spin"></span></div><div><h3>Applying updates…</h3><p>Deploying to '+repos.length+' site'+(repos.length!==1?'s':'')+' in sequence.</p></div>';
     var summary = done ? '<div class="summary '+(fail?'mixed':'ok')+'"><div style="text-align:center;min-width:64px"><div class="s-big" style="color:var(--ok)">'+ok+'</div><div class="s-lbl">succeeded</div></div>'
       + (fail?'<div style="text-align:center;min-width:64px"><div class="s-big" style="color:var(--err)">'+fail+'</div><div class="s-lbl">failed</div></div>':'')
-      + '<div style="flex:1;display:flex;align-items:center;font-size:13.5px;color:var(--ink-soft);line-height:1.4">'+(fail?'Failed sites kept their previous revision — open their error log and retry.':'Every selected site is now live on the latest revision.')+'</div></div>' : '';
+      + '<div style="flex:1;display:flex;align-items:center;font-size:13.5px;color:var(--ink-soft);line-height:1.4">'+(fail?'Failed sites kept their previous revision — open their error log and retry. A skipped server kept its previous revision too; the line under the site says why.':'Every selected site is now live on the latest revision.')+'</div></div>' : '';
     modal('<div class="modal"><div class="modal-head">'+head+(done?'<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button>':'')+'</div>'
       + '<div class="modal-body">'+summary+repos.map(rowHtml).join('')+'</div>'
       + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" id="updDoneBtn" '+(done?'':'disabled')+' data-close-modal="1">'+(done?'Done':'Please wait…')+'</button></div></div>');
@@ -1616,8 +1628,9 @@ function runBatchUpdate(repos){
   function step(){
     if(i>=repos.length){ render(true); enqueueScan(repos, true); return; }
     var r = repos[i]; states[r]='updating'; render(false);
-    $.post('update_repository.php', {repository:r}, function(){
-      states[r]='done'; i++; setTimeout(step, 150);
+    $.post('update_repository.php', {repository:r}, function(txt){
+      srvNotes[r] = serverNotes(txt);
+      states[r] = srvNotes[r].some(function(n){ return n.bad; }) ? 'partial' : 'done'; i++; setTimeout(step, 150);
     }).fail(function(){ states[r]='failed'; i++; setTimeout(step, 150); });
   }
   setTimeout(step, 250);
