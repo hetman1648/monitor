@@ -21,12 +21,28 @@ if ($host) {
 	$log = svn_host_log_path($repository);
 	if ($log === '') { echo "Error log location not configured for this site yet."; exit; }
 	$ssh = svn_host_ssh($host);
+	$php_log = svn_host_php_log_path($repository);
 	// last 50: tail the log; critical: pull fatal/critical lines. tema uses sudo on these hosts.
+	// The log PHP errors land in (php_log_path, Apache's ssl_error.log on rss) is read too, since they
+	// never reach nginx's log. Each file gets its own tail so a noisy one can't crowd out the other; a
+	// missing file is simply skipped. That log can run to several GB a day (officesupplystore), so only
+	// its last 50MB is searched.
 	if ($last_50) {
 		$remote = "sudo tail -n 50 " . escapeshellarg($log);
+		if ($php_log !== '') $remote .= "; sudo tail -n 50 " . escapeshellarg($php_log) . " 2>/dev/null";
 		$empty  = "The error log is empty.";
 	} else {
-		$remote = "sudo grep -aiE 'fatal|critical|emerg|PHP (Fatal|Parse)' " . escapeshellarg($log) . " | tail -n 50";
+		// nginx tags its own severities as [crit]/[alert]/[emerg] (not the word "critical"), and a dead
+		// PHP backend shows up only as an upstream connect/timeout error. The TLS handshake/read failures
+		// nginx logs at [crit] are just scanners and broken clients, so they're dropped.
+		$remote = "sudo grep -aiE 'fatal|critical|\\[(crit|alert|emerg)\\]|PHP (Fatal|Parse)|connect\\(\\) failed|upstream timed out|no live upstreams|failed to make connection to backend' " . escapeshellarg($log)
+			. " | grep -avE 'SSL_(do_handshake|read|write|shutdown)\\(\\) failed' | tail -n 50";
+		if ($php_log !== '') {
+			// same bar as web1's daemon minus its catch-all ':error': PHP fatals/parse errors, ViArt DB
+			// errors, and Apache's own crit/alert/emerg
+			$remote .= "; sudo tail -c 50000000 " . escapeshellarg($php_log) . " 2>/dev/null"
+				. " | grep -aE 'PHP (Fatal|Parse) error|Database error|:(crit|alert|emerg)\\]' | tail -n 50";
+		}
 		$empty  = "No critical errors found.";
 	}
 	$out = array(); $rc = 0;

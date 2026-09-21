@@ -1904,11 +1904,17 @@ function logSevClass(s){ s=(s||'').toLowerCase();
 function logSevWeight(s){ return ({fatal:4,parse:4,warning:2,notice:1,deprecated:0,strict:0})[logSevClass(s)]||1; }
 function logApacheTime(tm){ var m=(tm||'').match(/^\w+\s+(\w+)\s+(\d+)\s+(\d+):(\d+)/); return m?(m[2]+' '+m[1]+' '+m[3]+':'+m[4]):''; }
 var LOG_MONTHS={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-// Parse an apache-style "[Sun Jul 05 18:18:15.28 2026]" prefix into epoch ms (0 if unparseable).
+// Parse a log line's leading timestamp (apache, nginx or PHP error_log format) into epoch ms (0 if unparseable).
 function logApacheEpoch(line){
-  var m=String(line).match(/^\[\w+\s+(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)(?:\.\d+)?\s+(\d+)\]/);
-  if(!m || !(m[1] in LOG_MONTHS)) return 0;
-  var d=new Date(+m[6], LOG_MONTHS[m[1]], +m[2], +m[3], +m[4], +m[5]);
+  line=String(line);
+  var d=null, m;
+  // apache: [Mon Sep 21 07:28:49.123456 2026]
+  if((m=line.match(/^\[\w+\s+(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)(?:\.\d+)?\s+(\d+)\]/)) && (m[1] in LOG_MONTHS)) d=new Date(+m[6], LOG_MONTHS[m[1]], +m[2], +m[3], +m[4], +m[5]);
+  // nginx (off-web1 sites): 2026/09/21 07:28:49 [error] ...
+  else if((m=line.match(/^(\d{4})\/(\d\d)\/(\d\d) (\d\d):(\d\d):(\d\d) /))) d=new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+  // PHP error_log: [21-Sep-2026 07:28:49 Europe/London] PHP Fatal error: ...
+  else if((m=line.match(/^\[(\d+)-(\w+)-(\d{4}) (\d\d):(\d\d):(\d\d)/)) && (m[2] in LOG_MONTHS)) d=new Date(+m[3], LOG_MONTHS[m[2]], +m[1], +m[4], +m[5], +m[6]);
+  if(!d) return 0;
   var t=d.getTime();
   return isNaN(t)?0:t;
 }

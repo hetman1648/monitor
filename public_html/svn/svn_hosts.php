@@ -1,7 +1,7 @@
 <?php
 /*
 	Where each SVN site is actually hosted, for the host-specific tools:
-	  - error.log   (get_logs.php)
+	  - error.log + PHP error log   (get_logs.php)
 	  - file diffs  (get_file_diff.php)
 	  - cron jobs   (get_cron.php / cron_manage.php)
 
@@ -24,6 +24,7 @@ function svn_site_host_map() {
 		'officesupplystore.co.uk'       => 'rss',
 		'caresupplystore.co.uk'         => 'rss',
 		'restaurantsupplystore.co.uk'   => 'rss',
+		'restaurantstore.co.uk'         => 'rss',
 
 		'puregusto.co.uk'               => 'puregusto',
 		'dev.puregusto.co.uk'           => 'puregusto',
@@ -50,6 +51,10 @@ function svn_host_servers() {
 			'ssh_host' => 'rss.sayu.co.uk',  'ssh_user' => 'tema',
 			'wc_base'  => '/mnt/drive2/vhosts',
 			'log_path' => '/var/log/vhosts/{repo}/nginx_error.log',
+			// Where PHP errors actually land: nginx proxies to Apache, which hands PHP to FPM via
+			// proxy_fcgi, so PHP's messages come back as Apache "AH01071: Got error 'PHP message: ...'"
+			// lines in the SSL vhost's error log. They never reach nginx_error.log.
+			'php_log_path' => '/var/log/vhosts/{repo}/ssl_error.log',
 		),
 		'puregusto' => array(
 			'ssh_host' => 'puregusto.co.uk', 'ssh_user' => 'tema',
@@ -79,6 +84,7 @@ function svn_site_cron_users() {
 		'officesupplystore.co.uk'       => 'offstore',
 		'caresupplystore.co.uk'         => 'csupstore',
 		'restaurantsupplystore.co.uk'   => 'rsstore',
+		'restaurantstore.co.uk'         => 'rstore',
 		'puregusto.co.uk'               => 'puregusto',
 		'coffeesupplies.co.uk'          => 'coffeesupp',
 		'dev.puregusto.co.uk'           => '',          // TODO: confirm crontab owner
@@ -107,6 +113,13 @@ function svn_host_log_path($repo) {
 	$h = svn_host_for($repo);
 	if (!$h || $h['log_path'] === '') return '';
 	return str_replace('{repo}', $repo, $h['log_path']);
+}
+
+/** Resolved log path where a hosted repo's PHP errors land (php_log_path), or '' if not configured. */
+function svn_host_php_log_path($repo) {
+	$h = svn_host_for($repo);
+	if (!$h || empty($h['php_log_path'])) return '';
+	return str_replace('{repo}', $repo, $h['php_log_path']);
 }
 
 /** Resolved working-copy dir for a hosted repo, or '' if not hosted/known. */
