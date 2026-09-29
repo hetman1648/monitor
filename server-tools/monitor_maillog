@@ -1,0 +1,59 @@
+#!/bin/bash
+# Mail-log reader for the Sayu Monitor SVN tool. Invoked ONLY via sudo by the 'monitor' web user.
+# Read-only access to the root-only postfix log. Two modes:
+#   monitor_maillog list <domain> [limit]   -> recent deliveries SENT FROM <domain>, one per line:
+#                                               "<time>\t<queue-id>\t<from>\t<to>\t<status>"
+#                                               (<time> exactly as logged: classic syslog or RFC3339)
+#   monitor_maillog raw  <domain> <qid>      -> the raw log lines for one queue-id, but ONLY if that
+#                                               message is owned by <domain> (DKIM/message-id) — this
+#                                               stops a caller reading another domain's mail by qid.
+# <domain> is validated (letters/digits/dot/dash) and only ever used inside a grep regex (dots
+# escaped); <qid> is validated alphanumeric. Nothing is eval'd or passed to a shell.
+set -uo pipefail
+
+mode="${1:-}"; dom="${2:-}"
+case "$dom" in ''|*[!A-Za-z0-9.-]*) echo "bad domain" >&2; exit 2 ;; esac
+LOG=/var/log/mail.log
+[ -r "$LOG" ] || { echo "no mail log" >&2; exit 3; }
+esc="$(printf '%s' "$dom" | sed 's/[.]/\\./g')"
+# Regex (fed to grep -iE) that marks a line as belonging to <domain>.
+own="DKIM-Signature.* d=${esc}[ );,]|message-id=<[^@>]*@([a-z0-9-]+\.)*${esc}>"
+
+case "$mode" in
+  list)
+    lim="${3:-100}"; case "$lim" in (''|*[!0-9]*) lim=100 ;; esac; [ "$lim" -gt 500 ] && lim=500
+    mapfile -t qids < <(
+      grep -aiE "$own" "$LOG" | grep -aoE ': [0-9A-Za-z]{6,}: ' | tr -d ' :' | awk '!s[$0]++' | tail -n "$lim"
+    )
+    [ "${#qids[@]}" -eq 0 ] && exit 0
+    pat="$(mktemp /tmp/monmaillog.XXXXXX)"
+    for q in "${qids[@]}"; do printf '%s: \n' "$q"; done > "$pat"
+    grep -aF -f "$pat" "$LOG" | perl -e '
+      my (%from,@rows);
+      while (my $l=<STDIN>) {
+        next unless $l =~ /: ([0-9A-Za-z]{6,}): /; my $qid=$1;
+        # classic syslog "Sep 22 12:44:37" (web1, rubberduck) or RFC3339 "2026-09-22T12:44:37.123456+01:00"
+        # (rsyslog on the newer boxes: rss, puregusto, web2); mail_log.php normalises both for display.
+        my ($ts) = $l =~ /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?|\w{3}\s+\d+\s+[\d:]+)/;
+        if ($l =~ /\bfrom=<([^>]*)>/i) { $from{$qid}=$1; }
+        if ($l =~ /\bto=<([^>]*)>/i) {
+          my $to=$1; my $st = ($l =~ /\bstatus=([a-z]+)/) ? $1 : "?";
+          push @rows, [$ts, $qid, $to, $st];
+        }
+      }
+      for my $r (@rows) { print join("\t", $r->[0], $r->[1], ($from{$r->[1]}//""), $r->[2], $r->[3]), "\n"; }
+    '
+    rm -f "$pat"
+    ;;
+  raw)
+    qid="${3:-}"
+    case "$qid" in ''|*[!A-Za-z0-9]*) echo "bad queue id" >&2; exit 2 ;; esac
+    lines="$(grep -aE " ${qid}: " "$LOG")"
+    [ -z "$lines" ] && exit 0
+    # Only reveal it if this queue-id is actually owned by <domain>.
+    if ! printf '%s\n' "$lines" | grep -qiE "$own"; then echo "not this domain" >&2; exit 4; fi
+    printf '%s\n' "$lines" | tail -n 500
+    ;;
+  *)
+    echo "usage: monitor_maillog list <domain> [limit] | raw <domain> <qid>" >&2; exit 2 ;;
+esac

@@ -5,6 +5,8 @@
 	that only manages crontabs of vhost site users.
 
 	@param action: get | save
+	get -> { ok, user, crontab, system:[{file,expr,cmd,ignored}] }  (system = /etc/crontab + /etc/cron.d
+	       entries that run as this user; read-only)
 	@param repository
 	@param crontab   (for save: full crontab text)
 */
@@ -24,6 +26,36 @@ if ($repository === '' || preg_match('#[/\\\\\x00]#', $repository) || strpos($re
 	cron_json(array('ok' => false, 'error' => 'Invalid repository.'));
 }
 
+// System cron entries that run AS the site's user: /etc/crontab and /etc/cron.d/* carry a user
+// field after the schedule ("15 4 * * * richdiamonds cd ..."), so they never show in that user's own
+// crontab — which is all the editor reads. They're root's files, so they're listed read-only. Those
+// files are world-readable: no sudo needed, locally or over SSH. Debian's cron skips cron.d files
+// whose name has anything but letters, digits, '-' or '_' (e.g. "x.cron"), so those are flagged.
+function cron_system_script($cuser) {
+	return 'for f in /etc/crontab /etc/cron.d/*; do [ -f "$f" ] && [ -r "$f" ] || continue; '
+		. 'awk -v f="$f" -v u=' . escapeshellarg($cuser) . ' \'/^[ \t]*(#|$)/ {next} /^[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*=/ {next} '
+		. '{ if ($1 ~ /^@/) { n = 1 } else { n = 5 } if (NF <= n + 1 || $(n + 1) != u) next; '
+		. 'e = $1; for (i = 2; i <= n; i++) e = e " " $i; c = $0; '
+		. 'for (i = 1; i <= n + 1; i++) { sub(/^[ \t]*[^ \t]+/, "", c) } sub(/^[ \t]+/, "", c); '
+		. 'print f "\t" e "\t" c }\' "$f"; done';
+}
+function cron_system_parse($lines) {
+	$rows = array();
+	foreach ($lines as $l) {
+		$p = explode("\t", $l, 3);
+		if (count($p) < 3) continue;
+		$file = $p[0];
+		$base = basename($file);
+		$rows[] = array(
+			'file'    => $file,
+			'expr'    => $p[1],
+			'cmd'     => $p[2],
+			'ignored' => (strpos($file, '/etc/cron.d/') === 0 && !preg_match('/^[A-Za-z0-9_-]+$/', $base)),
+		);
+	}
+	return $rows;
+}
+
 // Sites hosted off web1: read/write the per-site user's crontab on its own server over SSH.
 // The target user comes ONLY from the host map (a per-site account) and can never be root.
 $host = svn_host_for($repository);
@@ -38,7 +70,9 @@ if ($host) {
 	if ($action === 'get') {
 		$out = array();
 		exec($ssh . ' ' . escapeshellarg($readq) . ' 2>/dev/null', $out);
-		cron_json(array('ok' => true, 'user' => $cuser, 'crontab' => implode("\n", $out)));
+		$sys = array();
+		exec($ssh . ' ' . escapeshellarg(cron_system_script($cuser)) . ' 2>/dev/null', $sys);
+		cron_json(array('ok' => true, 'user' => $cuser, 'crontab' => implode("\n", $out), 'system' => cron_system_parse($sys)));
 	}
 
 	if ($action === 'save') {
@@ -112,7 +146,9 @@ if ($action === 'get') {
 	if ($rc !== 0) {
 		cron_json(array('ok' => false, 'user' => $user, 'error' => 'Could not read crontab: ' . trim($err)));
 	}
-	cron_json(array('ok' => true, 'user' => $user, 'crontab' => $out));
+	$sys = array();
+	exec('/bin/bash -c ' . escapeshellarg(cron_system_script($user)) . ' 2>/dev/null', $sys);
+	cron_json(array('ok' => true, 'user' => $user, 'crontab' => $out, 'system' => cron_system_parse($sys)));
 }
 
 if ($action === 'save') {

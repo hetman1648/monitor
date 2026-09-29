@@ -478,6 +478,56 @@ html.dark-mode{
 #svnApp .mail-status.warn{ color:var(--warn); background:var(--warn-bg); }
 #svnApp .mail-status.err{ color:var(--err); background:var(--err-bg); }
 #svnApp .mail-status.muted{ color:var(--muted); background:var(--fill-2); }
+/* access log */
+#svnApp .modal.xwide{ width:min(1180px,100%); }
+#svnApp .acc-form{ display:flex; flex-direction:column; gap:8px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; background:var(--fill); margin-bottom:12px; }
+#svnApp .acc-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+#svnApp .acc-row .cron-in{ padding:7px 9px; font-size:12.5px; min-width:0; }
+#svnApp .acc-ip{ width:190px; }
+#svnApp .acc-url{ flex:2 1 200px; }
+#svnApp .acc-st{ width:160px; }
+#svnApp .acc-text{ flex:1 1 190px; }
+#svnApp .acc-row select.cron-in{ font-family:inherit; cursor:pointer; }
+#svnApp .acc-dt{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--muted); }
+#svnApp .acc-cb{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-soft); cursor:pointer; user-select:none; }
+#svnApp .acc-loading{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted); padding:14px 4px; }
+#svnApp .acc-sum{ font-size:12.5px; color:var(--muted); margin:2px 0 9px; line-height:1.5; }
+#svnApp .acc-sum b{ color:var(--ink); font-variant-numeric:tabular-nums; }
+#svnApp .acc-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+#svnApp .acc-chip{ font-size:12px; font-weight:800; padding:3px 9px; border-radius:7px; border:1px solid transparent; cursor:pointer; font-variant-numeric:tabular-nums; }
+#svnApp .acc-chip .n{ font-weight:500; opacity:.85; margin-left:5px; }
+#svnApp .acc-chip.on{ border-color:currentColor; }
+#svnApp .acc-s2{ color:var(--ok); background:var(--ok-bg); }
+#svnApp .acc-s3{ color:var(--muted); background:var(--fill-2); }
+#svnApp .acc-s4{ color:var(--warn); background:var(--warn-bg); }
+#svnApp .acc-s5{ color:var(--err); background:var(--err-bg); }
+#svnApp .acc-tops{ display:grid; grid-template-columns:minmax(0,2fr) minmax(0,3fr); gap:12px; margin-bottom:12px; }
+@media (max-width:720px){ #svnApp .acc-tops{ grid-template-columns:minmax(0,1fr); } }
+#svnApp .acc-top{ border:1px solid var(--line); border-radius:10px; padding:8px 8px 6px; background:var(--card-2); min-width:0; }
+#svnApp .acc-top-h{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted-2); margin:0 4px 5px; }
+#svnApp .acc-top-list{ max-height:190px; overflow-y:auto; }
+#svnApp .acc-top-i{ display:flex; align-items:center; gap:8px; width:100%; text-align:left; font-size:12px; padding:3px 5px; border-radius:6px; cursor:pointer; background:transparent; color:var(--ink-soft); position:relative; }
+#svnApp .acc-top-i:hover{ background:var(--hover); color:var(--ink); }
+#svnApp .acc-top-i .bar{ position:absolute; left:0; top:2px; bottom:2px; border-radius:5px; background:var(--fill-2); z-index:0; }
+#svnApp .acc-top-i .v, #svnApp .acc-top-i .n{ position:relative; z-index:1; }
+#svnApp .acc-top-i .v{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'JetBrains Mono',ui-monospace,monospace; }
+#svnApp .acc-top-i .n{ color:var(--muted); font-variant-numeric:tabular-nums; flex:none; }
+#svnApp .acc-list{ border:1px solid var(--line); border-radius:10px; max-height:56vh; overflow-y:auto; background:var(--card-2); }
+#svnApp .acc-r{ display:flex; align-items:center; gap:10px; padding:6px 10px; font-size:12.5px; border-top:1px solid var(--line); cursor:pointer; }
+#svnApp .acc-r:first-child{ border-top:none; }
+#svnApp .acc-r:hover{ background:var(--hover); }
+#svnApp .acc-r.open{ background:var(--hover-2); }
+#svnApp .acc-t{ color:var(--muted); font-size:12px; white-space:nowrap; flex:none; width:108px; }
+#svnApp .acc-r .acc-chip{ flex:none; width:40px; text-align:center; padding:1px 0; cursor:inherit; font-size:11.5px; }
+#svnApp .acc-m{ flex:none; width:44px; font-size:11px; font-weight:800; color:var(--muted); }
+#svnApp .acc-p{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink); font-size:12px; }
+#svnApp .acc-ipb{ flex:none; width:150px; text-align:left; font-size:12px; color:var(--acc-solid); background:transparent; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#svnApp .acc-ipb:hover{ text-decoration:underline; }
+#svnApp .acc-b{ flex:none; width:64px; text-align:right; color:var(--muted-2); font-size:11.5px; font-variant-numeric:tabular-nums; }
+#svnApp .acc-d{ padding:8px 12px 11px 128px; font-size:12px; background:var(--hover-2); display:flex; flex-direction:column; gap:4px; border-top:1px dashed var(--line); word-break:break-all; color:var(--ink-soft); }
+#svnApp .acc-d .k{ color:var(--muted-2); font-weight:800; font-size:10.5px; letter-spacing:.4px; text-transform:uppercase; display:inline-block; width:78px; word-break:normal; }
+#svnApp .acc-d-act{ display:flex; gap:6px; margin-top:5px; flex-wrap:wrap; word-break:normal; }
+@media (max-width:720px){ #svnApp .acc-t{ width:auto; } #svnApp .acc-ipb, #svnApp .acc-b, #svnApp .acc-m{ display:none; } #svnApp .acc-d{ padding-left:12px; } }
 #svnApp .pchip{ font-size:12.5px; font-weight:600; color:var(--ink-soft); background:var(--raise); border:1px solid var(--line); border-radius:20px; padding:5px 11px; cursor:pointer; }
 #svnApp .pchip:hover{ border-color:var(--line-strong); color:var(--ink); }
 
@@ -717,6 +767,7 @@ html.dark-mode{
         <button class="btn" id="btnLog" data-info="log">Error Log</button>
         <button class="btn" id="btnCritical">Critical Errors</button>
         <button class="btn" id="btnMail" data-info="mail">Mail Log</button>
+        <button class="btn" id="btnAccess" data-info="access">Access Log</button>
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
         <button class="btn" id="btnServers">Servers</button>
         <button class="btn" id="btnBackups">Backups</button>
@@ -823,6 +874,8 @@ var ICONS = {
   chevronR:'M9 6l6 6-6 6',
   plus:'M12 5v14M5 12h14',
   mail:'M3 5h18v14H3zM3 6l9 7 9-7',
+  filter:'M4 5h16l-6 8v5l-4 2v-7L4 5Z',
+  globe:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM3 12h18M12 3c2.4 2.6 3.6 5.6 3.6 9s-1.2 6.4-3.6 9M12 3c-2.4 2.6-3.6 5.6-3.6 9s1.2 6.4 3.6 9',
   folder:'M3 6h6l2 2h10v11H3V6Z',
   folderPlus:'M3 6h6l2 2h10v11H3V6ZM12 11v5M9.5 13.5h5',
   grid:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
@@ -902,8 +955,23 @@ function siteHiddenCount(s){ return ((s && s.files) || []).length - siteFiles(s)
 // as a change. With live edits hidden, call it what it is instead of "Update available · 0".
 function siteStatus(s){
   if(!s) return '';
-  if(STATE.hideEdited && s.status === 'update' && siteFiles(s).length === 0) return 'current';
+  if(STATE.hideEdited && s.status === 'update' && siteFiles(s).length === 0 && !s.serversBehind) return 'current';
   return s.status;
+}
+// Shared repos (Common8, Common): dedicated-server copies that lag the repo, or couldn't be read.
+// Only problems are listed; servers that are current stay quiet.
+function serverNotes(s){
+  return ((s && s.servers) || []).filter(function(v){ return v.behind || v.error; }).map(function(v){
+    return v.error ? {warn:true, text:v.host+': could not read its revision: '+v.error}
+                   : {warn:false, text:v.host+' is at r'+v.rev+(s.headRev?', behind r'+s.headRev:'')+'. Update deploys it there.'};
+  });
+}
+// "3 changes", "1 server behind", or "3 changes · 1 server behind".
+function behindLabel(s, nFiles){
+  var parts = [];
+  if(nFiles) parts.push(nFiles+' change'+(nFiles!==1?'s':''));
+  if(s && s.serversBehind) parts.push(s.serversBehind+' server'+(s.serversBehind!==1?'s':'')+' behind');
+  return parts.join(' · ') || '0 changes';
 }
 var RECENT_KEY = 'svn_recent_repos', MAX_RECENT = 8;
 var LAST_SCOPE_KEY = 'svn_last_scope';
@@ -942,7 +1010,7 @@ function hashInfo(h){
   var c = v.indexOf(':');
   if(c < 0) return null;
   var kind = v.slice(0, c), repo = v.slice(c + 1);
-  if(['history','log','critical','cron','mail'].indexOf(kind) === -1) return null;
+  if(['history','log','critical','cron','mail','access'].indexOf(kind) === -1) return null;
   if(REPOS.indexOf(repo) === -1) return null;
   return { kind: kind, repo: repo };
 }
@@ -1039,12 +1107,13 @@ function pumpScan(){
           site.status=data.status; site.behind=data.behind; site.headRev=data.headRev;
           site.lastBy=data.lastBy; site.lastAt=data.lastAt; site.errorMsg=data.errorMsg||'';
           site.files=data.files||[]; site.clientId=data.clientId||0; site.adminUrl=data.adminUrl||''; site.scanState='done';
+          site.servers=data.servers||[]; site.serversBehind=data.serversBehind||0;
           // Only auto-select if the repo is still in the current scope: a scan enqueued under a
           // previous (multi-site) scope can finish after the user has navigated to a single site,
           // and selecting it here would inflate the apply-bar count with an off-screen straggler.
           // ...and don't auto-select a site whose only changes are hidden live edits — it would
           // sit invisibly in the apply bar with nothing to actually deploy.
-          if(autoSelectUpdates && siteStatus(site)==='update' && scopedRepos().indexOf(repo)!==-1 && siteFiles(site).length>0){ STATE.sel[repo]=true; }
+          if(autoSelectUpdates && siteStatus(site)==='update' && scopedRepos().indexOf(repo)!==-1 && (siteFiles(site).length>0 || site.serversBehind>0)){ STATE.sel[repo]=true; }
         } else {
           site.status='error'; site.errorMsg=(data&&data.error)||'Scan failed'; site.scanState='error';
         }
@@ -1187,7 +1256,7 @@ function reviewBtnHtml(repo){
   var s = STATE.sites[repo], st = s ? s.scanState : 'idle';
   var attrs = 'class="btn grad" id="finderReview" data-repo="'+esc(repo)+'"';
   if(st==='queued' || st==='scanning') return '<button '+attrs+' disabled><span class="spin"></span> Loading changes…</button>';
-  if(s && st==='done' && siteStatus(s)==='update'){ var n=siteFiles(s).length; return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update'+(n?' ('+n+')':'')+'</button>'; }
+  if(s && st==='done' && siteStatus(s)==='update'){ var n=siteFiles(s).length+(s.serversBehind||0); return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update'+(n?' ('+n+')':'')+'</button>'; }
   if(s && st==='done' && siteStatus(s)==='current') return '<button '+attrs+' disabled>'+icon('check',16)+' Up to date</button>';
   if(s && st==='error')                        return '<button '+attrs+' disabled>'+icon('alert',16)+' Scan failed</button>';
   return '<button '+attrs+'>'+icon('refresh',16)+' Review &amp; update</button>'; // idle/not scanned: kicks off the scan
@@ -1267,7 +1336,7 @@ function renderTable(){
         + '<button class="site-collapse" data-collapse="'+esc(r)+'" '+(hasFiles?'':'disabled')+' title="'+(isCol?'Show files':'Hide files')+'">'+icon('chevron',16,1.8,(isCol?'transform:rotate(-90deg)':''))+'</button>'
         + '<span class="host">'+esc(r)+'</span>'
         + statusBadge(s)
-        + (s.scanState==='done'&&siteStatus(s)==='update' ? '<span class="behind">'+icon('up',13)+files.length+' change'+(files.length!==1?'s':'')+(s.headRev?' <span class="rev mono">r'+esc(s.headRev)+'</span>':'')+'</span>' : '')
+        + (s.scanState==='done'&&siteStatus(s)==='update' ? '<span class="behind">'+icon('up',13)+behindLabel(s, files.length)+(s.headRev?' <span class="rev mono">r'+esc(s.headRev)+'</span>':'')+'</span>' : '')
         + (s.lastBy||s.lastAt ? '<span class="site-meta">'+(s.lastBy?icon('user',12)+' '+esc(s.lastBy):'')+(s.lastBy&&s.lastAt?' <span class="mdot"></span> ':'')+(s.lastAt?icon('clock',12)+' '+esc(s.lastAt):'')+'</span>' : '')
         + '<span class="sh-spacer"></span>'
         + '<span class="file-count">'+(hasFiles?(files.length+' file'+(files.length!==1?'s':'')):(s.scanState==='done'?(siteStatus(s)==='current'?'Up to date':'—'):''))+'</span>'
@@ -1280,6 +1349,9 @@ function renderTable(){
     if(!isCol && s.scanState==='error'){
       rows += '<tr class="note-row first-note"><td class="col-chk"></td><td colspan="5"><div class="err-note">'+icon('alert',16)+' '+esc(s.errorMsg||'Error')+'</div></td></tr>';
     }
+    if(!isCol && s.scanState==='done'){ serverNotes(s).forEach(function(n, i){
+      rows += '<tr class="note-row'+(i?'':' first-note')+'"><td class="col-chk"></td><td colspan="5"><div class="err-note"'+(n.warn?'':' style="color:var(--muted);background:transparent"')+'>'+icon(n.warn?'alert':'up',16)+' '+esc(n.text)+'</div></td></tr>';
+    }); }
     if(!isCol && hasFiles){
       files.forEach(function(f){
         var dir = (f.file_path||'public_html/'); if(dir && dir.indexOf('public_html')!==0){ dir = 'public_html/'+dir; }
@@ -1357,7 +1429,7 @@ function renderCards(){
   if(!repos.length){ $('#tableHost').html('<div class="empty"><div class="e-ico">'+icon('grid',34)+'</div><div class="e-t">'+emptyMsg()+'</div></div>'); return; }
   var cards = repos.map(function(r){
     var s = ensureSite(r); var seld = !!STATE.sel[r]; var selectable = s.scanState==='done'&&siteStatus(s)==='update';
-    var nchg = siteFiles(s).length;
+    var nchg = siteFiles(s).length + (s.serversBehind||0);
     return '<div class="scard'+(seld?' sel':'')+'" data-cardrepo="'+esc(r)+'">'
       + '<div class="scard-top"><div><div class="host">'+esc(r)+'</div>'
         + '<div class="meta">'+(s.lastBy?esc(s.lastBy):'')+(s.lastBy&&s.lastAt?' · ':'')+(s.lastAt?esc(s.lastAt):'')+'</div></div>'
@@ -1445,6 +1517,7 @@ function openActionsPop(repo, anchor){
     ['history','History', icon('history',16)],
     ['log','Error log', icon('file',16)],
     ['critical','Critical errors', icon('alert',16)],
+    ['access','Access log', icon('globe',16)],
     ['cron','Cron jobs', icon('calendar',16)],
     ['servers','Servers', icon('server',16)],
     ['backups','Backups', icon('database',16)],
@@ -1566,7 +1639,7 @@ function openConfirmUpdate(){
   var skip = selRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.status==='error'; });
   if(!upd.length){ return; }
   var rows = upd.map(function(r){ var s=STATE.sites[r], n=siteFiles(s).length;
-    return '<div class="prow">'+icon('branch',16,1.8,'color:var(--muted)')+'<div class="phost"><div class="h">'+esc(r)+'</div><div class="s">'+n+' change'+(n!==1?'s':'')+(s.headRev?' · r'+esc(s.headRev):'')+'</div></div></div>';
+    return '<div class="prow">'+icon('branch',16,1.8,'color:var(--muted)')+'<div class="phost"><div class="h">'+esc(r)+'</div><div class="s">'+esc(behindLabel(s, n))+(s.headRev?' · r'+esc(s.headRev):'')+'</div>'+serverNotes(s).map(function(v){ return '<div class="s" style="white-space:normal;color:'+(v.warn?'var(--err)':'var(--muted)')+'">'+esc(v.text)+'</div>'; }).join('')+'</div></div>';
   }).join('');
   var skipHtml = skip.length ? '<div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--err-bg);color:var(--err);font-size:13px"><b>'+skip.length+' site'+(skip.length>1?'s':'')+' skipped</b> — '+esc(skip.join(', '))+' '+(skip.length>1?'have':'has')+' errors and must be resolved first.</div>' : '';
   modal('<div class="modal"><div class="modal-head"><div class="mh-ico">'+icon('refresh',21)+'</div>'
@@ -1854,14 +1927,27 @@ function renderCronEditor(){
   var cronRows = []; CRON.lines.forEach(function(l,i){ if(l.type==='cron') cronRows.push({l:l,i:i}); });
   var envs = CRON.lines.filter(function(l){ return l.type==='env'; });
   var allText = cronRows.map(function(o){ return o.l.expr+' '+o.l.cmd; }).join('\n');
-  var html = '<div class="cron-head"><span class="ct">'+cronRows.length+' cron job'+(cronRows.length!==1?'s':'')+'</span>'
+  var nSys = (CRON.system || []).length;
+  var html = '<div class="cron-head"><span class="ct">'+cronRows.length+' cron job'+(cronRows.length!==1?'s':'')+(nSys?' + '+nSys+' system':'')+'</span>'
     + '<span class="ct" style="color:var(--muted-2)">· user '+esc(CRON.user)+'</span><span class="spacer"></span>'
     + (cronRows.length?'<button class="btn tiny cron-copy-all" data-copy="'+esc(allText)+'">'+icon('copy',14)+' Copy all</button>':'')
     + '</div>';
   html += '<div class="cron-list">';
-  if(!cronRows.length) html += '<div class="svn-modal-message" style="margin:0">No cron jobs installed for this user. Add one below.</div>';
+  var sys = CRON.system || [];
+  if(!cronRows.length) html += '<div class="svn-modal-message" style="margin:0">No cron jobs in '+esc(CRON.user)+'\'s own crontab'+(sys.length?' (the system cron entries below still run as this user)':'')+'. Add one below.</div>';
   cronRows.forEach(function(o){ html += cronRowHtml(o.l, o.i); });
   html += '</div>';
+  // System cron entries (/etc/crontab, /etc/cron.d) that run as this user: root's files, so shown
+  // read-only with where they live. A cron.d file with a dot etc. in its name is skipped by cron.
+  if(sys.length){
+    html += '<div class="cron-env-title">System cron · runs as '+esc(CRON.user)+' · read-only here</div><div class="cron-list">';
+    sys.forEach(function(e){
+      html += '<div class="cron-item" style="display:block"><div><span class="mono" style="font-weight:700">'+esc(e.expr)+'</span> <span class="mono">'+esc(e.cmd)+'</span></div>'
+        + '<div class="mono" style="font-size:11.5px;margin-top:3px;color:'+(e.ignored?'var(--err)':'var(--muted)')+'">'+esc(e.file)
+        + (e.ignored?' — NOT RUN: cron ignores /etc/cron.d files whose name contains anything but letters, digits, - or _':'')+'</div></div>';
+    });
+    html += '</div>';
+  }
   html += '<div class="cron-add"><div class="cron-add-title">'+icon('plus',13)+' Add a cron job</div>'
     + '<div class="cron-add-fields"><input class="cron-in" id="cronAddExpr" placeholder="30 14 * * *"/>'
     + '<input class="cron-in cron-in-cmd" id="cronAddCmd" placeholder="/usr/bin/php /mnt/drive2/vhosts/'+esc(CRON.repo)+'/cron/script.php"/>'
@@ -2541,9 +2627,9 @@ function openInfo(kind, repo){
   // Reflect the open info modal in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
-  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'], mail:['Mail log','Recent mail sent from this domain'] };
+  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'], mail:['Mail log','Recent mail sent from this domain'], access:['Access log','Requests to this site — search by IP, URL, status and date'] };
   var t = titles[kind];
-  modal('<div class="modal wide"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':(kind==='mail'?'mail':'file')),21)+'</div>'
+  modal('<div class="modal wide'+(kind==='access'?' xwide':'')+'"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':(kind==='mail'?'mail':(kind==='access'?'globe':'file'))),21)+'</div>'
     + '<div style="min-width:0"><h3>'+t[0]+'</h3><p>'+t[1]+' · <span class="mono">'+esc(repo)+'</span></p></div>'
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body"><div id="infoBody"><span class="spin"></span> Loading…</div></div>'
@@ -2555,7 +2641,7 @@ function openInfo(kind, repo){
     }, 'json');
   } else if(kind==='cron'){
     $.post('cron_manage.php', {action:'get', repository:repo}, function(d){
-      if(d&&d.ok){ CRON={repo:repo, user:d.user||'', lines:cronParse(d.crontab||'')}; renderCronEditor(); }
+      if(d&&d.ok){ CRON={repo:repo, user:d.user||'', lines:cronParse(d.crontab||''), system:d.system||[]}; renderCronEditor(); }
       else { $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not read crontab.')+'</div>'); }
     }, 'json');
   } else if(kind==='log'){
@@ -2577,6 +2663,8 @@ function openInfo(kind, repo){
       if(d&&d.ok){ renderMailLog(d, repo); }
       else { $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not read the mail log.')+'</div>'); }
     }, 'json').fail(function(){ $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
+  } else if(kind==='access'){
+    accOpen(repo);
   }
 }
 // ---- mail log rendering ----
@@ -2597,13 +2685,157 @@ function renderMailLog(d, repo){
   }).join('');
   $('#infoBody').html(head+'<div class="mail-list">'+body+'</div>');
 }
+// ---- access log (access_log.php) ----
+// Filters stay put while the modal is reopened for the same site; a relative range (1h, 24h, ...) is
+// re-anchored to "now" on every search. Dates are sent as the browser's local time, read as UK time.
+var ACC = { repo:'', f:null, d:null, seq:0, open:{} };
+var ACC_RANGES = [ {k:'latest',label:'Latest'}, {k:'60',label:'1h'}, {k:'1440',label:'24h'}, {k:'10080',label:'7 days'}, {k:'43200',label:'30 days'}, {k:'custom',label:'Custom'} ];
+function accDefaults(){ return {range:'latest', from:'', to:'', ip:'', url:'', text:'', status:'', method:'', nobots:false, nostatic:false, limit:300}; }
+function accLocal(d){ function z(n){ return (n<10?'0':'')+n; } return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes()); }
+function accNum(n){ return String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function accBytes(b){ b=+b||0; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(b<10240?1:0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+function accCls(s){ var c=String(s||'').charAt(0); return (c>='2'&&c<='5') ? 'acc-s'+c : 'acc-s3'; }
+function accIn(id, ph, v, cls){ return '<input class="cron-in '+cls+'" id="'+id+'" placeholder="'+esc(ph)+'" value="'+esc(v)+'" autocomplete="off" spellcheck="false">'; }
+function accOpen(repo){
+  if(ACC.repo!==repo || !ACC.f) ACC.f=accDefaults();
+  ACC.repo=repo; ACC.d=null; ACC.open={};
+  $('#infoBody').html(accFormHtml()+'<div id="accOut"></div>');
+  accSearch();
+}
+function accFormHtml(){
+  var f=ACC.f;
+  var seg=ACC_RANGES.map(function(r){ return '<button type="button" class="logw-btn'+(f.range===r.k?' on':'')+'" data-accrange="'+r.k+'">'+esc(r.label)+'</button>'; }).join('');
+  var meth=['','GET','POST','HEAD','PUT','DELETE','OPTIONS','PATCH'].map(function(m){ return '<option value="'+m+'"'+(f.method===m?' selected':'')+'>'+(m||'Any method')+'</option>'; }).join('');
+  var lim=[100,300,1000,2000].map(function(n){ return '<option value="'+n+'"'+(+f.limit===n?' selected':'')+'>'+n+' rows</option>'; }).join('');
+  return '<div class="acc-form">'
+    + '<div class="acc-row"><div class="logw-seg" style="margin-left:0">'+seg+'</div>'
+    +   '<label class="acc-dt">From <input type="datetime-local" class="cron-in" id="accFrom" value="'+esc(f.from)+'"></label>'
+    +   '<label class="acc-dt">To <input type="datetime-local" class="cron-in" id="accTo" value="'+esc(f.to)+'"></label></div>'
+    + '<div class="acc-row">'
+    +   accIn('accIp', 'IP, or prefix like 66.249.', f.ip, 'acc-ip')
+    +   accIn('accUrl', 'URL contains', f.url, 'acc-url')
+    +   accIn('accStatus', 'Status: 404 · 4xx,5xx · !200', f.status, 'acc-st')
+    +   '<select class="cron-in" id="accMethod">'+meth+'</select>'
+    +   accIn('accText', 'User agent / referer contains', f.text, 'acc-text')
+    + '</div>'
+    + '<div class="acc-row">'
+    +   '<label class="acc-cb"><input type="checkbox" class="chk" id="accNobots"'+(f.nobots?' checked':'')+'> Hide bots</label>'
+    +   '<label class="acc-cb"><input type="checkbox" class="chk" id="accNostatic"'+(f.nostatic?' checked':'')+'> Hide images / css / js</label>'
+    +   '<span style="margin-left:auto"></span>'
+    +   '<select class="cron-in" id="accLimit" title="Newest rows to show (all matches are counted)">'+lim+'</select>'
+    +   '<button type="button" class="btn tiny" id="accReset">Reset</button>'
+    +   '<button type="button" class="btn grad tiny" id="accGo">'+icon('search',14)+' Search</button>'
+    + '</div></div>';
+}
+function accRead(){
+  var f=ACC.f;
+  f.from=$('#accFrom').val()||''; f.to=$('#accTo').val()||'';
+  f.ip=$.trim($('#accIp').val()||''); f.url=$.trim($('#accUrl').val()||''); f.text=$.trim($('#accText').val()||'');
+  f.status=$.trim($('#accStatus').val()||''); f.method=$('#accMethod').val()||'';
+  f.nobots=$('#accNobots').is(':checked'); f.nostatic=$('#accNostatic').is(':checked'); f.limit=+($('#accLimit').val()||300);
+}
+function accFiltered(f){ return !!(f.ip||f.url||f.text||f.status||f.method||f.nobots||f.nostatic); }
+function accSearch(){
+  accRead();
+  var f=ACC.f, repo=ACC.repo;
+  if(/^\d+$/.test(f.range)){ f.from=accLocal(new Date(Date.now()-f.range*60000)); f.to=''; }
+  else if(f.range==='latest'){ f.from=''; f.to=''; }
+  $('#accFrom').val(f.from); $('#accTo').val(f.to);
+  var seq=++ACC.seq; ACC.open={};
+  var what = (f.from || accFiltered(f)) ? 'Searching the access log'+(f.from?'':' since its last rotation')+'… (a wide range can take a minute)' : 'Reading the latest requests…';
+  $('#accGo').prop('disabled', true);
+  $('#accOut').html('<div class="acc-loading"><span class="spin"></span> '+esc(what)+'</div>');
+  $.post('access_log.php', {repository:repo, from:f.from, to:f.to, ip:f.ip, url:f.url, text:f.text, status:f.status, method:f.method, nobots:f.nobots?1:0, nostatic:f.nostatic?1:0, limit:f.limit}, function(d){
+    if(seq!==ACC.seq) return;
+    ACC.d=d||{ok:false}; accRender();
+  }, 'json').fail(function(x){
+    if(seq!==ACC.seq) return;
+    ACC.d={ok:false, error:'Request failed'+(x&&x.status?' (HTTP '+x.status+')':'')+'.'}; accRender();
+  }).always(function(){ if(seq===ACC.seq) $('#accGo').prop('disabled', false); });
+}
+function accRender(){
+  var d=ACC.d, f=ACC.f;
+  if(!d) return;
+  if(!d.ok){ $('#accOut').html('<div class="svn-modal-message svn-modal-message--warn">'+esc(d.error||'Could not read the access log.')+'</div>'); return; }
+  var rows=d.rows||[];
+  var sum='<div class="acc-sum"><b>'+accNum(d.total)+'</b> '+(d.quick?'latest request'+(d.total!==1?'s':''):'matching request'+(d.total!==1?'s':''))
+    + (d.total>rows.length?' · newest <b>'+accNum(rows.length)+'</b> shown':'')
+    + (!d.quick&&d.scanned?' · '+accNum(d.scanned)+' log lines searched':'')
+    + (d.first?' · '+(d.quick?'':'log covers ')+esc(d.first)+' → '+esc(d.last):'')
+    + (d.source&&d.source!=='web1'?' · via '+esc(d.source):'')
+    + '</div>';
+  var note=d.note?'<div class="svn-modal-message svn-modal-message--warn" style="margin:0 0 10px">'+esc(d.note)+'</div>':'';
+  if(!d.total){ $('#accOut').html(sum+note+'<div class="svn-modal-message">No requests match.</div>'); return; }
+  var codes=Object.keys(d.statuses||{}).sort();
+  var chips='<div class="acc-chips">'+codes.map(function(c){
+    return '<button type="button" class="acc-chip '+accCls(c)+(f.status===c?' on':'')+'" data-accstatus="'+esc(c)+'" title="'+(f.status===c?'Clear status filter':'Only '+esc(c))+'">'+esc(c)+'<span class="n">'+accNum(d.statuses[c])+'</span></button>';
+  }).join('')+'</div>';
+  function top(title, list, attr){
+    var max=list.length?list[0][1]:1;
+    return '<div class="acc-top"><div class="acc-top-h">'+title+'</div><div class="acc-top-list">'+list.map(function(p){
+      return '<button type="button" class="acc-top-i" '+attr+'="'+esc(p[0])+'" title="Filter by '+esc(p[0])+'"><span class="bar" style="width:'+Math.max(2, Math.round(p[1]/max*100))+'%"></span><span class="v">'+esc(p[0])+'</span><span class="n">'+accNum(p[1])+'</span></button>';
+    }).join('')+'</div></div>';
+  }
+  var tops=(d.ips&&d.ips.length>1 || d.paths&&d.paths.length>1) ? '<div class="acc-tops">'+top('Top IPs', d.ips||[], 'data-accip')+top('Top URLs (without query)', d.paths||[], 'data-accurl')+'</div>' : '';
+  var list='<div class="acc-list">'+rows.map(function(r, i){
+    return '<div class="acc-r" data-accrow="'+i+'"><span class="acc-t mono">'+esc(r.time)+'</span>'
+      + '<span class="acc-chip '+accCls(r.s)+'">'+esc(r.s)+'</span><span class="acc-m">'+esc(r.m)+'</span>'
+      + '<span class="acc-p mono" title="'+esc(r.path)+'">'+esc(r.path)+'</span>'
+      + '<button type="button" class="acc-ipb mono" data-accip="'+esc(r.ip)+'" title="Only requests from '+esc(r.ip)+'">'+esc(r.ip)+'</button>'
+      + '<span class="acc-b">'+accBytes(r.b)+'</span></div>';
+  }).join('')+'</div>';
+  $('#accOut').html(sum+note+chips+tops+list);
+}
+function accDetailHtml(r){
+  var url='https://'+ACC.repo+(r.path.charAt(0)==='/'?r.path:'/'+r.path);
+  var line=r.ip+' - - ['+r.time+'] "'+r.m+' '+r.path+'" '+r.s+' '+r.b+' "'+r.ref+'" "'+r.ua+'"';
+  return '<div class="acc-d"><div><span class="k">Request</span>'+esc(r.m+' '+r.path)+'</div>'
+    + '<div><span class="k">Referer</span>'+esc(r.ref||'-')+'</div>'
+    + '<div><span class="k">User agent</span>'+esc(r.ua||'-')+'</div>'
+    + '<div><span class="k">Size</span>'+accNum(r.b)+' bytes</div>'
+    + '<div class="acc-d-act">'
+    +   '<button type="button" class="btn tiny" data-accip="'+esc(r.ip)+'">'+icon('filter',13)+' Only this IP</button>'
+    +   '<button type="button" class="btn tiny" data-accurl="'+esc(r.path.split('?')[0])+'">'+icon('filter',13)+' Only this URL</button>'
+    +   '<a class="btn tiny" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+icon('link',13)+' Open URL</a>'
+    +   '<a class="btn tiny" href="https://ipinfo.io/'+encodeURIComponent(r.ip)+'" target="_blank" rel="noopener noreferrer">'+icon('globe',13)+' Who is '+esc(r.ip)+'</a>'
+    +   '<button type="button" class="btn tiny" data-acccopy="'+esc(line)+'">'+icon('copy',13)+' Copy line</button>'
+    + '</div></div>';
+}
+// Set one filter (IP / URL / status) from a click and search again. Keeps the other filters.
+function accSetFilter(key, val){
+  if(!ACC.f) return;
+  accRead();
+  ACC.f[key] = (ACC.f[key]===val) ? '' : val;
+  $('#accIp').val(ACC.f.ip); $('#accUrl').val(ACC.f.url); $('#accStatus').val(ACC.f.status);
+  accSearch();
+}
 // ---- single mail entry (parsed + raw), layered above the list ----
 var MAIL_ENTRY={raw:'', mode:'parsed'};
+// A raw postfix line's timestamp as "22 Sep 12:44:37", same as mail_log.php's list. Classic syslog
+// ("Sep 22 12:44:37", web1/rubberduck) is already local time; RFC3339 ("2026-09-22T11:42:35.35+00:00",
+// rss/puregusto/web2 — web2 in UTC) is converted to UK time.
+var MAIL_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function mailTime(l){
+  var m=String(l).match(/^(\w{3})\s+(\d+)\s+(\d\d:\d\d:\d\d)/);
+  if(m) return (+m[2])+' '+m[1]+' '+m[3];
+  m=String(l).match(/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d+)?(Z|[+-]\d\d:?\d\d)?/);
+  if(!m) return '';
+  var d=new Date(m[1]+(m[2]||'Z'));
+  if(isNaN(d.getTime())) return m[1].replace('T',' ');
+  try{
+    var p={}; new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})
+      .formatToParts(d).forEach(function(x){ p[x.type]=x.value; });
+    return (+p.day)+' '+MAIL_MON[(+p.month)-1]+' '+(p.hour==='24'?'00':p.hour)+':'+p.minute+':'+p.second;
+  }catch(e){
+    function z(n){ return (n<10?'0':'')+n; }
+    return d.getDate()+' '+MAIL_MON[d.getMonth()]+' '+z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds());
+  }
+}
 function mailParseEntry(raw){
   var lines=String(raw||'').split('\n').filter(function(l){return l.trim()!=='';});
   var info={from:'',size:'',nrcpt:'',msgid:'',dkim:'',client:'',uid:'',first:'',last:'',removed:false,recips:[]};
   lines.forEach(function(l){
-    var ts=(l.match(/^(\w{3}\s+\d+\s+[\d:]+)/)||[])[1]||'';
+    var ts=mailTime(l);
     if(ts){ if(!info.first) info.first=ts; info.last=ts; }
     var m;
     if(m=l.match(/\bfrom=<([^>]*)>/)) info.from=m[1];
@@ -3167,9 +3399,11 @@ $(function(){
       else { renderGroupTrigger(); renderTable(); renderApplyBar(); }
     })();
     if(bk0 || info0 || dc0 || crit0) reconcileOverlay(bk0, info0, dc0, crit0);
-    // Autofocus the finder with its value pre-selected, so the first keystroke replaces it.
-    if(!bk0 && !info0 && !dc0 && !crit0){ var $fi=$('#finderInput'); if($fi.val()){ $fi.focus(); try{ $fi[0].select(); }catch(e){} } }
+    if(!bk0 && !info0 && !dc0 && !crit0) focusFinder();
   });
+  // Also focus straight away, not only after the svn_groups.php round-trip above: typing
+  // right after arriving shouldn't depend on that request (or on scope restore not throwing).
+  if(!/~(bk|info|dc)=|~crit/.test(location.hash)) focusFinder();
 
   // group dropdown
   $('#grpTrigger').on('click', function(e){ e.stopPropagation(); if($('#grpDd .grp-dd-menu').length){ closeGroupMenu(); } else { openGroupMenu(); } });
@@ -3221,6 +3455,14 @@ $(function(){
   function reviewSingle(repo){ pendingReviewRepo=repo; openSingle(repo); var s=STATE.sites[repo]; if(s && (s.scanState==='done'||s.scanState==='error')) maybeOpenPendingReview(repo); }
   $(document).on('click', '#finderCopy', function(){ var $b=$(this); copyText($b.attr('data-copy'), function(){ $b.html(icon('check',14)); setTimeout(function(){ $b.html(icon('copy',14)); },1200); }); });
   $(document).on('click', '[data-recent]', function(){ openSingle($(this).attr('data-recent')); });
+  // Autofocus the finder with its value pre-selected, so the first keystroke replaces it.
+  // Leaves focus alone if the user has already clicked into another field or a modal is open.
+  function focusFinder(){
+    var a=document.activeElement, $fi=$('#finderInput');
+    if(a && a!==document.body && a!==$fi[0] && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    if($('.scrim:visible').length) return;
+    $fi.focus(); try{ $fi[0].select(); }catch(e){}
+  }
   function openSingle(repo){ $('#finderInput').val(repo); renderFinderMatch(); saveRecent(repo); pickScope('__one:'+repo, {}); }
 
   // filter / search / view
@@ -3393,7 +3635,7 @@ $(function(){
   function doSaveGroup(){ var name=$('#grpNameInput').val().trim(); var repos=$('#grpNameInput').data('repos')||[]; if(!name){ $('#grpNameInput').focus(); return; } groupsAction({action:'create', name:name, repositories:repos}, function(d){ closeModal(); if(d.newId){ pickScope(String(d.newId), {}); } }); }
 
   // global head buttons
-  $('#btnHistory,#btnLog,#btnCron,#btnMail').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
+  $('#btnHistory,#btnLog,#btnCron,#btnMail,#btnAccess').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
   // Critical errors: aggregate across the whole group/all scope, or fall back to the single focused site.
   $('#btnCritical').on('click', function(){
     var ag=STATE.activeGroup;
@@ -3560,6 +3802,24 @@ $(function(){
   $(document).on('click', '[data-mailqid]', function(){ openMailEntry(MAIL_REPO, $(this).attr('data-mailqid')); });
   $(document).on('click', '#meToggle', function(){ MAIL_ENTRY.mode = MAIL_ENTRY.mode==='raw'?'parsed':'raw'; renderMailEntry(); });
   $(document).on('click', '#meCopy', function(){ var $b=$(this); bkCopyText(MAIL_ENTRY.raw||''); var h=$b.html(); $b.html(icon('check',13)+' Copied'); setTimeout(function(){ $b.html(h); }, 1200); });
+  // access log: range presets, search, click-to-filter, row details
+  $(document).on('click', '[data-accrange]', function(){ if(!ACC.f) return; ACC.f.range=$(this).attr('data-accrange'); $('[data-accrange]').removeClass('on'); $(this).addClass('on'); if(ACC.f.range==='custom'){ $('#accFrom').focus(); return; } accSearch(); });
+  $(document).on('change', '#accFrom, #accTo', function(){ if(!ACC.f) return; ACC.f.range='custom'; $('[data-accrange]').removeClass('on'); $('[data-accrange="custom"]').addClass('on'); });
+  $(document).on('click', '#accGo', function(){ accSearch(); });
+  $(document).on('keydown', '#accIp, #accUrl, #accStatus, #accText, #accFrom, #accTo', function(e){ if(e.which===13){ e.preventDefault(); accSearch(); } });
+  $(document).on('change', '#accMethod, #accLimit, #accNobots, #accNostatic', function(){ accSearch(); });
+  $(document).on('click', '#accReset', function(){ ACC.f=accDefaults(); accOpen(ACC.repo); });
+  $(document).on('click', '[data-accstatus]', function(){ accSetFilter('status', $(this).attr('data-accstatus')); });
+  $(document).on('click', '[data-accip]', function(e){ e.stopPropagation(); accSetFilter('ip', $(this).attr('data-accip')); });
+  $(document).on('click', '[data-accurl]', function(e){ e.stopPropagation(); accSetFilter('url', $(this).attr('data-accurl')); });
+  $(document).on('click', '[data-acccopy]', function(e){ e.stopPropagation(); var $b=$(this); bkCopyText($b.attr('data-acccopy')); var h=$b.html(); $b.html(icon('check',13)+' Copied'); setTimeout(function(){ $b.html(h); }, 1200); });
+  $(document).on('click', '.acc-d a', function(e){ e.stopPropagation(); });
+  $(document).on('click', '.acc-r', function(){
+    var i=+$(this).attr('data-accrow'), r=ACC.d&&ACC.d.rows&&ACC.d.rows[i]; if(!r) return;
+    var $n=$(this).next('.acc-d');
+    if($n.length){ $n.remove(); $(this).removeClass('open'); return; }
+    $(this).addClass('open').after(accDetailHtml(r));
+  });
   $(document).on('click', '[data-source-scrim]', function(e){ if(e.target===this) closeSource(); });
   $(document).on('click', function(e){
     if(!$(e.target).closest('#finderInput,#finderDd').length) $('#finderDd').removeClass('show');

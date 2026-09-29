@@ -55,21 +55,27 @@ function svn_host_servers() {
 			// proxy_fcgi, so PHP's messages come back as Apache "AH01071: Got error 'PHP message: ...'"
 			// lines in the SSL vhost's error log. They never reach nginx_error.log.
 			'php_log_path' => '/var/log/vhosts/{repo}/ssl_error.log',
+			// nginx is the edge: its log has every request, incl. the ones it answers itself (403 blocks,
+			// statics) that never reach Apache's ssl_access.log
+			'access_log_path' => '/var/log/vhosts/{repo}/nginx_access.log',
 		),
 		'puregusto' => array(
 			'ssh_host' => 'puregusto.co.uk', 'ssh_user' => 'tema',
 			'wc_base'  => '/var/vhosts',
 			'log_path' => '/var/log/vhosts/{repo}/nginx_error.log',
+			'access_log_path' => '/var/log/vhosts/{repo}/nginx_access.log',
 		),
 		'rubberduck' => array(
 			'ssh_host' => 'rubberduckbathrooms.co.uk', 'ssh_user' => 'tema',
 			'wc_base'  => '/var/www',
 			'log_path' => '/var/log/apache2/{repo}_error.log',
+			'access_log_path' => '/var/log/apache2/{repo}_access.log',
 		),
 		'web2' => array(
 			'ssh_host' => 'web2.sayu.co.uk', 'ssh_user' => 'tema',
 			'wc_base'  => '/var/vhosts',
 			'log_path' => '/var/log/vhosts/{repo}/error.log',
+			'access_log_path' => '/var/log/vhosts/{repo}/nginx_access.log',
 			// These sites are reached publicly via web2's userdir path, not their own domain, so the
 			// client file API's base_url uses this pattern (files land in {wc_base}/{repo}/public_html).
 			'public_base' => 'https://web2.sayu.co.uk/~{repo}/',
@@ -120,6 +126,18 @@ function svn_host_php_log_path($repo) {
 	$h = svn_host_for($repo);
 	if (!$h || empty($h['php_log_path'])) return '';
 	return str_replace('{repo}', $repo, $h['php_log_path']);
+}
+
+/**
+ * The site's current access log(s); rotated siblings (.1, .2.gz, ...) sit next to each. web1 sites log to
+ * /mnt/drive2/logs/{repo}/ (world-readable, read locally): https in ssl_access.log, plain http in
+ * access.log. Off-web1 sites use their server's access_log_path. Empty list = not configured.
+ */
+function svn_access_log_paths($repo) {
+	$h = svn_host_for($repo);
+	if (!$h) return array('/mnt/drive2/logs/' . $repo . '/ssl_access.log', '/mnt/drive2/logs/' . $repo . '/access.log');
+	if (empty($h['access_log_path'])) return array();
+	return array(str_replace('{repo}', $repo, $h['access_log_path']));
 }
 
 /** Resolved working-copy dir for a hosted repo, or '' if not hosted/known. */
@@ -210,6 +228,36 @@ function svn_shared_update_sh($wc, $auth) {
 		. 'EOF' . "\n"
 		. 'if [ -n "$clash" ]; then echo "SKIPPED - incoming changes to files edited on this server, resolve by hand: $clash"; exit 0; fi; '
 		. 'sudo svn update --force ' . $auth . ' 2>&1';
+}
+
+/**
+ * Where each dedicated-server copy of a shared repo stands against the repository's youngest revision.
+ * The page's normal scan only asks web1, so without this a box left behind (web1 current, rss not)
+ * reads 'Up to date' and offers no Update at all. Returns array(head, servers) where servers is a list
+ * of array(host, rev, behind, error); an unreachable box is reported with an error, not as behind.
+ */
+function svn_shared_repo_server_revs($repo) {
+	$shared = svn_shared_repo_deploys($repo);
+	if (!$shared) return array(0, array());
+	$head = (int) trim((string) @shell_exec('svnlook youngest ' . escapeshellarg('/mnt/drive2/webclients/' . $repo) . ' 2>/dev/null'));
+	$servers = svn_host_servers();
+	$out = array();
+	foreach ($shared as $s) {
+		if (!isset($servers[$s['key']])) continue;
+		$h = $servers[$s['key']];
+		$lines = array(); $rc = 0;
+		@exec('timeout 25 ' . svn_host_ssh($h) . ' ' . escapeshellarg('sudo svn info --show-item revision ' . escapeshellarg($s['wc'])) . ' 2>&1', $lines, $rc);
+		$txt = trim(implode(' ', $lines));
+		$ok = ($rc === 0 && ctype_digit($txt));
+		$rev = $ok ? (int) $txt : 0;
+		$out[] = array(
+			'host'   => $h['ssh_host'],
+			'rev'    => $ok ? (string) $rev : '',
+			'behind' => ($ok && $head > 0 && $rev < $head),
+			'error'  => $ok ? '' : ($txt !== '' ? substr($txt, 0, 160) : 'no response (exit ' . (int) $rc . ')'),
+		);
+	}
+	return array($head, $out);
 }
 
 /** SSH command prefix for a resolved host config (uses the monitor user's key). */

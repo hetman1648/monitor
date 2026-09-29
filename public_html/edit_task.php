@@ -2953,6 +2953,15 @@ $user_name = GetSessionParam("UserName");
                             <span class="meta-label">Domain <a href="view_clients.php?q=<?php echo urlencode($task['task_domain_url']); ?>" target="_blank" title="Search clients by this domain" style="color: #a0aec0; text-decoration: none; vertical-align: middle;" onmouseover="this.style.color='#667eea'" onmouseout="this.style.color='#a0aec0'"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></a></span>
                             <span class="meta-value">
                                 <a href="http://<?php echo htmlspecialchars($task['task_domain_url']); ?>" target="_blank"><?php echo htmlspecialchars($task['task_domain_url']); ?></a>
+                                <?php
+                                // SVN repos are named by bare domain: strip scheme, www., port and path.
+                                $svn_repo = strtolower(trim($task['task_domain_url']));
+                                $svn_repo = preg_replace('~^[a-z]+://~', '', $svn_repo);
+                                $svn_repo = preg_replace('~[/:?#].*$~', '', $svn_repo);
+                                $svn_repo = preg_replace('~^www\.~', '', $svn_repo);
+                                if ($svn_repo !== ''): ?>
+                                <a href="svn/#d-<?php echo htmlspecialchars(rawurlencode($svn_repo)); ?>" target="_blank" title="Open this site in the SVN updater" style="margin-left: 6px; font-size: 11px; padding: 1px 6px; border: 1px solid #cbd5e0; border-radius: 4px; color: #667eea; text-decoration: none;">SVN</a>
+                                <?php endif; ?>
                             </span>
                         </div>
                         <?php endif; ?>

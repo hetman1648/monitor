@@ -44,6 +44,30 @@ function ml_run($host, $argv) {
 	return $out;
 }
 
+// Postfix timestamps come in two shapes depending on the box's syslog: classic "Sep 22 12:44:37"
+// (web1, rubberduck; local time, no year) and RFC3339 "2026-09-22T11:42:35.358817+00:00" (rss,
+// puregusto, web2; web2 logs in UTC). Show both as "22 Sep 12:44:37" in UK time; a classic stamp
+// with no year is taken as this year, or last year if that would put it in the future.
+function ml_time($ts) {
+	$ts = trim((string) $ts);
+	if ($ts === '') return '';
+	$tz = new DateTimeZone('Europe/London');
+	try {
+		if (preg_match('/^\d{4}-\d\d-\d\dT/', $ts)) {
+			$d = new DateTime(preg_replace('/\.\d+/', '', $ts));
+			$d->setTimezone($tz);
+			return $d->format('j M H:i:s');
+		}
+		if (preg_match('/^(\w{3})\s+(\d+)\s+(\d\d:\d\d:\d\d)$/', $ts, $m)) {
+			$now = new DateTime('now', $tz);
+			$d = DateTime::createFromFormat('M j H:i:s Y', $m[1] . ' ' . $m[2] . ' ' . $m[3] . ' ' . $now->format('Y'), $tz);
+			if ($d && $d > $now->modify('+1 day')) $d->modify('-1 year');
+			if ($d) return $d->format('j M H:i:s');
+		}
+	} catch (Exception $e) {}
+	return $ts;
+}
+
 $host = svn_host_for($repository); // non-null => off-web1
 
 if ($action === 'raw') {
@@ -68,7 +92,7 @@ foreach ($out as $line) {
 	$p = explode("\t", $line);
 	if (count($p) < 5) continue;
 	$rows[] = array(
-		'time'   => ensure_utf8($p[0]),
+		'time'   => ensure_utf8(ml_time($p[0])),
 		'qid'    => ensure_utf8($p[1]),
 		'from'   => ensure_utf8($p[2]),
 		'to'     => ensure_utf8($p[3]),

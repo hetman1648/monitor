@@ -68,18 +68,27 @@ if (!$host && svn_is_library_repo($repository) && @fileowner($wc) === 0) {
 $f_q = escapeshellarg($file);
 $inner = "cd " . escapeshellarg($wc) . " || exit 1\n"
 	. "ST=\$(svn status " . $f_q . " 2>&1 | head -1)\n"
+	. "ACC=" . escapeshellarg($accept) . "\n"
 	. "case \"\$ST\" in\n"
-	// Only a genuinely conflicted file (col 1 = 'C' for a text conflict; 'C' in the props column
-	// shows as 'XC' etc., caught by the wildcard). Anything else: say so rather than silently
-	// 'resolving' — an empty status means it's already resolved.
+	// A text conflict has 'C' in col 1 (a props conflict 'C' in col 2, caught by '?C*'): svn's
+	// markers are in the file and the chosen side replaces it whole.
 	. "  C*|?C*) ;;\n"
 	. "  svn:*) echo \">> cannot read svn status for " . $file . ": \$ST\"; exit 8 ;;\n"
-	. "  *) echo \">> " . $file . " is not in conflict (status: '\$ST') — already resolved?\"; exit 2 ;;\n"
+	. "  *)\n"
+	// A tree conflict has 'C' in col 7 instead (e.g. '?     C': deleted/replaced on the live box
+	// while the update deleted or moved it too). There's no merged file to pick a side of, and svn
+	// only resolves these with --accept working, which keeps whatever is live now. 'Take SVN's
+	// version' would mean deleting or replacing the live path by hand, so that's refused with svn's
+	// own description of the conflict rather than guessed at. Anything else isn't in conflict.
+	. "    if [ \"\$(printf '%s' \"\$ST\" | cut -c7)\" != C ]; then echo \">> " . $file . " is not in conflict (status: '\$ST') — already resolved?\"; exit 2; fi\n"
+	. "    WHY=\$(svn status " . $f_q . " 2>&1 | sed -n 's/^ *> *//p' | head -1)\n"
+	. "    if [ \"\$ACC\" != mine-full ]; then echo \">> " . $file . " has a tree conflict (\$WHY), not a content conflict — there is no SVN version of the file to take. Choose 'Keep the live version' to clear it and leave the live file as it is, or sort it out by hand on the server.\"; exit 3; fi\n"
+	. "    echo \">> tree conflict: \$WHY — keeping the live state\"; ACC=working ;;\n"
 	. "esac\n"
-	. "OUT=\$(svn resolve --accept " . $accept . " " . $f_q . " 2>&1); rc=\$?\n"
+	. "OUT=\$(svn resolve --accept \$ACC " . $f_q . " 2>&1); rc=\$?\n"
 	. "echo \"\$OUT\"\n"
 	. "if [ \$rc -ne 0 ]; then echo '>> resolve failed'; exit \$rc; fi\n"
-	. "echo \">> resolved " . $file . " (" . $accept . ")\"\n";
+	. "echo \">> resolved " . $file . " (\$ACC)\"\n";
 
 // Run it as the working copy's owner (same channel as svn_delete.php).
 $output = ''; $rc = 0;

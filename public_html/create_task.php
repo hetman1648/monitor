@@ -816,13 +816,10 @@ $months = array(
         }
 
         textarea.form-control {
-            min-height: 120px;
-            resize: vertical;
-            transition: min-height 0.3s ease;
-        }
-
-        textarea.form-control:focus {
+            /* Stays at full height when unfocused - it used to shrink to 120px on blur,
+               which was disruptive when switching away to check source/files. */
             min-height: 250px;
+            resize: vertical;
         }
 
         select.form-control {

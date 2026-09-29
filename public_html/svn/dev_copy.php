@@ -223,10 +223,31 @@ if ($want_images) {
 	// Don't launch a second dsid run if an rsync for this repo's images is already copying on
 	// slayer — concurrent copies just fight over the same files and slow each other down.
 	$img_needle = "/" . $repository . "/public_html/images";
-	$run .= "if " . $SLAYER . " " . escapeshellarg('ps -eo args 2>/dev/null | grep -F ' . escapeshellarg($img_needle) . ' | grep -i rsync | grep -qv grep') . "; then\n";
+	$img_probe  = $SLAYER . " " . escapeshellarg('ps -eo args 2>/dev/null | grep -F ' . escapeshellarg($img_needle) . ' | grep -i rsync | grep -qv grep');
+	$run .= "if " . $img_probe . "; then\n";
 	$run .= "  echo '   images are already copying for this site — skipping (watch progress in the popup)'\n";
 	$run .= "else\n";
-	$run .= "  curl -s --max-time 600 " . escapeshellarg($img_url) . " || { echo '!! images request failed'; ok=0; }\n";
+	// curl's exit status only reports the transfer, so a dsid failure — a "-ERR ..." reply, or
+	// Apache's 504 page once the daemon stops answering — still exits 0 and used to be logged as
+	// a success with nothing copied. The daemon answers "+OK Running immediately|Queued (PID=n)"
+	// when it has actually taken the job, so that string is what decides, alongside the HTTP code.
+	$run .= "  img_out=\$(curl -sS --max-time 600 -w '|HTTP:%{http_code}' " . escapeshellarg($img_url) . " 2>&1)\n";
+	$run .= "  img_code=\${img_out##*|HTTP:}\n";
+	$run .= "  img_body=\${img_out%|HTTP:*}\n";
+	$run .= "  case \"\$img_body\" in\n";
+	$run .= "    *'+OK'*) echo \"   \$img_body\" ;;\n";
+	$run .= "    *)\n";
+	// A timeout is not proof that nothing started: the request can time out while the copy it
+	// asked for is already under way, so check for the rsync before calling it a failure.
+	$run .= "      if " . $img_probe . "; then\n";
+	$run .= "        echo \"   the daemon never replied (HTTP \$img_code), but an rsync is running — leaving it to finish\"\n";
+	$run .= "      else\n";
+	$run .= "        echo \"!! images request failed (HTTP \$img_code) — no images were copied\"\n";
+	$run .= "        printf '%s\\n' \"\$img_body\" | sed -e 's/<[^>]*>//g' -e '/^[[:space:]]*\$/d' | head -4 | sed 's/^/   /'\n";
+	$run .= "        ok=0\n";
+	$run .= "      fi\n";
+	$run .= "      ;;\n";
+	$run .= "  esac\n";
 	$run .= "fi\n";
 	$run .= "echo\n";
 }

@@ -3,13 +3,15 @@
 	AJAX (JSON): status of a single SVN repository for the multi-site SVN Updater.
 	@param: repository
 	Returns: { ok, repository, status:'update'|'current'|'error', behind, headRev,
-	           lastBy, lastAt, errorMsg, files:[{kind,status,status_badge,version,file_path,file_name,rel_path}] }
+	           lastBy, lastAt, errorMsg, files:[{kind,status,status_badge,version,file_path,file_name,rel_path}],
+	           servers:[{host,rev,behind,error}], serversBehind }   (servers: shared repos' dedicated boxes)
 */
 
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
 include_once ("./svn_repo_support.php");
+include_once ("./svn_hosts.php");
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -72,10 +74,23 @@ foreach ($files as $f) {
 	}
 }
 
+// Shared repos (Common8, Common) are also checked out on dedicated servers, which Update deploys to
+// as well. The gateway scan above only sees web1, so ask each server's copy where it stands: a box
+// behind the repo makes the site 'update' even when web1 itself is current. Nothing below needs the
+// session, so release its lock first; otherwise these ssh calls stall the page's parallel scans.
+$servers = array();
+$servers_behind = 0;
+if (svn_shared_repo_deploys($repository)) {
+	session_write_close();
+	list($repo_head, $servers) = svn_shared_repo_server_revs($repository);
+	foreach ($servers as $sv) { if ($sv['behind']) $servers_behind++; }
+	if ($servers_behind && $repo_head > $head_rev) $head_rev = $repo_head;
+}
+
 svn_status_json(array(
 	'ok'        => true,
 	'repository'=> $repository,
-	'status'    => $behind > 0 ? 'update' : 'current',
+	'status'    => ($behind > 0 || $servers_behind > 0) ? 'update' : 'current',
 	'behind'    => $behind,
 	'headRev'   => $head_rev ? (string) $head_rev : '',
 	'lastBy'    => $last_by,
@@ -84,4 +99,6 @@ svn_status_json(array(
 	'files'     => $files,
 	'clientId'  => $client_id,
 	'adminUrl'  => $admin_url,
+	'servers'   => $servers,
+	'serversBehind' => $servers_behind,
 ));

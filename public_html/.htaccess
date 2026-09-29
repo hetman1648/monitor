@@ -100,6 +100,7 @@ Allow from 96.22.185.22
     Allow from 193.194.107.53
     Allow from 46.211.152.122
     Allow from 82.2.169.132
+    Allow from 9.246.33.39
 
 #Yarm
     Allow from 81.106.89.201
@@ -239,6 +240,8 @@ Allow from 96.22.185.22
     Allow from 31.94.28.26
     Allow from 31.94.31.22
     Allow from 81.100.251.31
+    Allow from 217.142.21.46
+    Allow from 150.228.103.224
 
 #simon nadin
     Allow from 80.1.31.
