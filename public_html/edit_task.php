@@ -9,14 +9,14 @@ include("./includes/date_functions.php");
 function linkify_urls($text) {
     $text = htmlspecialchars(ensure_utf8($text));
     // Match URLs (http, https, ftp)
-    $pattern = '/(https?:\/\/|ftp:\/\/)[^\s<>\[\]"\']+/i';
+    $pattern = MONITOR_URL_PATTERN;
     $replacement = '<a href="$0" target="_blank" rel="noopener noreferrer">$0</a>';
     return preg_replace($pattern, $replacement, $text);
 }
 
 // Linkify URLs in already-escaped HTML (no extra escaping)
 function linkify_urls_safe($html) {
-    $pattern = '/(https?:\/\/|ftp:\/\/)[^\s<>\[\]"\']+/i';
+    $pattern = MONITOR_URL_PATTERN;
     return preg_replace($pattern, '<a href="$0" target="_blank" rel="noopener noreferrer">$0</a>', $html);
 }
 
@@ -44,7 +44,7 @@ function simple_markdown_to_html($escaped_text) {
         return "\x01C" . (count($code_blocks) - 1) . "\x01\n";
     }, $escaped_text);
 
-    $url_pattern = '/(https?:\/\/|ftp:\/\/)[^\s<>\[\]"\']+/i';
+    $url_pattern = MONITOR_URL_PATTERN;
     $urls = array();
     $escaped_text = preg_replace_callback($url_pattern, function ($m) use (&$urls) {
         $urls[] = $m[0];
@@ -4659,7 +4659,7 @@ $user_name = GetSessionParam("UserName");
         var html = '';
         
         function applySimpleMarkdown(escapedLine) {
-            var urlPattern = /(https?:\/\/[^\s<]+)/g;
+            var urlPattern = /(https?:\/\/(?:(?!&(?:quot|#0?39|lt|gt);)[^\s<>()]|\((?:(?!&(?:quot|#0?39|lt|gt);)[^\s<>()])*\))+(?<![.,;:!?]))/g;
             var urls = [];
             var t = escapedLine.replace(urlPattern, function(m) {
                 urls.push(m);
@@ -4709,7 +4709,7 @@ $user_name = GetSessionParam("UserName");
 
     // Convert URLs to clickable links
     function linkifyUrls(text) {
-        var urlPattern = /(https?:\/\/[^\s<]+)/g;
+        var urlPattern = /(https?:\/\/(?:(?!&(?:quot|#0?39|lt|gt);)[^\s<>()]|\((?:(?!&(?:quot|#0?39|lt|gt);)[^\s<>()])*\))+(?<![.,;:!?]))/g;
         return text.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener">$1</a>');
     }
 

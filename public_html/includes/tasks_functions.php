@@ -1646,6 +1646,11 @@ function task_add_hours($task_id, $spent_hours, $user_id=false,
 	}
 }
 
+// URLs to linkify. Stops before trailing punctuation (.,;:!?), an unbalanced ")" and
+// escaped quotes/brackets, so "(see https://x/y?id=1)" links to .../y?id=1, not .../y?id=1)
+// while https://en.wikipedia.org/wiki/Foo_(bar) keeps its balanced parentheses.
+define("MONITOR_URL_PATTERN", '/(https?:\/\/|ftp:\/\/)(?:(?!&(?:quot|#0?39|lt|gt);)[^\s<>\[\]"\'()]|\((?:(?!&(?:quot|#0?39|lt|gt);)[^\s<>\[\]"\'()])*\))+(?<![.,;:!?])/i');
+
 /**
  * Format message body for email: same as edit_task (quotes, markdown, linkify) with inline styles for email clients.
  */
@@ -1653,7 +1658,7 @@ function format_message_for_email($text) {
 	if (trim($text) === '') {
 		return '(no text)';
 	}
-	$url_pattern = '/(https?:\/\/|ftp:\/\/)[^\s<>\[\]"\']+/i';
+	$url_pattern = MONITOR_URL_PATTERN;
 	// Simple markdown on one line (already escaped); URLs protected so _ in URLs are not italic
 	$markdown_line = function($line) use ($url_pattern) {
 		$urls = array();
