@@ -1146,7 +1146,28 @@
 			echo json_encode(array("success" => false, "error" => "No task ID provided"));
 			exit;
 		}
-		
+		// An expired session used to post anyway: the message was saved with no author,
+		// and edit_task.php's "Assign to" default (last sender) then came out empty, so the
+		// next reply unassigned the task (task 74483, 7 Oct 2026)
+		if (!$session_user_id) {
+			echo json_encode(array("success" => false, "error" => "Your session has expired - please log in again (your message was not sent)"));
+			exit;
+		}
+		// Never leave a task with nobody responsible: no assignee posted keeps the current one
+		if ($responsible_user_id <= 0) {
+			$db->query("SELECT responsible_user_id, created_person_id FROM tasks WHERE task_id=" . ToSQL($task_id, "integer"));
+			if ($db->next_record()) {
+				$responsible_user_id = (int) $db->f("responsible_user_id");
+				if ($responsible_user_id <= 0) {
+					$responsible_user_id = (int) $db->f("created_person_id");
+				}
+			}
+			if ($responsible_user_id <= 0) {
+				echo json_encode(array("success" => false, "error" => "Please choose who to assign the task to"));
+				exit;
+			}
+		}
+
 		// Buffer output from add_task_message to prevent stray output corrupting JSON
 		ob_start();
 		try {

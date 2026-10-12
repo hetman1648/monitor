@@ -435,9 +435,10 @@ if (empty($messages)) {
     $reply_to_user_id = $task['created_person_id'];
 } else {
     // Has messages: last person who sent a message, unless that person is the current user — then keep current assignee
-    $reply_to_user_id = isset($task['responsible_user_id']) ? $task['responsible_user_id'] : $task['created_person_id'];
+    $reply_to_user_id = !empty($task['responsible_user_id']) ? $task['responsible_user_id'] : $task['created_person_id'];
     $last_sender_id = $messages[0]['user_id'];
-    if ($last_sender_id != $session_user_id) {
+    // a message with no author (old expired-session posts) must not blank the default
+    if ($last_sender_id && $last_sender_id != $session_user_id) {
         $reply_to_user_id = $last_sender_id;
     }
 }
