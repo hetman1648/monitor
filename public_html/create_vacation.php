@@ -32,7 +32,7 @@
 
 	if ($action == "Delete Vacation" || $action == "Delete Paid Period")
 	{
-		$sql = "DELETE FROM days_off WHERE period_id = ".$_POST["period_id"];
+		$sql = "DELETE FROM days_off WHERE period_id = " . ToSQL($_POST["period_id"], "integer");
 		$db->query($sql);
 		header("Location: view_vacations.php");
 	}
@@ -60,7 +60,7 @@
 		.", start_date = '".$_POST["start_date"]
 		."', end_date = '".$_POST["end_date"]
 		."', total_days = ".$_POST["total_days"]
-		." WHERE period_id = ".$_POST["period_id"];
+		." WHERE period_id = " . ToSQL($_POST["period_id"], "integer");
 		$db->query($sql);
 		header("Location: view_vacations.php");
 	}

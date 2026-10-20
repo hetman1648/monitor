@@ -109,7 +109,7 @@ $cyear = $current_date[0]; $cmonth = $current_date[1]; $cday = $current_date[2];
 
 $today_date = date("Y-m-d");
 $yesterday_date = date("Y-m-d", mktime(0, 0, 0, $cmonth, $cday - 1, $cyear));
-$week_start_date = date("Y-m-d", mktime(0, 0, 0, $cmonth, $cday - 7, $cday));
+$week_start_date = date("Y-m-d", mktime(0, 0, 0, $cmonth, $cday - 7, $cyear));
 $week_end_date = date("Y-m-d", mktime(0, 0, 0, $cmonth, $cday - 1, $cyear));
 $month_start_date = date("Y-m-d", mktime(0, 0, 0, $cmonth - 1, 1, $cyear));
 $month_end_date = date("Y-m-t", mktime(0, 0, 0, $cmonth - 1, 1, $cyear));

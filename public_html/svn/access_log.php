@@ -2,7 +2,8 @@
 /*
 	AJAX (JSON): search a site's web access log (combined format) — last N requests, filtered.
 
-	web1 sites are read locally from /mnt/drive2/logs/<repo>/{ssl_access,access}.log; off-web1 sites
+	web1 sites are read locally from /mnt/drive2/logs/<repo>/: nginx_access.log since the site went
+	behind nginx, {ssl_access,access}.log before it (svn_access_log_window); off-web1 sites
 	over SSH (sudo) from their server's access_log_path (see svn_hosts.php). Rotated files (.1, .N.gz)
 	are pulled in when the date range reaches back past the current file.
 
@@ -92,7 +93,13 @@ $listing = al_run($host, $ls, $rc);
 $MAX_FILES = 12;
 $note = '';
 $plan = array(); // base => list of files, oldest first
+$win = array();  // base => array(from, to) actually searched: the request's range cut to the log's own window
 foreach ($bases as $b) {
+	list($wf, $wt) = svn_access_log_window($repository, $b);
+	$bf = max($from, $wf);
+	$bt = ($to && $wt) ? min($to, $wt) : ($to ? $to : $wt);
+	if ($bf && $bt && $bt < $bf) continue;           // the range lies wholly outside what this log covers
+	$win[$b] = array($bf, $bt);
 	$rot = array();
 	foreach ($listing as $l) {
 		$p = explode(' ', $l, 3);
@@ -114,7 +121,7 @@ foreach ($bases as $b) {
 			continue;
 		}
 		if ($f['mtime'] < $from) break;              // this and every older file ended before 'from'
-		if ($to && $starts > $to) continue;          // starts after 'to'
+		if ($bt && $starts > $bt) continue;          // starts after 'to'
 		$pick[] = $f['path'];
 	}
 	if (count($pick) > $MAX_FILES) {
@@ -192,7 +199,7 @@ AWK;
 
 $env = array(
 	'F_LIMIT' => $limit, 'F_IP' => $ip, 'F_URL' => $url, 'F_TEXT' => $text, 'F_METHOD' => $method,
-	'F_STATUS' => $status, 'F_FROM' => $from, 'F_TO' => $to, 'F_NOBOTS' => $nobots, 'F_NOSTATIC' => $nostatic,
+	'F_STATUS' => $status, 'F_NOBOTS' => $nobots, 'F_NOSTATIC' => $nostatic,
 );
 $exports = '';
 foreach ($env as $k => $v) $exports .= 'export ' . $k . '=' . escapeshellarg((string) $v) . '; ';
@@ -213,7 +220,7 @@ foreach ($plan as $b => $list) {
 	$q = '';
 	foreach ($list as $f) { $q .= ' ' . escapeshellarg($f); $files[] = $f; }
 	$read = $quick ? $sudo . 'tail -n ' . $limit . ' --' . $q : $sudo . 'zcat -f --' . $q;
-	$script = $exports . 'timeout ' . $TIMEOUT . ' ' . $read . $pre
+	$script = $exports . 'export F_FROM=' . (int) $win[$b][0] . ' F_TO=' . (int) $win[$b][1] . '; timeout ' . $TIMEOUT . ' ' . $read . $pre
 		. ' | awk ' . escapeshellarg($AWK) . '; echo "#RC	${PIPESTATUS[0]}"';
 	$rc = 0;
 	$out = al_run($host, $script, $rc);

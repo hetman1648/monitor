@@ -129,15 +129,50 @@ function svn_host_php_log_path($repo) {
 }
 
 /**
+ * When web1 put nginx in front of Apache (12 Oct 2026, ~03:40 UK). From then on nginx is the edge: its
+ * nginx_access.log has every request, incl. the ones it answers itself (geo-block 403s, statics), while
+ * Apache's ssl_access.log still logs each one it is proxied — so the two overlap and only one may be read
+ * for any moment. Before it, nginx_access.log holds just a few stray hits on the IP.
+ */
+function svn_web1_nginx_since() {
+	$d = new DateTime('2026-10-12 03:40:00', new DateTimeZone('Europe/London'));
+	return $d->getTimestamp();
+}
+
+/** A web1 site's local log dir (world-readable), or '' for an off-web1 site. */
+function svn_web1_log_dir($repo) {
+	return svn_host_for($repo) ? '' : '/mnt/drive2/logs/' . $repo;
+}
+
+/**
  * The site's current access log(s); rotated siblings (.1, .2.gz, ...) sit next to each. web1 sites log to
- * /mnt/drive2/logs/{repo}/ (world-readable, read locally): https in ssl_access.log, plain http in
- * access.log. Off-web1 sites use their server's access_log_path. Empty list = not configured.
+ * /mnt/drive2/logs/{repo}/ (read locally): nginx_access.log once the site is behind nginx, and Apache's
+ * ssl_access.log (https) + access.log (plain http) — see svn_access_log_window() for which covers when.
+ * Off-web1 sites use their server's access_log_path. Empty list = not configured.
  */
 function svn_access_log_paths($repo) {
 	$h = svn_host_for($repo);
-	if (!$h) return array('/mnt/drive2/logs/' . $repo . '/ssl_access.log', '/mnt/drive2/logs/' . $repo . '/access.log');
+	if (!$h) {
+		$dir = svn_web1_log_dir($repo);
+		$paths = array($dir . '/ssl_access.log', $dir . '/access.log');
+		if (is_file($dir . '/nginx_access.log')) array_unshift($paths, $dir . '/nginx_access.log');
+		return $paths;
+	}
 	if (empty($h['access_log_path'])) return array();
 	return array(str_replace('{repo}', $repo, $h['access_log_path']));
+}
+
+/**
+ * The time span (epochs, 0 = open) a log from svn_access_log_paths() is authoritative for, so overlapping
+ * logs aren't double-counted: on a web1 site behind nginx, nginx_access.log from the cutover on and the
+ * Apache logs only before it.
+ */
+function svn_access_log_window($repo, $path) {
+	if (svn_host_for($repo)) return array(0, 0);
+	$dir = svn_web1_log_dir($repo);
+	if (!is_file($dir . '/nginx_access.log')) return array(0, 0);
+	$since = svn_web1_nginx_since();
+	return basename($path) === 'nginx_access.log' ? array($since, 0) : array(0, $since - 1);
 }
 
 /** Resolved working-copy dir for a hosted repo, or '' if not hosted/known. */

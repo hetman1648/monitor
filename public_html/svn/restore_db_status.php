@@ -9,6 +9,8 @@
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+// Read-only on the session: release its lock so a slow call here never stalls the page's other requests.
+session_write_close();
 include ("./svn_backups_support.php");
 
 header("Content-Type: application/json");

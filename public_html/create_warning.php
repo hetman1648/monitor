@@ -31,7 +31,7 @@ if ($_POST["action"] == "Cancel") {
 }
 
 if (($_POST["action"] == "Delete Vacation") || ($_POST["action"] == "Delete Paid Period")) {
-  $sql = "DELETE FROM days_off WHERE period_id = ".$_POST["period_id"];
+  $sql = "DELETE FROM days_off WHERE period_id = " . ToSQL($_POST["period_id"], "integer");
   $db->query($sql);
   header("Location: view_warnings.php");
 }

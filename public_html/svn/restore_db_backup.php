@@ -17,6 +17,8 @@
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+// Read-only on the session: release its lock so a slow call here never stalls the page's other requests.
+session_write_close();
 include ("./svn_backups_support.php");
 
 header("Content-Type: application/json");
@@ -89,7 +91,11 @@ $decomp = (substr($file, -4) === '.bz2') ? 'bunzip2' : ((substr($file, -3) === '
 $pwd_q  = "'" . str_replace("'", "'\\''", DATABASE_PASSWORD) . "'";
 // Strip DEFINER=`u`@`h` clauses so triggers/views/routines restore on a server where
 // those accounts don't exist (the backtick+@ form never occurs in real row data).
-$strip  = 'sed -E \'s/DEFINER=`[^`]+`@`[^`]+` ?//g\'';
+// Also drop a schema prefix from trigger/routine names on CREATE lines: Workbench-made
+// triggers dump as TRIGGER `linth`.`x_AFTER_INSERT`, which would land in the live DB
+// (and be refused - monitor only has rights on test_%) instead of the test copy.
+$strip  = 'sed -E -e \'s/DEFINER=`[^`]+`@`[^`]+` ?//g\''
+	. ' -e \'/^(\/\*!500[0-9]{2} )?CREATE/s/(TRIGGER|PROCEDURE|FUNCTION) `[^`]+`\.`/\1 `/\'';
 $run  = "#!/bin/bash\n";
 $run .= "set -o pipefail\n";
 $run .= "echo \$\$ > " . escapeshellarg($dir . "/pgid") . "\n";

@@ -86,6 +86,9 @@
 		case "update_vacation":
 			ajax_update_vacation();
 		break;
+		case "delete_vacation":
+			ajax_delete_vacation();
+		break;
 		case "delete_holiday":
 			ajax_delete_holiday();
 		break;
@@ -571,7 +574,7 @@
 			echo json_encode(array('success' => false));
 			exit;
 		}
-		$db->query("SELECT period_id, period_title, reason_id, start_date, end_date, total_days, notes FROM days_off WHERE period_id = " . $period_id . " AND user_id = " . (int) $user_id);
+		$db->query("SELECT period_id, period_title, reason_id, start_date, end_date, total_days, notes, start_date >= CURDATE() AS can_delete FROM days_off WHERE period_id = " . $period_id . " AND user_id = " . (int) $user_id);
 		if (!$db->next_record()) {
 			echo json_encode(array('success' => false));
 			exit;
@@ -585,7 +588,8 @@
 				'start_date' => $db->f("start_date"),
 				'end_date' => $db->f("end_date"),
 				'total_days' => (int) $db->f("total_days"),
-				'notes' => $db->f("notes")
+				'notes' => $db->f("notes"),
+				'can_delete' => (bool) $db->f("can_delete")
 			)
 		));
 		exit;
@@ -685,6 +689,34 @@
 		$end_date = $data['end_date'];
 		$sql = "UPDATE days_off SET period_title = " . ToSQL($title, "text") . ", notes = " . ToSQL($notes, "text") . ", reason_id = " . $reason_id . ", start_date = " . ToSQL($start_date, "text") . ", end_date = " . ToSQL($end_date, "text") . ", total_days = " . $total_days . ", is_paid = " . $is_paid . " WHERE period_id = " . $period_id . " AND user_id = " . $user_id;
 		$db->query($sql);
+		echo json_encode(array('success' => true));
+		exit;
+	}
+
+	// Users can delete their own time off, but only before it has started - past periods stay on record
+	function ajax_delete_vacation() {
+		global $db;
+		while (ob_get_level()) ob_end_clean();
+		header('Content-Type: application/json');
+		CheckSecurity(1);
+		$raw = file_get_contents('php://input');
+		$data = json_decode($raw, true);
+		$period_id = ($data && isset($data['period_id'])) ? (int) $data['period_id'] : 0;
+		$user_id = (int) GetSessionParam("UserID");
+		if (!$period_id || !$user_id) {
+			echo json_encode(array('success' => false, 'error' => 'Missing period'));
+			exit;
+		}
+		$db->query("SELECT start_date >= CURDATE() AS can_delete FROM days_off WHERE period_id = " . $period_id . " AND user_id = " . $user_id);
+		if (!$db->next_record()) {
+			echo json_encode(array('success' => false, 'error' => 'Not found'));
+			exit;
+		}
+		if (!$db->f("can_delete")) {
+			echo json_encode(array('success' => false, 'error' => 'This time off has already started and can no longer be deleted'));
+			exit;
+		}
+		$db->query("DELETE FROM days_off WHERE period_id = " . $period_id . " AND user_id = " . $user_id);
 		echo json_encode(array('success' => true));
 		exit;
 	}

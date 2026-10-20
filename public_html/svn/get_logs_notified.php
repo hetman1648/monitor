@@ -115,6 +115,10 @@ function get_page($url,$user_agent='Mozilla/4.0 (compatible; MSIE 5.01; Windows 
         CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects 
         CURLOPT_USERAGENT	   => $user_agent,
         CURLOPT_SSL_VERIFYPEER => false,
+        // web1 has nginx in front since 12 Oct 2026 and it caches GET 200s for 1m — a deploy
+        // then re-scanned the pre-update file list, and a repeat Update got the cached "+OK"
+        // without deploying. "Cache-Control: private" makes nginx bypass + not store.
+        CURLOPT_HTTPHEADER     => array("Cache-Control: private, no-cache"),
         CURLOPT_URL            => $url
     ); 
 

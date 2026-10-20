@@ -563,6 +563,16 @@ html.dark-mode{
 #svnApp .cron-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
 #svnApp .cron-head .ct{ font-size:12px; font-weight:700; color:var(--muted); }
 #svnApp .cron-head .spacer{ margin-left:auto; }
+#svnApp .cache-state{ font-weight:700; }
+#svnApp .cache-state.ok{ color:#9fe0bd; }
+#svnApp .cache-state.err{ color:#f0a9b8; }
+#svnApp .cache-sub{ display:flex; gap:8px; margin-top:4px; font-size:11.5px; color:var(--muted-2); font-variant-numeric:tabular-nums; }
+#svnApp .cache-sub .spacer{ margin-left:auto; }
+#svnApp .cache-flush{ display:flex; align-items:center; gap:14px; margin-top:14px; }
+#svnApp .cache-flush .bk-note{ margin:0; }
+#svnApp .cache-what{ flex:1 1 auto; font-size:12.5px; color:var(--muted); line-height:1.5; }
+#svnApp .cache-flush .btn{ flex:none; }
+@media (max-width:640px){ #svnApp .cache-flush{ flex-direction:column; align-items:stretch; } #svnApp .cache-sub{ flex-wrap:wrap; } }
 #svnApp .cron-list{ display:flex; flex-direction:column; gap:8px; }
 #svnApp .cron-item{ display:flex; gap:14px; align-items:flex-start; padding:11px 13px; background:var(--card-2); border:1px solid var(--line); border-radius:10px; }
 #svnApp .cron-when{ flex:none; width:160px; }
@@ -594,6 +604,7 @@ html.dark-mode{
 #svnApp .cron-output pre.empty{ color:var(--muted-2); font-style:italic; }
 #svnApp .cron-del-row:hover{ color:var(--err); border-color:rgba(226,101,127,.4); background:var(--err-bg); }
 #svnApp .cron-item.editing{ align-items:center; }
+#svnApp .cron-item.cron-new{ border-style:dashed; border-color:var(--acc-solid); }
 #svnApp .cron-edit-fields, #svnApp .cron-add-fields{ display:flex; gap:8px; flex:1; min-width:0; flex-wrap:wrap; align-items:center; }
 #svnApp .cron-in{ background:var(--raise); border:1px solid var(--line-strong); border-radius:8px; padding:8px 10px; color:var(--ink); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12.5px; outline:none; }
 #svnApp .cron-in:focus{ border-color:var(--acc-solid); box-shadow:0 0 0 3px rgba(93,111,214,.18); }
@@ -769,6 +780,7 @@ html.dark-mode{
         <button class="btn" id="btnMail" data-info="mail">Mail Log</button>
         <button class="btn" id="btnAccess" data-info="access">Access Log</button>
         <button class="btn" id="btnCron" data-info="cron">Cron Jobs</button>
+        <button class="btn" id="btnCache" data-info="cache">Cache</button>
         <button class="btn" id="btnServers">Servers</button>
         <button class="btn" id="btnBackups">Backups</button>
         <button class="btn" id="btnDevCopy">Dev copy</button>
@@ -868,6 +880,7 @@ var ICONS = {
   alert:'M12 9v4M12 17h.01M10.3 4l-8 14a2 2 0 0 0 1.7 3h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z',
   calendar:'M3 9h18M7 3v3M17 3v3M5 5h14v16H5V5Z',
   copy:'M9 9h10v10H9zM5 15V5h10',
+  duplicate:'M8 8h12v12H8zM4 16V4h12M14 11v6M11 14h6',
   check:'M5 12l5 5L20 6',
   checkSm:'M4 10l4 4 8-9',
   chevron:'M6 9l6 6 6-6',
@@ -898,7 +911,8 @@ var ICONS = {
   server:'M4 4h16v6H4zM4 14h16v6H4zM7.5 7h.01M7.5 17h.01M12 7h4M12 17h4',
   cpu:'M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2M6 6h12v12H6zM10 10h4v4h-4z',
   gauge:'M12 13l4-4M7 18a7 7 0 1 1 10 0M12 3v0',
-  trash:'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'
+  trash:'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
+  layers:'M12 3 3 7.5l9 4.5 9-4.5L12 3ZM3 12l9 4.5 9-4.5M3 16.5 12 21l9-4.5'
 };
 function icon(name, s, w, style){
   s = s || 18; w = w || 1.8; style = style || '';
@@ -1010,7 +1024,7 @@ function hashInfo(h){
   var c = v.indexOf(':');
   if(c < 0) return null;
   var kind = v.slice(0, c), repo = v.slice(c + 1);
-  if(['history','log','critical','cron','mail','access'].indexOf(kind) === -1) return null;
+  if(['history','log','critical','cron','mail','access','cache'].indexOf(kind) === -1) return null;
   if(REPOS.indexOf(repo) === -1) return null;
   return { kind: kind, repo: repo };
 }
@@ -1042,7 +1056,8 @@ function ensureSite(repo){
 }
 
 // ---------------- recents ----------------
-function getRecents(){ try{ var r=localStorage.getItem(RECENT_KEY); return r?JSON.parse(r):[]; }catch(e){ return []; } }
+// Drop names the gateway doesn't list (e.g. half-typed text Enter used to open, like "m6beds").
+function getRecents(){ try{ var r=localStorage.getItem(RECENT_KEY); return (r?JSON.parse(r):[]).filter(function(x){ return REPOS.indexOf(x)!==-1; }); }catch(e){ return []; } }
 function saveRecent(repo){ repo=(repo||'').trim(); if(!repo) return; var l=getRecents().filter(function(r){return r!==repo;}); l.unshift(repo); l=l.slice(0,MAX_RECENT); try{ localStorage.setItem(RECENT_KEY, JSON.stringify(l)); }catch(e){} renderRecents(); }
 function renderRecents(){
   var l=getRecents(), $w=$('#recentsWrap'), $c=$('#recentsList');
@@ -1346,7 +1361,7 @@ function renderTable(){
         + '<button class="site-btn" data-actions="'+esc(r)+'" title="Site actions">'+icon('dots',16)+'</button>'
         + '<button class="site-btn" data-addgroup="'+esc(r)+'" title="Add to group">'+icon('folderPlus',16)+'</button>'
       + '</div></td></tr>';
-    if(!isCol && s.scanState==='error'){
+    if(!isCol && (s.scanState==='error' || s.scanState==='done' && s.status==='error')){
       rows += '<tr class="note-row first-note"><td class="col-chk"></td><td colspan="5"><div class="err-note">'+icon('alert',16)+' '+esc(s.errorMsg||'Error')+'</div></td></tr>';
     }
     if(!isCol && s.scanState==='done'){ serverNotes(s).forEach(function(n, i){
@@ -1436,7 +1451,7 @@ function renderCards(){
         + '<input type="checkbox" class="chk row-chk" '+(seld?'checked':'')+' '+(selectable?'':'disabled')+' data-repo="'+esc(r)+'"></div>'
       + statusBadge(s)
       + '<div class="scard-foot">'
-        + (s.scanState==='done'&&siteStatus(s)==='update' ? '<span class="behind">'+icon('up',14)+nchg+' behind</span>' : '<span class="behind none">'+(s.status==='error'?'Needs attention':(s.scanState==='done'?'Up to date':'Not scanned'))+'</span>')
+        + (s.scanState==='done'&&siteStatus(s)==='update' ? '<span class="behind">'+icon('up',14)+nchg+' behind</span>' : '<span class="behind none"'+(s.status==='error'&&s.errorMsg?' title="'+esc(s.errorMsg)+'"':'')+'>'+(s.status==='error'?'Needs attention':(s.scanState==='done'?'Up to date':'Not scanned'))+'</span>')
         + '<button class="btn ghost tiny" data-refresh="'+esc(r)+'">Scan '+icon('refresh',13)+'</button>'
       + '</div></div>';
   }).join('');
@@ -1519,6 +1534,7 @@ function openActionsPop(repo, anchor){
     ['critical','Critical errors', icon('alert',16)],
     ['access','Access log', icon('globe',16)],
     ['cron','Cron jobs', icon('calendar',16)],
+    ['cache','Cache', icon('layers',16)],
     ['servers','Servers', icon('server',16)],
     ['backups','Backups', icon('database',16)],
     ['devcopy','Dev copy', icon('copy',16)],
@@ -1880,7 +1896,7 @@ function cronHuman(expr){
   return '';
 }
 // ---- editable cron model ----
-var CRON = null; // { repo, user, lines:[ {type,raw,expr,cmd,_editing} ] }
+var CRON = null; // { repo, user, lines:[ {type,raw,expr,cmd,_editing,_new} ] } — _new: an unsaved duplicate, left out of cronBuild()
 function cronParse(text){
   var lines = String(text==null?'':text).replace(/\r/g,'').split('\n');
   while(lines.length && lines[lines.length-1].trim()==='') lines.pop();
@@ -1896,7 +1912,7 @@ function cronParse(text){
   });
 }
 function cronBuild(){
-  return CRON.lines.map(function(l){ return l.type==='cron' ? (l.expr+' '+l.cmd).trim() : l.raw; }).join('\n');
+  return CRON.lines.filter(function(l){ return !l._new; }).map(function(l){ return l.type==='cron' ? (l.expr+' '+l.cmd).trim() : l.raw; }).join('\n');
 }
 function cronValidExpr(e){
   e=(e||'').trim(); if(e==='') return false;
@@ -1905,7 +1921,7 @@ function cronValidExpr(e){
 }
 function cronRowHtml(l,i){
   if(l._editing){
-    return '<div class="cron-item editing" data-ci="'+i+'">'
+    return '<div class="cron-item editing'+(l._new?' cron-new':'')+'" data-ci="'+i+'">'
       + '<div class="cron-edit-fields"><input class="cron-in" data-cef="expr" value="'+esc(l.expr)+'" placeholder="* * * * *"/>'
       + '<input class="cron-in cron-in-cmd" data-cef="cmd" value="'+esc(l.cmd)+'" placeholder="command"/></div>'
       + '<div class="cron-row-actions"><button class="btn tiny solid cron-save-row" data-ci="'+i+'">Save</button>'
@@ -1918,6 +1934,7 @@ function cronRowHtml(l,i){
     + '<div class="cron-row-actions">'
       + '<button class="cron-icon-btn cron-run-row" data-ci="'+i+'" title="Run now (as user '+esc(CRON.user)+')">'+icon('play',13)+'</button>'
       + '<button class="cron-icon-btn cron-copy" data-copy="'+esc(l.expr+' '+l.cmd)+'" title="Copy">'+icon('copy',14)+'</button>'
+      + '<button class="cron-icon-btn cron-dup-row" data-ci="'+i+'" title="Duplicate (opens an unsaved copy below)">'+icon('duplicate',14)+'</button>'
       + '<button class="cron-icon-btn cron-edit-row" data-ci="'+i+'" title="Edit">'+icon('pencil',14)+'</button>'
       + '<button class="cron-icon-btn cron-del-row" data-ci="'+i+'" title="Delete">'+icon('x',14)+'</button>'
     + '</div></div>';
@@ -2627,9 +2644,9 @@ function openInfo(kind, repo){
   // Reflect the open info modal in the URL so a refresh reopens it.
   var nh = scopeToHash(STATE.activeGroup) + '~info=' + kind + ':' + repo;
   if(((location.hash||'').replace(/^#/,'')) !== nh){ location.hash = nh; }
-  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'], mail:['Mail log','Recent mail sent from this domain'], access:['Access log','Requests to this site — search by IP, URL, status and date'] };
+  var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'], mail:['Mail log','Recent mail sent from this domain'], access:['Access log','Requests to this site — search by IP, URL, status and date'], cache:['Cache','nginx cache on the site’s server'] };
   var t = titles[kind];
-  modal('<div class="modal wide'+(kind==='access'?' xwide':'')+'"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':(kind==='mail'?'mail':(kind==='access'?'globe':'file'))),21)+'</div>'
+  modal('<div class="modal wide'+((kind==='access'||kind==='cron')?' xwide':'')+'"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':(kind==='mail'?'mail':(kind==='access'?'globe':(kind==='cache'?'layers':'file')))),21)+'</div>'
     + '<div style="min-width:0"><h3>'+t[0]+'</h3><p>'+t[1]+' · <span class="mono">'+esc(repo)+'</span></p></div>'
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body"><div id="infoBody"><span class="spin"></span> Loading…</div></div>'
@@ -2665,6 +2682,8 @@ function openInfo(kind, repo){
     }, 'json').fail(function(){ $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
   } else if(kind==='access'){
     accOpen(repo);
+  } else if(kind==='cache'){
+    cacheLoad(repo);
   }
 }
 // ---- mail log rendering ----
@@ -2685,6 +2704,101 @@ function renderMailLog(d, repo){
   }).join('');
   $('#infoBody').html(head+'<div class="mail-list">'+body+'</div>');
 }
+// ---- nginx cache (cache.php) ----
+// State of the site's nginx cache zones on its own server, and a flush through that server's
+// flush-cache.sh — which is per server, not per site: the confirm says what else it clears.
+var CACHE = { repo:'', d:null, busy:false };
+function cacheAgo(t){
+  if(!t) return '—';
+  var s = Math.max(0, Math.round(Date.now()/1000 - t));
+  if(s < 60) return s+'s ago'; if(s < 3600) return Math.floor(s/60)+' min ago';
+  if(s < 86400) return Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function cacheWhen(t){
+  if(!t) return '—';
+  var d = new Date(t*1000), m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function z(n){ return (n<10?'0':'')+n; }
+  return d.getDate()+' '+m[d.getMonth()]+' '+z(d.getHours())+':'+z(d.getMinutes());
+}
+function cacheLoad(repo){
+  CACHE.repo = repo; CACHE.d = null;
+  $('#infoBody').html('<span class="spin"></span> Reading the nginx cache…');
+  $.post('cache.php', {repository:repo}, function(d){ if(CACHE.repo===repo) cacheRender(d); }, 'json')
+    .fail(function(){ if(CACHE.repo===repo) $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">Request failed.</div>'); });
+}
+function cacheRender(d){
+  var repo = CACHE.repo;
+  if(!d || !d.ok){
+    $('#infoBody').html('<div class="svn-modal-message svn-modal-message--warn">'+esc((d&&d.error)||'Could not read the cache.')
+      + (d&&d.detail ? '<div class="info-pre mono" style="margin-top:8px">'+esc(d.detail)+'</div>' : '')+'</div>');
+    return;
+  }
+  CACHE.d = d;
+  if(d.note){ $('#infoBody').html('<div class="svn-modal-message">'+esc(d.note)+'</div>'); return; }
+  var zones = d.zones||[], sc = d.script;
+  var up = d.nginx==='active';
+  var html = '<div class="cron-head"><span class="ct"><span class="mono">'+esc(d.host)+'</span> · nginx <span class="cache-state '+(up?'ok':'err')+'">'+esc(d.nginx||'unknown')+'</span></span>'
+    + '<span class="spacer"></span><button class="btn ghost" data-cache-refresh="1"'+(CACHE.busy?' disabled':'')+'>'+icon('refresh',14)+' Refresh</button></div>';
+  if(d.flushed){
+    var okf = d.flushed.rc===0;
+    html += '<div class="bk-note bk-note--'+(okf?'ok':'err')+'" style="margin:0 0 10px">'
+      + (okf ? 'Flushed with <span class="mono">'+esc(sc?sc.path:'flush-cache.sh')+'</span>.' : 'flush-cache.sh exited with code '+esc(d.flushed.rc)+'.')
+      + (d.flushed.output ? '<div class="mono" style="white-space:pre-wrap;margin-top:4px">'+esc(d.flushed.output)+'</div>' : '')+'</div>';
+  }
+  if(!zones.length){
+    html += '<div class="svn-modal-message">No nginx cache zone for <span class="mono">'+esc(repo)+'</span> in '+esc(d.host)+'’s nginx config.</div>';
+  } else {
+    html += '<div class="bk-rows">' + zones.map(function(z){
+      var kind = (z.zone||'').split('/')[0] || z.path;
+      var missing = z.bytes < 0;
+      return '<div class="bk-row"><div class="bk-line">'
+        + '<span class="bk-file"><b>'+esc(kind)+'</b> <span class="mono" style="color:var(--muted-2);font-size:12px">'+esc(z.path)+'</span></span>'
+        + '<span class="bk-meta">'+(missing ? '<span class="bk-size">directory missing</span>'
+            : '<span class="bk-size">'+accBytes(z.bytes)+'</span><span class="bk-size">'+accNum(z.files)+' file'+(z.files===1?'':'s')+'</span>')+'</span></div>'
+        + '<div class="cache-sub">'
+        + (z.files ? 'oldest '+esc(cacheWhen(z.oldest))+' · newest '+esc(cacheWhen(z.newest))+' ('+esc(cacheAgo(z.newest))+')' : (missing?'':'empty'))
+        + '<span class="spacer"></span>max '+esc(z.max_size||'—')+' · inactive '+esc(z.inactive||'—')+'</div></div>';
+    }).join('') + '</div>';
+  }
+  html += '<div class="cache-flush">';
+  if(!sc){
+    html += '<div class="bk-note">No <span class="mono">flush-cache.sh</span> on '+esc(d.host)+' — the cache can only be flushed by hand there.</div>';
+  } else if(!sc.covers){
+    html += '<div class="bk-note"><span class="mono">'+esc(sc.path)+'</span> on '+esc(d.host)+' does not clear '+esc(repo)+(sc.sites.length?' (it clears '+esc(sc.sites.join(', '))+')':'')+'.</div>';
+  } else {
+    var others = sc.sites.filter(function(s){ return s!==repo; });
+    html += '<div class="cache-what">Runs <span class="mono">sudo '+esc(sc.path)+'</span>: '
+      + (sc.stops_nginx ? 'stops nginx, ' : '') + 'clears <span class="mono">'+sc.paths.map(esc).join('</span>, <span class="mono">')+'</span>'
+      + (sc.stops_nginx ? ', starts nginx again' : '') + '.'
+      + (others.length ? ' <b>Also clears '+esc(others.join(', '))+'.</b>' : '') + '</div>'
+      + '<button class="btn solid ui-confirm-danger" data-cache-flush="1"'+(CACHE.busy?' disabled':'')+'>'+icon('trash',14)+' Flush cache</button>';
+  }
+  html += '</div>';
+  $('#infoBody').html(html);
+}
+$(document).on('click', '[data-cache-refresh]', function(){ if(!CACHE.busy && CACHE.repo) cacheLoad(CACHE.repo); });
+$(document).on('click', '[data-cache-flush]', function(){
+  var d = CACHE.d, repo = CACHE.repo; if(!d || !d.script || CACHE.busy) return;
+  var sc = d.script, others = sc.sites.filter(function(s){ return s!==repo; });
+  uiConfirm({icon:'trash', danger:true, title:'Flush the nginx cache for '+repo+'?', confirmLabel:'Flush cache',
+    bodyHtml:'Runs <span class="mono">sudo '+esc(sc.path)+'</span> on <b>'+esc(d.host)+'</b>.'
+      + (sc.stops_nginx ? '<br><br>The script <b>stops nginx</b> while it clears the cache, so <b>every site on '+esc(d.host)+'</b> is down for a few seconds.' : '')
+      + (others.length ? '<br><br>It is not per site: it also clears the cache for <b>'+esc(others.join(', '))+'</b>.' : '')
+      + '<br><br>Pages are slower for a while after, until the cache fills again.'},
+    function(){
+      CACHE.busy = true;
+      $('[data-cache-flush],[data-cache-refresh]').prop('disabled', true);
+      $('.cache-flush').html('<span class="spin"></span> Running flush-cache.sh on '+esc(d.host)+'…');
+      $.post('cache.php', {repository:repo, action:'flush'}, function(r){
+        CACHE.busy=false; if(CACHE.repo!==repo) return;
+        if(r && r.ok){ cacheRender(r); return; }
+        $('[data-cache-refresh]').prop('disabled', false);
+        $('.cache-flush').html('<div class="bk-note bk-note--err">'+esc((r&&r.error)||'The flush failed.')+'</div>');
+      }, 'json')
+        .fail(function(){ CACHE.busy=false; if(CACHE.repo===repo) $('.cache-flush').html('<div class="bk-note bk-note--err">Request failed — refresh to see whether the flush ran.</div>'); });
+    });
+});
 // ---- access log (access_log.php) ----
 // Filters stay put while the modal is reopened for the same site; a relative range (1h, 24h, ...) is
 // re-anchored to "now" on every search. Dates are sent as the browser's local time, read as UK time.
@@ -3424,7 +3538,8 @@ $(function(){
     renderFinderMatch();
     if(val.length>0){
       var m = REPOS.filter(function(r){ return r.toLowerCase().indexOf(val)!==-1; }).slice(0,10);
-      if(m.length){ $dd.html(m.map(function(x){ return '<div class="finder-opt" data-finder-pick="'+esc(x)+'">'+esc(x)+'</div>'; }).join('')).addClass('show'); }
+      // First option starts highlighted: it's what Enter opens.
+      if(m.length){ $dd.html(m.map(function(x, i){ return '<div class="finder-opt'+(i?'':' active')+'" data-finder-pick="'+esc(x)+'">'+esc(x)+'</div>'; }).join('')).addClass('show'); }
       else $dd.removeClass('show');
     } else $dd.removeClass('show');
   });
@@ -3441,10 +3556,12 @@ $(function(){
       var el=$opts.get(idx); if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest'});
       return;
     }
-    if(e.which===13){ // enter: open highlighted match, else whatever is typed
+    if(e.which===13){ // enter: open highlighted match, else the first suggestion — never the raw text ("m6beds" -> m6beds.co.uk)
       e.preventDefault();
-      var $act=$opts.filter('.active');
-      var v=($act.length ? $act.attr('data-finder-pick') : $(this).val().trim());
+      var $act=$opts.filter('.active'), q=$(this).val().trim(), ql=q.toLowerCase();
+      var v=$act.length ? $act.attr('data-finder-pick') : (REPOS.indexOf(q)!==-1 ? q
+        : (REPOS.filter(function(r){ return r.toLowerCase().indexOf(ql)!==-1; })[0] || ''));
+      if(!q) v='';
       $dd.removeClass('show');
       if(v){ openSingle(v); }
       return;
@@ -3463,7 +3580,8 @@ $(function(){
     if($('.scrim:visible').length) return;
     $fi.focus(); try{ $fi[0].select(); }catch(e){}
   }
-  function openSingle(repo){ $('#finderInput').val(repo); renderFinderMatch(); saveRecent(repo); pickScope('__one:'+repo, {}); }
+  // Only names the gateway lists: anything else can only ever scan as an error.
+  function openSingle(repo){ if(REPOS.indexOf(repo)===-1) return; $('#finderInput').val(repo); renderFinderMatch(); saveRecent(repo); pickScope('__one:'+repo, {}); }
 
   // filter / search / view
   // [data-filter] only — #hideEditedChip is also a .fchip but is an independent toggle, and
@@ -3571,13 +3689,20 @@ $(function(){
 
   // cron editing (structured rows)
   $(document).on('click', '.cron-edit-row', function(){ var i=+$(this).attr('data-ci'); if(CRON&&CRON.lines[i]){ CRON.lines[i]._editing=true; renderCronEditor(); } });
-  $(document).on('click', '.cron-cancel-row', function(){ var i=+$(this).attr('data-ci'); if(CRON&&CRON.lines[i]){ delete CRON.lines[i]._editing; renderCronEditor(); } });
+  $(document).on('click', '.cron-cancel-row', function(){ var i=+$(this).attr('data-ci'); if(CRON&&CRON.lines[i]){ if(CRON.lines[i]._new) CRON.lines.splice(i,1); else delete CRON.lines[i]._editing; renderCronEditor(); } });
+  // Duplicate: an unsaved copy right below the source, open for editing; Save commits it, Cancel drops it.
+  $(document).on('click', '.cron-dup-row', function(){
+    var i=+$(this).attr('data-ci'), l=CRON&&CRON.lines[i]; if(!l||l.type!=='cron') return;
+    CRON.lines.splice(i+1, 0, {type:'cron', expr:l.expr, cmd:l.cmd, raw:l.expr+' '+l.cmd, _editing:true, _new:true});
+    renderCronEditor();
+    var $in=$('.cron-item[data-ci="'+(i+1)+'"] [data-cef=cmd]'); if($in.length){ $in.focus(); var v=$in.val(); $in[0].setSelectionRange(v.length, v.length); }
+  });
   $(document).on('click', '.cron-save-row', function(){
     var i=+$(this).attr('data-ci'), $row=$(this).closest('.cron-item');
     var expr=$row.find('[data-cef=expr]').val().trim(), cmd=$row.find('[data-cef=cmd]').val().trim();
     if(!cronValidExpr(expr)){ alert('Schedule must be 5 fields (e.g. 30 14 * * *) or @daily / @hourly / @reboot.'); return; }
     if(!cmd){ alert('Command is required.'); return; }
-    CRON.lines[i].expr=expr; CRON.lines[i].cmd=cmd; delete CRON.lines[i]._editing; cronCommit();
+    CRON.lines[i].expr=expr; CRON.lines[i].cmd=cmd; delete CRON.lines[i]._editing; delete CRON.lines[i]._new; cronCommit();
   });
   $(document).on('click', '.cron-del-row', function(){
     var i=+$(this).attr('data-ci'); if(!CRON||!CRON.lines[i]) return;
@@ -3635,7 +3760,7 @@ $(function(){
   function doSaveGroup(){ var name=$('#grpNameInput').val().trim(); var repos=$('#grpNameInput').data('repos')||[]; if(!name){ $('#grpNameInput').focus(); return; } groupsAction({action:'create', name:name, repositories:repos}, function(d){ closeModal(); if(d.newId){ pickScope(String(d.newId), {}); } }); }
 
   // global head buttons
-  $('#btnHistory,#btnLog,#btnCron,#btnMail,#btnAccess').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
+  $('#btnHistory,#btnLog,#btnCron,#btnMail,#btnAccess,#btnCache').on('click', function(){ openInfo($(this).attr('data-info'), focusedRepoForGlobal()); });
   // Critical errors: aggregate across the whole group/all scope, or fall back to the single focused site.
   $('#btnCritical').on('click', function(){
     var ag=STATE.activeGroup;

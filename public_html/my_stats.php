@@ -1493,6 +1493,7 @@ $month_name = date("F", mktime(0, 0, 0, $month_selected, 1, $year_selected));
             </form>
         </div>
         <div class="modal-footer">
+            <button type="button" class="btn btn-delete" onclick="deleteHoliday()" id="deleteHolidayBtn" style="display: none;">Delete</button>
             <button type="button" class="btn btn-secondary" onclick="closeHolidayModal()">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="submitHolidayForm()" id="submitHolidayBtn">Submit Application</button>
         </div>
@@ -1569,6 +1570,26 @@ $month_name = date("F", mktime(0, 0, 0, $month_selected, 1, $year_selected));
         display: flex;
         justify-content: flex-end;
         gap: 10px;
+    }
+
+    .modal-footer .btn-delete {
+        margin-right: auto;
+        background: transparent;
+        color: #c53030;
+        border: 1px solid #feb2b2;
+    }
+
+    .modal-footer .btn-delete:hover {
+        background: #fff5f5;
+    }
+
+    html.dark-mode .modal-footer .btn-delete {
+        color: #fc8181;
+        border-color: #742a2a;
+    }
+
+    html.dark-mode .modal-footer .btn-delete:hover {
+        background: #2d1b1b;
     }
 
     .form-group {
@@ -1907,8 +1928,10 @@ function openHolidayModal(type, periodId = null) {
     const periodIdInput = document.getElementById('holiday_period_id');
     const reasonGroup = document.getElementById('reasonGroup');
     const submitBtn = document.querySelector('.modal-footer .btn-primary');
+    const deleteBtn = document.getElementById('deleteHolidayBtn');
     
     typeInput.value = type;
+    deleteBtn.style.display = 'none';
     periodIdInput.value = periodId || '';
     
     // Reset form first
@@ -1933,6 +1956,8 @@ function openHolidayModal(type, periodId = null) {
                     document.getElementById('holiday_start').value = vac.start_date || '';
                     document.getElementById('holiday_end').value = vac.end_date || '';
                     document.getElementById('holiday_notes').value = vac.notes || '';
+                    // Only time off that hasn't started yet can be deleted
+                    if (vac.can_delete) deleteBtn.style.display = '';
                     
                     // Load reasons then select the correct one
                     if (!reasonsLoaded) {
@@ -2313,6 +2338,61 @@ function submitHolidayForm() {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Application';
     });
+}
+
+function deleteHoliday() {
+    const periodId = document.getElementById('holiday_period_id').value;
+    if (!periodId) return;
+    if (!confirm('Delete this time off? This cannot be undone.')) return;
+    
+    const deleteBtn = document.getElementById('deleteHolidayBtn');
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Deleting...';
+    
+    fetch('ajax_responder.php?action=delete_vacation', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({period_id: parseInt(periodId)})
+    })
+    .then(r => r.json())
+    .then(data => {
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Delete';
+        if (data.success) {
+            closeHolidayModal();
+            removeTimeOffEntry(periodId);
+            showToast('Time off deleted');
+        } else {
+            alert(data.error || 'Failed to delete time off');
+        }
+    })
+    .catch(err => {
+        console.error('Failed to delete:', err);
+        alert('Failed to delete time off. Please try again.');
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Delete';
+    });
+}
+
+function removeTimeOffEntry(periodId) {
+    const table = document.getElementById('timeOffTable');
+    if (!table) return;
+    
+    table.querySelectorAll('tbody tr').forEach(row => {
+        if (row.getAttribute('data-period-id') == periodId) row.remove();
+    });
+    
+    // Back to the empty state when the last row goes
+    if (!table.querySelector('tbody tr')) {
+        table.remove();
+        document.getElementById('timeOffCard').insertAdjacentHTML('beforeend', `
+            <div class="card-body" id="timeOffEmpty">
+                <div class="empty-state">
+                    <p>No time off recorded this year</p>
+                </div>
+            </div>
+        `);
+    }
 }
 
 function getSelectedReasonName() {

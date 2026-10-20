@@ -51,9 +51,14 @@ if ($last_uid) {
 }
 
 if (strpos($res, 'Server response is: +OK') === false) {
-	$msg = trim((string) $res);
+	// The gateway echoes its action header ("Show repository updates<br>") before handing off to the
+	// repo's daemon; with nothing after it, it found no ftpdb http_users_data row to route the repo by.
+	$msg = trim(html_entity_decode(strip_tags(str_ireplace(array('<br>', '<br/>', '<br />'), ' ', (string) $res))));
+	$msg = trim(preg_replace('/^Show repository updates\b/i', '', $msg));
 	if ($msg === '') {
-		$msg = 'No response from SVN gateway.';
+		$msg = (trim((string) $res) === '')
+			? 'No response from SVN gateway.'
+			: 'SVN gateway returned no status: the repository is not registered for routing on web1 (no ftpdb http_users_data row for this hostname).';
 	}
 	// keep it short for the UI
 	$msg = svn_history_truncate_message(preg_replace('/\s+/', ' ', $msg), 240);

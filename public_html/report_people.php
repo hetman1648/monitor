@@ -1137,7 +1137,7 @@ if ($db->next_record()) {
                     </thead>
                     <tbody id="tasksTableBody">
                         <?php foreach ($tasks as $task): ?>
-                        <tr class="clickable-row draggable-row <?php echo $task['is_overdue'] ? 'overdue' : ''; ?> <?php echo $task['is_today'] ? 'today' : ''; ?>" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?>">
+                        <tr draggable="true" class="clickable-row draggable-row <?php echo $task['is_overdue'] ? 'overdue' : ''; ?> <?php echo $task['is_today'] ? 'today' : ''; ?>" data-task-id="<?php echo $task['task_id']; ?>" data-task-title="<?php echo htmlspecialchars($task['task_title'], ENT_QUOTES | ENT_SUBSTITUTE); ?>">
                             <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="<?php echo $task['task_id']; ?>"></td>
                             <td class="drag-handle col-drag" onclick="event.stopPropagation();">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1434,7 +1434,7 @@ if ($db->next_record()) {
     var baseUrl = 'report_people.php?report_user_id=' + reportUserId<?php echo $sort ? " + '&sort=" . addslashes($sort) . "'" : ""; ?>;
 
     // ==================== Priority Drag & Drop (List rows) ====================
-    var draggedRow = null;
+    var draggedRow = null, dragFromHandle = false;
     var prioritiesChanged = false;
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -1442,10 +1442,16 @@ if ($db->next_record()) {
         if (!tbody) return;
         var rows = tbody.querySelectorAll('.draggable-row');
         rows.forEach(function(row) {
-            var handle = row.querySelector('.drag-handle');
-            handle.addEventListener('mousedown', function() { row.draggable = true; });
-            row.addEventListener('dragstart', function(e) { draggedRow = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-            row.addEventListener('dragend', function() { this.classList.remove('dragging'); this.draggable = false; draggedRow = null; document.querySelectorAll('.drag-over').forEach(function(el){ el.classList.remove('drag-over'); }); });
+            // Rows are draggable="true" in the markup (Firefox ignores draggable switched on in mousedown);
+            // a drag only proceeds when it started on the handle, dragging a row by its text does nothing
+            row.addEventListener('mousedown', function(e) { dragFromHandle = !!e.target.closest('.drag-handle'); });
+            row.addEventListener('dragstart', function(e) {
+                if (!dragFromHandle) { e.preventDefault(); return; }
+                draggedRow = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+                // Firefox won't start a drag unless dataTransfer carries some data
+                e.dataTransfer.setData('text/plain', this.dataset.taskId);
+            });
+            row.addEventListener('dragend', function() { this.classList.remove('dragging'); dragFromHandle = false; draggedRow = null; document.querySelectorAll('.drag-over').forEach(function(el){ el.classList.remove('drag-over'); }); });
             row.addEventListener('dragover', function(e) { e.preventDefault(); if (this !== draggedRow) this.classList.add('drag-over'); });
             row.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
             row.addEventListener('drop', function(e) {

@@ -60,21 +60,42 @@ $empty_msg = $last_50 ? 'The error log is empty.' : 'No critical errors found.';
 $command = "index.php?action=" . $action . "&repository=" . $repository . "&username=" . $svn_login . "&password=" . $svn_password;
 $res = get_page($path . $command);
 
+// A web1 site behind nginx (since 12 Oct 2026) still has its PHP errors in Apache's ssl_error.log, which
+// the gateway reads; but nginx's own log is the only trace of Apache/PHP being down (upstream connect
+// refused / timed out) or of nginx's [crit]/[alert]/[emerg]. Read it here too, with the same bar as the
+// off-web1 nginx boxes above. Its lines follow the gateway's; the viewer sorts by time.
+$nginx_text = '';
+$dir = svn_web1_log_dir($repository);
+$nginx_log = $dir !== '' ? $dir . '/nginx_error.log' : '';
+if ($nginx_log !== '' && preg_match('/^[A-Za-z0-9.\-]+$/', $repository) && is_readable($nginx_log)) {
+	if ($last_50) $cmd = "tail -n 50 " . escapeshellarg($nginx_log);
+	else $cmd = "grep -aiE 'fatal|critical|\\[(crit|alert|emerg)\\]|PHP (Fatal|Parse)|connect\\(\\) failed|upstream timed out|no live upstreams' " . escapeshellarg($nginx_log)
+		. " | grep -avE 'SSL_(do_handshake|read|write|shutdown)\\(\\) failed' | tail -n 50";
+	$out = array(); $rc = 0;
+	exec($cmd . " 2>/dev/null", $out, $rc);
+	$nginx_text = trim(implode("\n", $out));
+}
+
+$gw_text = null; // null = the gateway failed
 if (strpos($res, $ok_string) !== false) {
 	$parts = explode($ok_string, $res);
 	$log = isset($parts[1]) ? trim($parts[1]) : '';
-	$decoded = trim((string) base64_decode($log));
-	echo $decoded !== '' ? $decoded : $empty_msg;
-	exit;
+	$gw_text = trim((string) base64_decode($log));
 }
-
 // Empty / nothing-to-show responses from the gateway
-if (stripos($res, '-ERR') !== false || stripos($res, 'is empty') !== false || stripos($res, 'No critical errors') !== false) {
-	echo $empty_msg;
+elseif (stripos($res, '-ERR') !== false || stripos($res, 'is empty') !== false || stripos($res, 'No critical errors') !== false) {
+	$gw_text = '';
+}
+
+if ($gw_text !== null) {
+	$text = trim($gw_text . "\n" . $nginx_text);
+	echo $text !== '' ? $text : $empty_msg;
 	exit;
 }
 
-// Anything else is a real failure — surface the gateway message in plain text.
+// Anything else is a real failure: surface the gateway message in plain text (and nginx's lines, which
+// don't depend on it).
 $plain = trim(strip_tags(str_replace(array('<br>', '<br/>', '<br />'), "\n", $res)));
 echo "ERROR: could not read the log from the SVN gateway.\n" . $plain;
+if ($nginx_text !== '') echo "\n\n" . $nginx_text;
 exit;

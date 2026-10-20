@@ -13,6 +13,8 @@
 $root_inc_path = "../";
 include ("../includes/common.php");
 include ("./auth.php");
+// Read-only on the session: release its lock so a slow call here never stalls the page's other requests.
+session_write_close();
 
 header("Content-Type: application/json");
 function ddb_json($a) { echo json_encode($a); exit; }
@@ -50,12 +52,18 @@ $action = GetParam("action");
 
 if ($action === "dbs") {
 	$out = array();
-	$r = ddb_q($m, "SELECT s.schema_name,
-			(SELECT COUNT(*) FROM information_schema.tables t WHERE t.table_schema=s.schema_name) AS tables,
-			(SELECT COALESCE(SUM(t.data_length+t.index_length),0) FROM information_schema.tables t WHERE t.table_schema=s.schema_name) AS bytes
+	// One grouped pass over information_schema.tables: per-schema correlated subqueries made
+	// MariaDB open every table on slayer twice per schema and ran for minutes.
+	// Capped too (MariaDB max_statement_time; ignored elsewhere) so it can never hang a worker.
+	ddb_q($m, "SET SESSION max_statement_time=60");
+	$r = ddb_q($m, "SELECT s.schema_name, COUNT(t.table_name) AS tables,
+			COALESCE(SUM(t.data_length+t.index_length),0) AS bytes
 		FROM information_schema.schemata s
+		LEFT JOIN information_schema.tables t ON t.table_schema=s.schema_name
 		WHERE s.schema_name NOT IN (" . ddb_sys_list() . ")
+		GROUP BY s.schema_name
 		ORDER BY s.schema_name");
+	if (!$r) ddb_json(array("ok" => false, "error" => "Listing the dev databases timed out: " . mysqli_error($m)));
 	while ($r && ($row = mysqli_fetch_assoc($r))) {
 		$out[] = array("name" => $row["schema_name"], "tables" => (int)$row["tables"], "bytes" => (float)$row["bytes"]);
 	}
