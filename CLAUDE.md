@@ -11,6 +11,7 @@ No build system, no dependency manager (no `composer.json` / `package.json`), no
 ## Running / deploying
 
 - The site is served live from `public_html/` on the host (Apache + mod_rewrite + Basic Auth). HTTPS is forced by `public_html/.htaccess`.
+- Runtime is **PHP 8.4** (FPM pool `/etc/php/8.4/fpm/pool.d/monitor.sayu.co.uk.conf`, socket `php8.4-monitor.sayu.co.uk-fpm.sock`, set in both `monitor.sayu.co.uk-*.conf` vhosts; moved from 5.6 on 2026-10-22, the old 5.6 pool still exists for rollback). Cron runs `/usr/bin/php-cgi8.4 -d short_open_tag=On -d date.timezone=Europe/London` (root crontab) and `php8.4` (monitor user). PHP errors from the pool end up in `/mnt/drive2/logs/monitor.sayu.co.uk/ssl_error.log` (AH01071 lines).
 - There is no dev server command, no build step, no asset bundler. To "run" a change, save the file and load the URL — PHP picks it up.
 - Access is gated by HTTP Basic Auth + an IP allowlist in `public_html/.htaccess` (`AuthUserFile /etc/.htpasswd`, user `mextern`). New developer IPs need to be added there to load anything.
 - The additional working directory `/home/vhosts/monitor.sayu.co.uk` is the same tree as the primary working directory `/mnt/drive2/vhosts/monitor.sayu.co.uk` (bind-mount / symlink) — edits in either are equivalent.
@@ -25,7 +26,7 @@ Almost every entrypoint starts with:
 include("./includes/common.php");
 ```
 
-`includes/common.php` is the spine — it pulls in `db_mysql.inc` (custom `DB_Sql` class, predates PDO), `db_connect.php` (DB credentials), `common_functions.php`, `tasks_functions.php`, defines privilege/status constants, instantiates a global `$db`, sets `$sAppPath = "./templates"`, and calls `session_start()`. After include, pages typically call `CheckSecurity(1)` which redirects unauthenticated users to `login.php`.
+`includes/common.php` is the spine — it pulls in `db_mysql.inc` (custom `DB_Sql` class on mysqli, latin1 link shared per credentials; `->escape()` for raw escaping), `db_connect.php` (DB credentials), `common_functions.php`, `tasks_functions.php`, defines privilege/status constants, instantiates a global `$db`, sets `$sAppPath = "./templates"`, and calls `session_start()`. After include, pages typically call `CheckSecurity(1)` which redirects unauthenticated users to `login.php`.
 
 Because `common.php` already creates `$db`, individual scripts use that global directly (`global $db; $db->query(...)`). Some scripts create a second `$db2` when they need a parallel cursor.
 
@@ -75,6 +76,7 @@ Scripts invoked by system cron (not via the web) include `cron_reminders.php`, `
 
 - **SQL injection is the #1 risk.** Always wrap dynamic values with `ToSQL($value, $type)` (types: `integer` / `Number` / `string` / `date` / etc.) instead of string concatenation or `addslashes`. Many older scripts do it wrong; do not copy those patterns into new code.
 - **Use the global `$db`** (and `$db2` if you need a second cursor) instead of opening new connections. After a query, advance with `$db->next_record()` and read fields with `$db->f("col")`.
+- **PHP 8 arithmetic**: `$db->f()` returns `""` for SQL NULL and `GetParam()` returns `""` for a missing param; `"" + 1` and `round("")` are TypeErrors on PHP 8 and `"" == 0` is false. Wrap such operands in `ToNumber()` (common_functions.php) or cast. Smoke-test pages read-only by running them with env `MONITOR_DB_READ_ONLY=1` (DB_Sql then skips writes).
 - **Reading request input goes through `GetParam("name")`**, not `$_GET`/`$_POST` directly — it normalizes across sources and strips magic-quotes artifacts.
 - **Auth gate**: every web-facing PHP page should call `CheckSecurity($level)` after including `common.php`. Cron scripts skip this.
 - **HTML escaping**: use `ToHTML($value)` for text rendered into HTML and `escape_task_title_for_js()` for task titles inlined into JS strings.
