@@ -871,7 +871,7 @@ function insert_responses($task_id, $assign_to_myself)
 			$response_time = get_hours_from_timediff($db->f(0));
 		}
 		
-		$response_time += $time_report_working_hours + $current_working_hours;
+		$response_time += ToNumber($time_report_working_hours) + $current_working_hours;
 			
 		$sql = " INSERT INTO responses (date_added, manager_id, task_id, response_time, is_assigned_to_myself) ";
 		$sql.= " VALUES (NOW(), ".ToSQL($user_id,"Number",false);
