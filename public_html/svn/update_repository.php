@@ -10,6 +10,10 @@ include ("./auth.php");
 include_once ("./svn_repo_support.php");
 include_once ("./svn_hosts.php");
 
+// Nothing below touches the session (auth.php has already read $user_id + the svn login), and
+// the batch deploy runs several of these at once — holding the lock would serialise them.
+session_write_close();
+
 $repository = GetParam("repository");
 if (!strlen($repository)) die ("Please specify SVN repository");
 $command = "index.php?action=checkout&username=".$svn_login."&password=".$svn_password."&repository=".$repository;

@@ -15,6 +15,10 @@ include_once ("./svn_hosts.php");
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Read-only from here on (auth.php already has $user_id + the svn login). The page scans several
+// sites at once; holding the session lock through the gateway call made them run one at a time.
+session_write_close();
+
 function svn_status_json($a) {
 	echo json_encode($a);
 	exit;
@@ -81,12 +85,11 @@ foreach ($files as $f) {
 
 // Shared repos (Common8, Common) are also checked out on dedicated servers, which Update deploys to
 // as well. The gateway scan above only sees web1, so ask each server's copy where it stands: a box
-// behind the repo makes the site 'update' even when web1 itself is current. Nothing below needs the
-// session, so release its lock first; otherwise these ssh calls stall the page's parallel scans.
+// behind the repo makes the site 'update' even when web1 itself is current. (The session lock was
+// released at the top, so these ssh calls don't stall the page's parallel scans.)
 $servers = array();
 $servers_behind = 0;
 if (svn_shared_repo_deploys($repository)) {
-	session_write_close();
 	list($repo_head, $servers) = svn_shared_repo_server_revs($repository);
 	foreach ($servers as $sv) { if ($sv['behind']) $servers_behind++; }
 	if ($servers_behind && $repo_head > $head_rev) $head_rev = $repo_head;

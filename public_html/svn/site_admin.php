@@ -6,7 +6,7 @@
 	same adminUrl for scanned sites.
 
 	@param repository   the domain (repo name)
-	Returns { ok, repository, adminUrl, clientId }
+	Returns { ok, repository, adminUrl, clientId, liveHost }  (liveHost: '' unless deployed under another domain)
 */
 
 $root_inc_path = "../";
@@ -28,4 +28,5 @@ echo json_encode(array(
 	'repository' => $repository,
 	'adminUrl'   => isset($admin['adminUrl']) ? $admin['adminUrl'] : '',
 	'clientId'   => isset($admin['clientId']) ? (int) $admin['clientId'] : 0,
+	'liveHost'   => isset($admin['liveHost']) ? $admin['liveHost'] : '',
 ));

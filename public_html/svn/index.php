@@ -258,6 +258,11 @@ html.dark-mode{
 #svnApp .svnctx-danger:hover{ background:var(--err-bg); color:var(--err); }
 #svnApp .svnctx-danger:hover .svnctx-ic{ color:var(--err); }
 #svnApp .host{ cursor:context-menu; }
+/* repo deployed under another domain (plastics-express.co.uk -> www.tradepipes.co.uk) */
+#svnApp .live-host{ display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; color:var(--info); background:rgba(47,134,184,.12); border:1px solid rgba(47,134,184,.35); border-radius:999px; padding:2px 9px 2px 7px; text-decoration:none; white-space:nowrap; }
+#svnApp .live-host:hover{ background:rgba(47,134,184,.22); }
+#svnApp .scard .live-host{ margin-top:6px; }
+#svnApp .svnctx-head .live-host{ display:flex; margin-top:4px; width:max-content; }
 #svnApp .svnctx-toast{ position:fixed; z-index:61; background:var(--ink); color:var(--card); font-size:12.5px; font-weight:700; padding:7px 12px; border-radius:8px; box-shadow:var(--shadow); pointer-events:none; opacity:0; transition:opacity .12s; }
 #svnApp .svnctx-toast.show{ opacity:.96; }
 
@@ -376,6 +381,27 @@ html.dark-mode{
 #svnApp .pstate.failed{ color:var(--err); }
 #svnApp .spin{ width:15px; height:15px; border-radius:50%; border:2px solid rgba(255,255,255,.18); border-top-color:var(--info); animation:svnspin .7s linear infinite; display:inline-block; }
 @keyframes svnspin{ to{ transform:rotate(360deg); } }
+/* batch deploy progress: strip above the (independently scrolling) list, one-line rows */
+#svnApp .upd-prog{ padding:12px 22px 10px; border-bottom:1px solid var(--line); }
+#svnApp .upd-bar{ height:6px; border-radius:99px; background:var(--hover-2); overflow:hidden; display:flex; }
+#svnApp .upd-bar i{ display:block; height:100%; transition:width .3s; }
+#svnApp .upd-bar .b-ok{ background:var(--ok); }
+#svnApp .upd-bar .b-err{ background:var(--err); }
+#svnApp .upd-bar .b-run{ background:var(--info); opacity:.55; }
+#svnApp .upd-chips{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+#svnApp .upd-chip{ font-size:12px; font-weight:700; color:var(--muted); padding:3px 10px; border-radius:99px; border:1px solid var(--line); cursor:pointer; }
+#svnApp .upd-chip b{ color:var(--ink-soft); margin-left:3px; }
+#svnApp .upd-chip.on{ background:var(--hover-2); color:var(--ink); border-color:var(--line-strong); }
+#svnApp .upd-chip[data-f=failed] b{ color:var(--err); }
+#svnApp .upd-chip:disabled{ opacity:.45; cursor:default; }
+#svnApp .upd-list .prow{ padding:7px 2px; }
+#svnApp .upd-list .prow .phost .h{ font-size:13.5px; display:flex; align-items:baseline; gap:8px; }
+#svnApp .upd-list .prow .phost .h .mono{ font-size:11.5px; font-weight:500; color:var(--muted); }
+#svnApp .upd-list[data-f=running] .prow:not([data-st=updating]),
+#svnApp .upd-list[data-f=failed] .prow:not([data-st=failed]):not([data-st=partial]),
+#svnApp .upd-list[data-f=done] .prow:not([data-st=done]),
+#svnApp .upd-list[data-f=queued] .prow:not([data-st=queued]){ display:none; }
+#svnApp .upd-empty{ padding:18px 2px; font-size:13px; color:var(--muted); display:none; }
 #svnApp .pcheck{ width:18px; height:18px; border-radius:50%; background:var(--ok-bg); color:var(--ok); display:flex; align-items:center; justify-content:center; }
 #svnApp .pfail{ width:18px; height:18px; border-radius:50%; background:var(--err-bg); color:var(--err); display:flex; align-items:center; justify-content:center; }
 
@@ -936,6 +962,14 @@ $(document).ajaxError(function(e, xhr){
 // ---------------- state ----------------
 var REPOS = [<?php echo $repositories_typehead; ?>];
 var DEV_SUBDOMAIN = <?php echo json_encode($dev_subdomain); ?>;
+// Repos served under a different domain than their name: repo -> live host (svn_live_host_map()).
+var LIVE_HOSTS = <?php echo json_encode((object) svn_live_host_map($db)); ?>;
+function liveHost(r){ return LIVE_HOSTS.hasOwnProperty(r) ? LIVE_HOSTS[r] : ''; }
+function siteHost(r){ return liveHost(r) || r; }   // the host the site actually answers on
+function liveHostHtml(r){
+  var h=liveHost(r); if(!h) return '';
+  return '<a class="live-host" href="https://'+esc(h)+'/" target="_blank" rel="noopener" title="Live as '+esc(h)+' (SVN repo: '+esc(r)+')">'+icon('globe',13)+esc(h)+'</a>';
+}
 // Shared library repos (Common8/Common): svn-only, no DB/images/dev-URL — see svn_repo_support.php.
 var LIB_REPOS = <?php echo json_encode(array_values(svn_library_repos())); ?>;
 function isLibRepo(r){ return LIB_REPOS.indexOf(String(r)) !== -1; }
@@ -1085,7 +1119,7 @@ function activeScopeName(){
 }
 
 // ---------------- scan queue ----------------
-var scanQueue = [], scanning = 0, SCAN_CONCURRENCY = 4, autoSelectUpdates = false;
+var scanQueue = [], scanning = 0, SCAN_CONCURRENCY = 6, autoSelectUpdates = false;   // parallel scans (svn_site_status.php releases the session lock)
 // Set when the user picks "Review & update" from the finder: once this repo finishes
 // scanning, jump straight into the update-review modal (if it has pending changes).
 var pendingReviewRepo = null;
@@ -1350,12 +1384,13 @@ function renderTable(){
       + '<td colspan="5" class="site-head-cell"><div class="site-head">'
         + '<button class="site-collapse" data-collapse="'+esc(r)+'" '+(hasFiles?'':'disabled')+' title="'+(isCol?'Show files':'Hide files')+'">'+icon('chevron',16,1.8,(isCol?'transform:rotate(-90deg)':''))+'</button>'
         + '<span class="host">'+esc(r)+'</span>'
+        + liveHostHtml(r)
         + statusBadge(s)
         + (s.scanState==='done'&&siteStatus(s)==='update' ? '<span class="behind">'+icon('up',13)+behindLabel(s, files.length)+(s.headRev?' <span class="rev mono">r'+esc(s.headRev)+'</span>':'')+'</span>' : '')
         + (s.lastBy||s.lastAt ? '<span class="site-meta">'+(s.lastBy?icon('user',12)+' '+esc(s.lastBy):'')+(s.lastBy&&s.lastAt?' <span class="mdot"></span> ':'')+(s.lastAt?icon('clock',12)+' '+esc(s.lastAt):'')+'</span>' : '')
         + '<span class="sh-spacer"></span>'
         + '<span class="file-count">'+(hasFiles?(files.length+' file'+(files.length!==1?'s':'')):(s.scanState==='done'?(siteStatus(s)==='current'?'Up to date':'—'):''))+'</span>'
-        + (s.adminUrl ? '<a class="site-btn site-admin" href="'+esc(s.adminUrl)+'" target="_blank" rel="noopener" title="Admin login ('+esc(r)+')">'+icon('login',15)+'</a>'
+        + (s.adminUrl ? '<a class="site-btn site-admin" href="'+esc(s.adminUrl)+'" target="_blank" rel="noopener" title="Admin login ('+esc(siteHost(r))+')">'+icon('login',15)+'</a>'
             : (s.clientId ? '<a class="site-btn site-admin" href="../create_client.php?client_id='+esc(s.clientId)+'" target="_blank" rel="noopener" title="Open client record">'+icon('login',15)+'</a>' : ''))
         + '<button class="site-btn" data-refresh="'+esc(r)+'" title="Re-scan this site">'+icon('refresh',15)+'</button>'
         + '<button class="site-btn" data-actions="'+esc(r)+'" title="Site actions">'+icon('dots',16)+'</button>'
@@ -1389,7 +1424,7 @@ function renderTable(){
             + ' title="Stop SVN tracking this file (it stays on the live site) and ignore it — for generated files">'+icon('x',12)+' Stop tracking</button>')
           + '<button class="fdel" data-del-repo="'+esc(r)+'" data-del-file="'+esc(rel)+'" data-del-kind="'+esc(f.kind||'')+'"'
           + ' title="'+(untracked?'Delete this file from the live site (permanent — it is not in SVN)':'Delete this file from SVN and the live site')+'">'+icon('trash',12)+' Delete</button>';
-        rows += '<tr class="file-row">'
+        rows += '<tr class="file-row" data-frepo="'+esc(r)+'" data-ffile="'+esc(rel)+'" data-fkind="'+esc(f.kind||'')+'">'
           + '<td class="col-chk"></td>'
           + '<td class="fp-dir mono">'+esc(dir)+'</td>'
           + '<td class="fp-name"><button class="file-open" data-open-repo="'+esc(r)+'" data-open-file="'+esc(rel)+'" title="Open '+esc(f.file_name)+'">'+esc(f.file_name)+'</button>'
@@ -1446,7 +1481,7 @@ function renderCards(){
     var s = ensureSite(r); var seld = !!STATE.sel[r]; var selectable = s.scanState==='done'&&siteStatus(s)==='update';
     var nchg = siteFiles(s).length + (s.serversBehind||0);
     return '<div class="scard'+(seld?' sel':'')+'" data-cardrepo="'+esc(r)+'">'
-      + '<div class="scard-top"><div><div class="host">'+esc(r)+'</div>'
+      + '<div class="scard-top"><div><div class="host">'+esc(r)+'</div>'+liveHostHtml(r)
         + '<div class="meta">'+(s.lastBy?esc(s.lastBy):'')+(s.lastBy&&s.lastAt?' · ':'')+(s.lastAt?esc(s.lastAt):'')+'</div></div>'
         + '<input type="checkbox" class="chk row-chk" '+(seld?'checked':'')+' '+(selectable?'':'disabled')+' data-repo="'+esc(r)+'"></div>'
       + statusBadge(s)
@@ -1552,7 +1587,7 @@ function openActionsPop(repo, anchor){
 
 // ---------------- domain right-click context menu ----------------
 var CTX_ADMIN = {};   // repo -> adminUrl ('' once resolved with no admin)
-function domainFullUrl(repo){ return 'https://'+repo+'/'; }
+function domainFullUrl(repo){ return 'https://'+siteHost(repo)+'/'; }
 function knownAdminUrl(repo){
   if(typeof STATE!=='undefined' && STATE.sites[repo] && STATE.sites[repo].adminUrl) return STATE.sites[repo].adminUrl;
   return CTX_ADMIN.hasOwnProperty(repo) ? CTX_ADMIN[repo] : null;   // null = not resolved yet
@@ -1593,9 +1628,10 @@ function openDomainCtx(repo, x, y){
   var siteItems = (soloed ? '' : item('open-single','Only this site','branch'))
     + (curG ? item('remove-group','Remove from group','x', curG.name, ' svnctx-danger') : '');
   var html = '<div class="svnctx" data-ctxrepo="'+esc(repo)+'">'
-    + '<div class="svnctx-head mono">'+esc(repo)+'</div>'
+    + '<div class="svnctx-head mono">'+esc(repo)+liveHostHtml(repo)+'</div>'
     + '<div class="svnctx-sec">Copy</div>'
-    + item('copy-domain','Domain','copy')
+    + item('copy-domain','Domain','copy', liveHost(repo))
+    + (liveHost(repo) ? item('copy-repo','Repo name','copy', repo) : '')
     + item('copy-url','Full URL','copy')
     + item('copy-admin','Admin path','copy', pending?'…':(admin?adminPathFromUrl(admin):'none'), adminCls)
     + '<div class="svnctx-sec">Open</div>'
@@ -1621,15 +1657,72 @@ function openDomainCtx(repo, x, y){
   }
   setTimeout(function(){
     $(document).on('mousedown.svnctx', function(e){ if(!$(e.target).closest('.svnctx').length) closeCtxMenu(); });
-    $(document).on('contextmenu.svnctx', function(e){ if(!$(e.target).closest('.svnctx,.host').length) closeCtxMenu(); });
+    $(document).on('contextmenu.svnctx', function(e){ if(!$(e.target).closest('.svnctx,.host,.file-row').length) closeCtxMenu(); });
     $(document).on('keydown.svnctx', function(e){ if(e.key==='Escape') closeCtxMenu(); });
     $(window).on('scroll.svnctx resize.svnctx', function(){ closeCtxMenu(); });
   }, 0);
 }
 
+// ---------------- file-row right-click context menu ----------------
+// The row's own buttons, plus the ignore masks the Ignore dialog offers as chips — notably
+// "Ignore whole folder" (svn:ignore * on the file's directory) for a folder of generated
+// backups that lists hundreds of untracked files.
+function openFileCtx(repo, file, kind, x, y){
+  closeCtxMenu(); closeAllPopovers();
+  var base = file.split('/').pop(), dir = igDirOf(file);
+  var untracked = (kind === '?'), conflicted = (kind === 'C');
+  var ext = (base.indexOf('.')!==-1) ? ('*.'+base.split('.').pop()) : '';
+  var sibs = igDirUntracked(repo, dir);
+  function item(action, label, ic, sub, cls){
+    return '<button class="svnctx-item'+(cls||'')+'" data-ctx="'+action+'"><span class="svnctx-ic">'+icon(ic,15)+'</span><span>'+esc(label)+'</span>'
+      + (sub?'<span class="svnctx-sub mono">'+esc(sub)+'</span>':'')+'</button>';
+  }
+  var extN = ext ? sibs.filter(function(n){ return globToRe(ext).test(n); }).length : 0;
+  var html = '<div class="svnctx" data-ctxrepo="'+esc(repo)+'" data-ctxfile="'+esc(file)+'" data-ctxkind="'+esc(kind)+'">'
+    + '<div class="svnctx-head mono" title="'+esc(file)+'">'+esc(file)+'</div>'
+    + '<div class="svnctx-sec">File</div>'
+    + item('f-open','Open','file')
+    + (untracked ? '' : item('f-diff','View diff','branch'))
+    + item('f-copy','Copy path','copy')
+    + (conflicted ? item('f-resolve','Resolve conflict','check') : '')
+    + ((untracked || sibs.length) ? '<div class="svnctx-sec">Ignore</div>' : '')
+    + (untracked ? item('f-ig-file','This file','x') : '')
+    + (ext && extN > 1 ? item('f-ig-ext','All '+ext+' here','x', extN+' files') : '')
+    + (sibs.length ? item('f-ig-dir','Whole folder','folder', dir.split('/').pop()+'/ · '+sibs.length) : '')
+    + '<div class="svnctx-sec">Remove</div>'
+    + (untracked ? '' : item('f-untrack','Stop tracking','x'))
+    + item('f-delete', untracked ? 'Delete from live' : 'Delete from SVN + live', 'trash', '', ' svnctx-danger')
+    + '</div>';
+  var $m = $(html).appendTo('#svnApp');
+  $m.css({left:x+'px', top:y+'px'});
+  var w=$m.outerWidth(), h=$m.outerHeight();
+  if(x+w > window.innerWidth-8)  $m.css('left', Math.max(8, window.innerWidth - w - 8));
+  if(y+h > window.innerHeight-8) $m.css('top',  Math.max(8, window.innerHeight - h - 8));
+  setTimeout(function(){
+    $(document).on('mousedown.svnctx', function(e){ if(!$(e.target).closest('.svnctx').length) closeCtxMenu(); });
+    $(document).on('contextmenu.svnctx', function(e){ if(!$(e.target).closest('.svnctx,.host,.file-row').length) closeCtxMenu(); });
+    $(document).on('keydown.svnctx', function(e){ if(e.key==='Escape') closeCtxMenu(); });
+    $(window).on('scroll.svnctx resize.svnctx', function(){ closeCtxMenu(); });
+  }, 0);
+}
+function fileCtxAction(act, $menu, x, y){
+  var repo=$menu.attr('data-ctxrepo'), file=$menu.attr('data-ctxfile'), kind=$menu.attr('data-ctxkind')||'';
+  var base=file.split('/').pop();
+  closeCtxMenu();
+  if(act==='f-open')         openSource(file, 0, repo);
+  else if(act==='f-diff')    openDiff(repo, file);
+  else if(act==='f-copy')    ctxCopy(file, x, y, 'file path');
+  else if(act==='f-resolve') doResolve(repo, file);
+  else if(act==='f-ig-file') doIgnore(repo, file, base);
+  else if(act==='f-ig-ext')  doIgnore(repo, file, '*.'+base.split('.').pop());
+  else if(act==='f-ig-dir')  doIgnore(repo, file, '*');
+  else if(act==='f-untrack') doUntrack(repo, file, kind);
+  else if(act==='f-delete')  doDelete(repo, file, kind);
+}
+
 // ---------------- modals ----------------
 function modal(html){ $('#modalHost').html('<div class="scrim" data-scrim="1">'+html+'</div>'); }
-function closeModal(){ $(document).off('keydown.updDone'); if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); } BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; GCRIT=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
+function closeModal(){ if(UPD_RUNNING) return; /* batch deploy popup stays until it finishes */ $(document).off('keydown.updDone'); if(typeof bkStopPoll==='function'){ bkStopPoll(); BK_JOB=null; } if(typeof dcStopPoll==='function'){ dcStopPoll(); DC_JOB=null; } if(typeof dcStopImgPoll==='function'){ dcStopImgPoll(); } BK_OPEN_REPO=null; INFO_OPEN=null; DC_OPEN_REPO=null; GCRIT=null; var h=(location.hash||'').replace(/^#/,''); var base=h.split('~')[0]; if(base!==h){ location.hash = base; } if(typeof closeSource==='function') closeSource(); $('#modalHost').empty(); }
 
 // Styled confirm dialog (replaces window.confirm); layers above any open modal.
 var UICONFIRM_CB = null;
@@ -1667,7 +1760,10 @@ function openConfirmUpdate(){
     + '<button class="btn grad" id="confirmApply">'+icon('refresh',16)+' Apply '+upd.length+' update'+(upd.length!==1?'s':'')+'</button></div></div>');
 }
 
+var UPD_CONCURRENCY = 4;   // parallel deploys in a batch
+var UPD_RUNNING = false;
 function runBatchUpdate(repos){
+  UPD_RUNNING = true;
   var states = {}; repos.forEach(function(r){ states[r]='queued'; });
   // Per-server lines from a shared repo's fan-out to the dedicated boxes (update_repository.php appends
   // them after a '--- Shared repository' marker), e.g. "rss.sayu.co.uk: SKIPPED - ...". web1 itself
@@ -1688,41 +1784,87 @@ function runBatchUpdate(repos){
     else if(st==='failed') right = '<span class="pstate failed"><span class="pfail">'+icon('x',11,2.4)+'</span> Failed</span>';
     else if(st==='partial') right = '<span class="pstate failed"><span class="pfail">'+icon('x',11,2.4)+'</span> Server skipped</span>';
     var notes = (srvNotes[r]||[]).map(function(n){ return '<div class="s mono" style="white-space:normal;word-break:break-word;margin-top:3px;color:'+(n.bad?'var(--err)':'var(--muted)')+'">'+esc(n.text)+'</div>'; }).join('');
-    return '<div class="prow" data-prow="'+esc(r)+'"><div class="phost"><div class="h">'+esc(r)+'</div><div class="s mono">'+(s.headRev?'→ r'+esc(s.headRev):'')+'</div>'+notes+'</div>'+right+'</div>';
+    return '<div class="prow" data-prow="'+esc(r)+'" data-st="'+st+'"><div class="phost"><div class="h">'+esc(r)+(s.headRev?'<span class="mono">→ r'+esc(s.headRev)+'</span>':'')+'</div>'+notes+'</div>'+right+'</div>';
   }
-  function render(done){
-    var vals = Object.keys(states).map(function(k){return states[k];});
-    var ok = vals.filter(function(v){return v==='done';}).length;
-    var fail = vals.filter(function(v){return v==='failed'||v==='partial';}).length;
-    var head = done
-      ? '<div class="mh-ico">'+icon('check',22)+'</div><div><h3>'+(fail?'Finished with errors':'All updates applied')+'</h3><p>'+ok+' succeeded'+(fail?' · '+fail+' failed':'')+'</p></div>'
-      : '<div class="mh-ico"><span class="spin"></span></div><div><h3>Applying updates…</h3><p>Deploying to '+repos.length+' site'+(repos.length!==1?'s':'')+' in sequence.</p></div>';
-    var summary = done ? '<div class="summary '+(fail?'mixed':'ok')+'"><div style="text-align:center;min-width:64px"><div class="s-big" style="color:var(--ok)">'+ok+'</div><div class="s-lbl">succeeded</div></div>'
-      + (fail?'<div style="text-align:center;min-width:64px"><div class="s-big" style="color:var(--err)">'+fail+'</div><div class="s-lbl">failed</div></div>':'')
-      + '<div style="flex:1;display:flex;align-items:center;font-size:13.5px;color:var(--ink-soft);line-height:1.4">'+(fail?'Failed sites kept their previous revision — open their error log and retry. A skipped server kept its previous revision too; the line under the site says why.':'Every selected site is now live on the latest revision.')+'</div></div>' : '';
-    modal('<div class="modal"><div class="modal-head">'+head+(done?'<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button>':'')+'</div>'
-      + '<div class="modal-body">'+summary+repos.map(rowHtml).join('')+'</div>'
-      + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" id="updDoneBtn" '+(done?'':'disabled')+' data-close-modal="1">'+(done?'Done':'Please wait…')+'</button></div></div>');
-    if(done){
-      // Finished: let ENTER dismiss the popup — focus the Done button (native Enter=click) and
-      // add a one-shot Enter handler in case focus drifts off it.
-      setTimeout(function(){ $('#updDoneBtn').focus(); }, 0);
-      $(document).off('keydown.updDone').on('keydown.updDone', function(e){
-        if(e.key==='Enter'){ e.preventDefault(); $(document).off('keydown.updDone'); closeModal(); }
-      });
+  // The popup is built ONCE; progress then patches the header, the strip and the one row that
+  // changed. (Rebuilding the whole modal per step threw a scrolled list back to the top.)
+  var FILTER = 'all';
+  function counts(){
+    var c = {queued:0, updating:0, done:0, failed:0};
+    repos.forEach(function(r){ var v=states[r]; c[v==='partial'?'failed':v]++; });
+    return c;
+  }
+  function headHtml(done){
+    var c = counts();
+    return done
+      ? '<div class="mh-ico">'+icon(c.failed?'alert':'check',22)+'</div><div><h3>'+(c.failed?'Finished with errors':'All updates applied')+'</h3><p>'+c.done+' succeeded'+(c.failed?' · '+c.failed+' failed — failed sites kept their previous revision':'')+'</p></div>'
+        + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button>'
+      : '<div class="mh-ico"><span class="spin"></span></div><div><h3>Applying updates…</h3><p>'+(c.done+c.failed)+' of '+repos.length+' finished · '+UPD_CONCURRENCY+' at a time</p></div>';
+  }
+  function progHtml(){
+    var c = counts(), n = repos.length || 1;
+    var chips = [['all','All',repos.length],['updating','Running',c.updating],['queued','Queued',c.queued],['failed','Failed',c.failed],['done','Done',c.done]];
+    return '<div class="upd-bar"><i class="b-ok" style="width:'+(c.done/n*100)+'%"></i><i class="b-err" style="width:'+(c.failed/n*100)+'%"></i><i class="b-run" style="width:'+(c.updating/n*100)+'%"></i></div>'
+      + '<div class="upd-chips">'+chips.map(function(ch){
+          var f = (ch[0]==='updating') ? 'running' : ch[0];
+          return '<button type="button" class="upd-chip'+(FILTER===f?' on':'')+'" data-f="'+f+'"'+(ch[0]!=='all'&&!ch[2]&&FILTER!==f?' disabled':'')+'>'+ch[1]+'<b>'+ch[2]+'</b></button>';
+        }).join('')+'</div>';
+  }
+  function refresh(done){
+    $('#updHead').html(headHtml(done));
+    $('#updProg').html(progHtml());
+    // A filter whose rows have all moved on (e.g. "Running" at the end) would show an empty list.
+    var vis = $('#updList .prow').filter(function(){ return $(this).css('display')!=='none'; }).length;
+    $('#updEmpty').toggle(!vis);
+  }
+  function setRow(r){ $('#updList .prow[data-prow="'+cssEsc(r)+'"]').replaceWith(rowHtml(r)); }
+  modal('<div class="modal"><div class="modal-head" id="updHead"></div>'
+    + '<div class="upd-prog" id="updProg"></div>'
+    + '<div class="modal-body"><div class="upd-list" id="updList" data-f="all">'+repos.map(rowHtml).join('')+'</div><div class="upd-empty" id="updEmpty">Nothing here.</div></div>'
+    + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" id="updDoneBtn" disabled data-close-modal="1">Please wait…</button></div></div>');
+  refresh(false);
+  $('#updProg').on('click', '.upd-chip', function(){
+    FILTER = $(this).attr('data-f'); $('#updList').attr('data-f', FILTER); refresh(running>0 || next<repos.length ? false : true);
+  });
+  function finish(){
+    UPD_RUNNING = false;
+    refresh(true);
+    $('#updDoneBtn').prop('disabled', false).text('Done');
+    // Failures are what needs a look — jump the list to them.
+    if(counts().failed){ FILTER='failed'; $('#updList').attr('data-f', FILTER); refresh(true); }
+    enqueueScan(repos, true);
+    // Finished: let ENTER dismiss the popup — focus the Done button (native Enter=click) and
+    // add a one-shot Enter handler in case focus drifts off it.
+    setTimeout(function(){ $('#updDoneBtn').focus(); }, 0);
+    $(document).off('keydown.updDone').on('keydown.updDone', function(e){
+      if(e.key==='Enter'){ e.preventDefault(); $(document).off('keydown.updDone'); closeModal(); }
+    });
+  }
+  // Several deploys at once: each site is its own working copy and the svn daemons fork per
+  // request, so they don't contend (update_repository.php releases the session lock for this).
+  var next = 0, running = 0;
+  function pump(){
+    while(running < UPD_CONCURRENCY && next < repos.length){
+      (function(r){
+        running++; states[r]='updating'; setRow(r); refresh(false);
+        // timeout: a hung request must not keep the (un-closable while running) popup open forever
+        $.ajax({url:'update_repository.php', type:'POST', data:{repository:r}, timeout:300000}).done(function(txt){
+          srvNotes[r] = serverNotes(txt);
+          // The daemon answers "+OK Checkout complete" or "-ERR <why>"; the gateway's own failures
+          // ("Can't write to socket") carry neither — a 200 alone doesn't mean it deployed.
+          var web1 = String(txt||'').split('--- Shared repository')[0];
+          if(!/\+OK/.test(web1) || /-ERR/.test(web1)){
+            var why = $.trim(web1.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ')).slice(0,200) || 'empty reply from the SVN gateway';
+            srvNotes[r].unshift({text:why, bad:true}); states[r]='failed';
+          } else states[r] = srvNotes[r].some(function(n){ return n.bad; }) ? 'partial' : 'done';
+        }).fail(function(x, st){ srvNotes[r]=[{text:(st==='timeout'?'No reply after 5 minutes — it may still have deployed; re-scan to check.':'Request failed ('+(x.status||st)+').'), bad:true}]; states[r]='failed'; }).always(function(){
+          running--; setRow(r);
+          if(running===0 && next>=repos.length) finish(); else { refresh(false); pump(); }
+        });
+      })(repos[next++]);
     }
   }
-  render(false);
-  var i = 0;
-  function step(){
-    if(i>=repos.length){ render(true); enqueueScan(repos, true); return; }
-    var r = repos[i]; states[r]='updating'; render(false);
-    $.post('update_repository.php', {repository:r}, function(txt){
-      srvNotes[r] = serverNotes(txt);
-      states[r] = srvNotes[r].some(function(n){ return n.bad; }) ? 'partial' : 'done'; i++; setTimeout(step, 150);
-    }).fail(function(){ states[r]='failed'; i++; setTimeout(step, 150); });
-  }
-  setTimeout(step, 250);
+  setTimeout(pump, 250);
 }
 
 function openSaveGroup(presetRepos){
@@ -2458,17 +2600,18 @@ function doUntrack(repo, file, kind){
       });
     });
 }
-function doIgnore(repo, file){
+// preset: pattern to start with (the file-row context menu passes base / *.ext / '*').
+function doIgnore(repo, file, preset){
   if(!repo || !file) return;
   var base = file.split('/').pop(), dir = igDirOf(file);
   var sibs = igDirUntracked(repo, dir);                       // untracked names listed in this folder
   var ext  = (base.indexOf('.')!==-1) ? ('*.'+base.split('.').pop()) : '*';
   // Several untracked files in the same folder (e.g. a backup dir of generated css) => a mask
   // is almost certainly what's wanted; a lone stray file => just that file.
-  var def  = (sibs.length > 1) ? ext : base;
+  var def  = preset || ((sibs.length > 1) ? ext : base);
   var chips = [['This file', base]];
   if(ext !== base) chips.push(['All '+ext, ext]);
-  chips.push(['Everything here', '*']);
+  chips.push(['Whole folder', '*']);
   // uiConfirm's handler calls closeConfirm() (which empties #confirmHost) BEFORE our callback
   // runs — so the input is gone by then. Keep the current pattern in this closure instead of
   // reading it back out of the dialog.
@@ -2647,7 +2790,7 @@ function openInfo(kind, repo){
   var titles = { history:['History','Recent commits & deploys'], log:['Error log','Recent errors + latest critical from error.log'], critical:['Critical errors','Critical errors in error.log'], cron:['Cron jobs','Cron jobs for this repository'], mail:['Mail log','Recent mail sent from this domain'], access:['Access log','Requests to this site — search by IP, URL, status and date'], cache:['Cache','nginx cache on the site’s server'] };
   var t = titles[kind];
   modal('<div class="modal wide'+((kind==='access'||kind==='cron')?' xwide':'')+'"><div class="modal-head"><div class="mh-ico">'+icon(kind==='cron'?'calendar':(kind==='history'?'history':(kind==='mail'?'mail':(kind==='access'?'globe':(kind==='cache'?'layers':'file')))),21)+'</div>'
-    + '<div style="min-width:0"><h3>'+t[0]+'</h3><p>'+t[1]+' · <span class="mono">'+esc(repo)+'</span></p></div>'
+    + '<div style="min-width:0"><h3>'+t[0]+'</h3><p>'+t[1]+' · <span class="mono">'+esc(repo)+'</span>'+(liveHost(repo)?' → <span class="mono">'+esc(liveHost(repo))+'</span>':'')+'</p></div>'
     + '<button class="mh-x" data-close-modal="1">'+icon('x',17)+'</button></div>'
     + '<div class="modal-body"><div id="infoBody"><span class="spin"></span> Loading…</div></div>'
     + '<div class="modal-foot"><div class="mf-grow"></div><button class="btn solid" data-close-modal="1">Close</button></div></div>');
@@ -2901,7 +3044,7 @@ function accRender(){
   $('#accOut').html(sum+note+chips+tops+list);
 }
 function accDetailHtml(r){
-  var url='https://'+ACC.repo+(r.path.charAt(0)==='/'?r.path:'/'+r.path);
+  var url='https://'+siteHost(ACC.repo)+(r.path.charAt(0)==='/'?r.path:'/'+r.path);
   var line=r.ip+' - - ['+r.time+'] "'+r.m+' '+r.path+'" '+r.s+' '+r.b+' "'+r.ref+'" "'+r.ua+'"';
   return '<div class="acc-d"><div><span class="k">Request</span>'+esc(r.m+' '+r.path)+'</div>'
     + '<div><span class="k">Referer</span>'+esc(r.ref||'-')+'</div>'
@@ -3608,7 +3751,7 @@ $(function(){
 
   // selection
   $(document).on('change', '.row-chk', function(e){ e.stopPropagation(); var r=$(this).attr('data-repo'); if(this.checked) STATE.sel[r]=true; else delete STATE.sel[r]; renderTable(); renderApplyBar(); });
-  $(document).on('click', '[data-cardrepo]', function(e){ if($(e.target).is('input,button') || $(e.target).closest('button').length) return; var r=$(this).attr('data-cardrepo'); var s=STATE.sites[r]; if(s&&siteStatus(s)==='update'){ if(STATE.sel[r]) delete STATE.sel[r]; else STATE.sel[r]=true; renderTable(); renderApplyBar(); } });
+  $(document).on('click', '[data-cardrepo]', function(e){ if($(e.target).is('input,button') || $(e.target).closest('button,a').length) return; var r=$(this).attr('data-cardrepo'); var s=STATE.sites[r]; if(s&&siteStatus(s)==='update'){ if(STATE.sel[r]) delete STATE.sel[r]; else STATE.sel[r]=true; renderTable(); renderApplyBar(); } });
   $('#selAll').on('change', function(){
     var vis = visibleRepos().filter(function(r){ var s=STATE.sites[r]; return s&&s.scanState==='done'&&siteStatus(s)==='update'; });
     if(this.checked) vis.forEach(function(r){ STATE.sel[r]=true; });
@@ -3640,12 +3783,22 @@ $(function(){
     e.preventDefault();
     openDomainCtx(repo, e.clientX, e.clientY);
   });
+  // Right-click a file row -> its actions + ignore masks (this file / *.ext / whole folder).
+  // Left alone on links/inputs/selected text so copying a path by hand still works.
+  $(document).on('contextmenu', '#svnApp tr.file-row', function(e){
+    var $t=$(this), repo=$t.attr('data-frepo'), file=$t.attr('data-ffile');
+    if(!repo || !file || $(e.target).closest('a,input').length || String(window.getSelection()||'')) return;
+    e.preventDefault();
+    openFileCtx(repo, file, $t.attr('data-fkind')||'', e.clientX, e.clientY);
+  });
   $(document).on('click', '#svnApp .svnctx-item', function(e){
     e.stopPropagation();
     if($(this).hasClass('svnctx-pending') || $(this).hasClass('svnctx-disabled')) return;
     var act=$(this).attr('data-ctx'); var repo=$(this).closest('.svnctx').attr('data-ctxrepo');
     var admin=knownAdminUrl(repo)||''; var x=e.clientX, y=e.clientY;
-    if(act==='copy-domain')      ctxCopy(repo, x, y, 'domain');
+    if(act.indexOf('f-')===0){ fileCtxAction(act, $(this).closest('.svnctx'), x, y); return; }   // file-row menu
+    if(act==='copy-domain')      ctxCopy(siteHost(repo), x, y, 'domain');
+    else if(act==='copy-repo')   ctxCopy(repo, x, y, 'repo name');
     else if(act==='copy-url')    ctxCopy(domainFullUrl(repo), x, y, 'full URL');
     else if(act==='copy-admin'){ if(!admin) return; ctxCopy(adminPathFromUrl(admin), x, y, 'admin path'); }
     else if(act==='open-url')    window.open(domainFullUrl(repo), '_blank', 'noopener');

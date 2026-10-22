@@ -485,11 +485,86 @@ function svn_build_admin_url($web_address, $admin_web_address, $login, $password
 	return rtrim($base, '/') . '/admin_login.php?operation=login&login=' . urlencode($login) . '&password=' . urlencode((string) $password);
 }
 
+/** Host part of a clients_sites.web_address ('https://www.x.co.uk/', 'x.co.uk/~y', ...), lower-cased. */
+function svn_web_address_host($wa) {
+	$wa = strtolower(trim((string) $wa));
+	$host = parse_url($wa, PHP_URL_HOST);
+	if (!$host) { $host = parse_url('http://' . ltrim($wa, '/'), PHP_URL_HOST); }
+	return strtolower((string) $host);
+}
+
+/**
+ * Repos served under a different domain than their name: repo => live host, e.g.
+ *   'plastics-express.co.uk' => 'www.tradepipes.co.uk'
+ * The repo's web1 vhost carries the real domain as a ServerAlias, but aliases are mostly old or
+ * spare domains that redirect (ramsayladders.com, agdequipment.co.uk...). So an alias only counts
+ * when the client records list it as a site (host = alias or www.alias) and list NO site at the
+ * repo's own domain — plastics-express.co.uk has only its ~userdir dev row there. The record's
+ * spelling (with/without www.) wins. web1 vhosts only; off-web1 sites come back as their repo.
+ */
+function svn_live_host_map(&$db) {
+	static $map = null;
+	if ($map !== null) return $map;
+	$map = array();
+	$out = array();
+	@exec("grep -hE '^[[:space:]]*Server(Name|Alias)[[:space:]]' /etc/apache2/sites-enabled/*.conf 2>/dev/null", $out);
+	$aliases = array();   // repo => alias base domains (no www.)
+	$repo = '';
+	foreach ($out as $line) {
+		$parts = preg_split('/\s+/', strtolower(trim($line)));
+		$kw = array_shift($parts);
+		if ($kw === 'servername') { $repo = preg_replace('/^www\./', '', (string) reset($parts)); continue; }
+		if ($repo === '') continue;
+		foreach ($parts as $h) {
+			$b = preg_replace('/^www\./', '', $h);
+			// Sayu's own hosts (svashop.sayuconnect.com, secure.sayu.co.uk) are staging/shared, never "the" site.
+			if ($b === '' || $b === $repo || !preg_match('/^[a-z0-9.\-]+$/', $b) || preg_match('/(^|\.)(sayuconnect\.com|sayu\.co\.uk)$/', $b)) continue;
+			$aliases[$repo][$b] = true;
+		}
+	}
+	if (!$aliases) return $map;
+	$likes = array();
+	foreach ($aliases as $r => $as) {
+		$likes[] = "web_address LIKE " . ToSQL('%' . $r . '%', "text");
+		foreach ($as as $a => $_) $likes[] = "web_address LIKE " . ToSQL('%' . $a . '%', "text");
+	}
+	$hosts = array();     // host => true, for every client site
+	$db->query("SELECT web_address FROM clients_sites WHERE " . implode(' OR ', $likes));
+	while ($db->next_record()) {
+		$h = svn_web_address_host($db->f("web_address"));
+		if ($h !== '') $hosts[$h] = true;
+	}
+	foreach ($aliases as $r => $as) {
+		if (isset($hosts[$r]) || isset($hosts['www.' . $r])) continue;
+		foreach ($as as $a => $_) {
+			if (isset($hosts['www.' . $a])) { $map[$r] = 'www.' . $a; break; }
+			if (isset($hosts[$a]))          { $map[$r] = $a; break; }
+		}
+	}
+	return $map;
+}
+
+/** The live host for a repo ('www.tradepipes.co.uk'), or '' when it is served as its own name. */
+function svn_live_host(&$db, $repository) {
+	$map = svn_live_host_map($db);
+	$d = strtolower((string) $repository);
+	return isset($map[$d]) ? $map[$d] : '';
+}
+
 // Resolve the Monitor client + admin-login URL for a domain (host matched precisely).
-// Returns array('clientId'=>int, 'adminUrl'=>string).
+// A repo deployed under another domain (svn_live_host) is resolved by that domain instead.
+// Returns array('clientId'=>int, 'adminUrl'=>string, 'liveHost'=>string).
 function svn_site_admin(&$db, $repository) {
 	$d = strtolower(preg_replace('/[^a-z0-9.\-]/i', '', $repository));
-	if ($d === '') return array('clientId' => 0, 'adminUrl' => '');
+	if ($d === '') return array('clientId' => 0, 'adminUrl' => '', 'liveHost' => '');
+	$live = svn_live_host($db, $d);
+	$res = svn_site_admin_for($db, $live !== '' ? preg_replace('/^www\./', '', $live) : $d);
+	if ($live !== '' && !$res['clientId']) $res = svn_site_admin_for($db, $d);
+	$res['liveHost'] = $live;
+	return $res;
+}
+
+function svn_site_admin_for(&$db, $d) {
 	$db->query("SELECT client_id,web_address,admin_web_address,admin_web_site_login,admin_web_site_password FROM clients_sites WHERE web_address LIKE " . ToSQL('%' . $d . '%', "text") . " ORDER BY client_id LIMIT 50");
 	$rows = array();
 	while ($db->next_record()) {
