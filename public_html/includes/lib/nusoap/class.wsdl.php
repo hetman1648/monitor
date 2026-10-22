@@ -58,6 +58,7 @@ class wsdl extends nusoap_base {
 	 * @param integer $response_timeout set the response timeout
      * @access public 
      */
+    function __construct() { $a = func_get_args(); self::wsdl(...$a); } // PHP 8: "wsdl()" is no longer a constructor
     function wsdl($wsdl = '',$proxyhost=false,$proxyport=false,$proxyusername=false,$proxypassword=false,$timeout=0,$response_timeout=30){
 		parent::nusoap_base();
         $this->wsdl = $wsdl;

@@ -88,7 +88,7 @@
 		$sql .= " AND MONTH(report_date) = " . $month_selected;
 		$db->query($sql,__FILE__,__LINE__);
 		if ($db->next_record()) {
-			$points += $db->f(0) * 10;
+			$points += ToNumber($db->f(0)) * 10;
 		}
 		
 		$sql  = " SELECT COUNT(report_id) FROM time_report ";
@@ -97,7 +97,7 @@
 		$sql .= " AND MONTH(report_date) = " . $month_selected;
 		$db->query($sql,__FILE__,__LINE__);
 		if ($db->next_record()) {
-			$points += $db->f(0) * 15;
+			$points += ToNumber($db->f(0)) * 15;
 		}
 		
 		$users[35]["manual_hours"] = 0;
@@ -110,7 +110,7 @@
 		$sql .= " AND t.task_id=6365 ";
 		$db->query($sql,__FILE__,__LINE__);
 		if ($db->next_record()) {
-			$users[35]["manual_hours"] += $db->f(0);
+			$users[35]["manual_hours"] += ToNumber($db->f(0));
 		}
 		
 		$sql  = " SELECT SUM(tr.spent_hours) AS tasks_spent_hours ";
@@ -122,7 +122,7 @@
 		$sql .= " AND t.task_id=4406 ";
 		$db->query($sql,__FILE__,__LINE__);
 		if ($db->next_record()) {
-			$users[35]["manual_hours"] += 2*$db->f(0);
+			$users[35]["manual_hours"] += 2*ToNumber($db->f(0));
 		}
 		
 		

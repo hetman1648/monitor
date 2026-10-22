@@ -101,7 +101,7 @@
 
 		$sql = "SELECT dn.*, CONCAT(u.first_name, ' ', u.last_name) as user_name ";
 		$sql .= " FROM delay_notifications dn, users u ";
-		$sql .= " WHERE u.user_id = dn.created_user_id AND note_id =" . ToSQL($note_id, INTEGER);
+		$sql .= " WHERE u.user_id = dn.created_user_id AND note_id =" . ToSQL($note_id, "integer");
 		$db->query($sql);
 		if ($db->next_record()) {
 			$user_id = $db->Record['user_id'];

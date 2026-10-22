@@ -59,7 +59,7 @@
 		$year =  date("Y");
 		$users = array();
 		show_microtime("Different  month (" . $diff_month . ")");
-		if ($diff_month != 0) {
+		if (ToNumber($diff_month) != 0) {
 			while ($diff_month >= 0) {
 				$new_date_unix = mktime(0,0,1,$month - $diff_month,1,$year);
 				$new_date_start_unix = $new_date_unix - MONTHDAY;//mktime(0,0,1,$month - $diff_month - 1,1,$year);
@@ -71,7 +71,7 @@
 				$sql .= " WHERE (UNIX_TIMESTAMP(report_date) BETWEEN " . $new_date_start_unix . " AND " . $new_date_finish_unix . ") ";
 				//$sql .= "	ANd DATE_FORMAT(report_date,'%Y-%m') = DATE_FORMAT('" . $new_date . "','%Y-%m')";
 				if (sizeof($support_users_ids) == 1) {
-					list($key, $helpdesk_user_id) = each($support_users_ids);
+					$helpdesk_user_id = reset($support_users_ids);
 					$sql .= " AND user_id = " . ToSQL($helpdesk_user_id,"number");
 				} else if (sizeof($support_users_ids)>1) {
 					$sql .= " AND user_id in (" . implode(",",$support_users_ids) . ") ";
@@ -104,7 +104,7 @@
 			$sql .= " FROM time_report ";
 			$sql .= " WHERE UNIX_TIMESTAMP(report_date) >= " . $last_update_unix_start;// . " AND UNIX_TIMESTAMP(report_date) <= " . $last_update_unix_finish . " ";
 			if (sizeof($support_users_ids) == 1) {
-				list($key, $helpdesk_user_id) = each($support_users_ids);
+				$helpdesk_user_id = reset($support_users_ids);
 				$sql .= " AND user_id = " . ToSQL($helpdesk_user_id,"number");
 			} else if (sizeof($support_users_ids)>1) {
 				$sql .= " AND user_id in (" . implode(",",$support_users_ids) . ") ";
@@ -176,7 +176,7 @@
 		$result_time = -1;
 		if (strlen($first) && strlen($second) && $first>0 && $second>0) {
 			$result_time = abs($first - $second);
-		} else if (strlen($diff) && $diff != 0) {
+		} else if (strlen($diff) && ToNumber($diff) != 0) {
 			$result_time = $diff;
 		}
 		if ($result_time>-1) {

@@ -75,6 +75,7 @@ class HTML_QuickForm_autocomplete extends HTML_QuickForm_text
      * @access    public
      * @return    void
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_autocomplete(...$a); } // PHP 8: "HTML_QuickForm_autocomplete()" is no longer a constructor
     function HTML_QuickForm_autocomplete($elementName = null, $elementLabel = null, $options = null, $attributes = null)
     {
         $this->HTML_QuickForm_text($elementName, $elementLabel, $attributes);

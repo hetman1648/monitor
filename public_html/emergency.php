@@ -80,7 +80,7 @@
 					if ($sms_message_id) { $sms_sent++; }
 				}
 			} else {
-		 		if (strlen($sms_email) && ereg("^[^@ ]+@[^@ ]+\.[^@ ]+$", $sms_email)) {
+		 		if (strlen($sms_email) && preg_match("/^[^@ ]+@[^@ ]+\.[^@ ]+$/", $sms_email)) {
 					mail($sms_email, $subject, stripslashes($message), $headers);
 				}
 		 	}

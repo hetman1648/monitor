@@ -15,7 +15,10 @@
 	$db_viart_com->Host     = VIART_COM_DATABASE_HOST;	
 	
 	$viart_com_table_prefix = "";
-	$viart_com_accessible = @mysql_connect($db_viart_com->Host, $db_viart_com->User, $db_viart_com->Password);
+	// connection probe (was @mysql_connect): quietly, without halting the page when c2s is down
+	$db_viart_com->Halt_On_Error = "no";
+	$viart_com_accessible = $db_viart_com->connect();
+	$db_viart_com->Halt_On_Error = "yes";
 	$monitor_tickets_project_id = 113;
 	$table_prefix = "";
 	$eol = "\r\n";
@@ -105,7 +108,7 @@
 			$sql = " UPDATE tasks SET last_ticket_message_id=".to_sql($message_id, "Number");
 			$sql.= " WHERE task_id=".to_sql($monitor_task_id, "Number");
 			$db->query($sql);
-			if (isset($ticket_tasks) && $ticket_tasks==0) {
+			if (isset($ticket_tasks) && ToNumber($ticket_tasks)==0) {
 				$db->query("UPDATE tasks SET is_closed=1 WHERE task_id=".to_sql($monitor_task_id, "Number"));				
 			}
 			
@@ -386,7 +389,7 @@
 			}
 		}
 		
-		$msg_strings = split("\r\n",$message);
+		$msg_strings = explode("\r\n",$message);
 		$message     = "";
 		$last_level = 0;
 
@@ -742,7 +745,7 @@
 		}
 		elseif ($type == "number") {return doubleval($value);}
 		elseif ($type == "integer") {return intval($value);}
-		elseif ($type == "date") {			if (ereg("([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})",$value,$t)){
+		elseif ($type == "date") {			if (preg_match("~([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})~",$value,$t)){
 				if (checkdate($t[3],$t[5],$t[1])) { $value = date("Y-m-d", mktime(0,0,0,$t[3],$t[5],$t[1]));}
 					else { $value = "0000-00-00";}
 			} else { $value = "0000-00-00";}
@@ -764,7 +767,7 @@
 			$prefix.=">";
 		}
 		
-		$lines = split("\n", $message);
+		$lines = explode("\n", $message);
 		
 		foreach ($lines as $key=>$line) {
 			$lines[$key] = $prefix.$line;

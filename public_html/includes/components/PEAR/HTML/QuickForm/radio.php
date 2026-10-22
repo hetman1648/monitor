@@ -57,6 +57,7 @@ class HTML_QuickForm_radio extends HTML_QuickForm_input
      * @access    public
      * @return    void
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_radio(...$a); } // PHP 8: "HTML_QuickForm_radio()" is no longer a constructor
     function HTML_QuickForm_radio($elementName=null, $elementLabel=null, $text=null, $value=null, $attributes=null)
     {
         $this->HTML_QuickForm_element($elementName, $elementLabel, $attributes);

@@ -100,8 +100,8 @@
 				$t->set_var("tasks_count", $tasks_count);
 				$t->set_var("manager_records","");
 				$t->set_var("assign_to_myself_tasks",intval($a_myself));
-				if ($a_not_myself + $a_myself) {
-					$t->set_var("assign_to_myself_percent",intval(round(100*$a_myself/($a_myself+$a_not_myself)))."%");
+				if (ToNumber($a_not_myself) + ToNumber($a_myself)) {
+					$t->set_var("assign_to_myself_percent",intval(round(100*ToNumber($a_myself)/(ToNumber($a_myself)+ToNumber($a_not_myself))))."%");
 				} else {
 					$t->set_var("assign_to_myself_percent","");
 				}

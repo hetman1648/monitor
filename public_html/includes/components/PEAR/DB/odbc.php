@@ -157,6 +157,7 @@ class DB_odbc extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_odbc(...$a); } // PHP 8: "DB_odbc()" is no longer a constructor
     function DB_odbc()
     {
         $this->DB_common();

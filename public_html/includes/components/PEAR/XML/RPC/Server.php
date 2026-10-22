@@ -330,6 +330,7 @@ class XML_RPC_Server
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::XML_RPC_Server(...$a); } // PHP 8: "XML_RPC_Server()" is no longer a constructor
     function XML_RPC_Server($dispMap, $serviceNow = 1, $debug = 0)
     {
         global $HTTP_RAW_POST_DATA;

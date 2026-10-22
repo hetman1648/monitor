@@ -415,7 +415,7 @@ if ($customer) {
            	$db2->next_record();
            	$T->set_var('count', $db2->Record['count']);
 			
-           	if ($db2->Record['count'] == 0) {
+           	if (ToNumber($db2->Record['count']) == 0) {
 				$T->set_var('white_color', 'white');
 			} else {
 				$T->set_var('white_color', 'black');

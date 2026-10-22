@@ -47,7 +47,7 @@ $today_year = $today["year"];
 		  	$differ = $db->f("differ");
 		 // echo "Name - ".$last_name." Diff - ".$differ."<br>";
 
-		 	$days_additional = floor($differ/12);
+		 	$days_additional = floor(ToNumber($differ)/12);
 		 	if ($days_additional > 5) $days_additional = 5;
 		  	$days_number = 1.25 + $days_additional*0.084;
 		   	
@@ -70,6 +70,6 @@ $date_parts1=explode($dformat, $beginDate);
 $date_parts2=explode($dformat, $endDate);
 $start_date=gregoriantojd($date_parts1[1], $date_parts1[2], $date_parts1[0]);
 $end_date=gregoriantojd($date_parts2[1], $date_parts2[2], $date_parts2[0]);
-return $end_date - $start_date;
+return $end_date - ToNumber($start_date);
 }
 ?>

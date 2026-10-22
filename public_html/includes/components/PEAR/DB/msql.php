@@ -130,6 +130,7 @@ class DB_msql extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_msql(...$a); } // PHP 8: "DB_msql()" is no longer a constructor
     function DB_msql()
     {
         $this->DB_common();

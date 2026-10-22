@@ -183,6 +183,7 @@ class DB_ibase extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_ibase(...$a); } // PHP 8: "DB_ibase()" is no longer a constructor
     function DB_ibase()
     {
         $this->DB_common();
@@ -592,7 +593,7 @@ class DB_ibase extends DB_common
         if ($this->manip_query[(int)$stmt]) {
             $tmp = DB_OK;
         } else {
-            $tmp =& new DB_result($this, $res);
+            $tmp = new DB_result($this, $res);
         }
         return $tmp;
     }

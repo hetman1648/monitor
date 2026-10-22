@@ -50,7 +50,7 @@ if ($userid && !$show_user_id) {
 }
 
 if ($filter_start_date == 'xxx') $filter_start_date = date('Y-m-00');
-if (strlen($show_user_id) > 0 && $show_user_id != 0) $filter_start_date = "";
+if (strlen($show_user_id) > 0 && ToNumber($show_user_id) != 0) $filter_start_date = "";
 
 if ($year_selected) {
     $search .= " AND DATE_FORMAT(d.start_date, '%Y') = '" . $year_selected . "'";
@@ -112,19 +112,19 @@ while ($db->next_record()) {
     while ($db2->next_record()) {
         switch ($db2->f("reason_id")) {
             case 1:
-                $vacation_i += $db2->f("total_days");
-                $total += $db2->f("total_days");
-                $total_vac += $db2->f("total_days");
+                $vacation_i += ToNumber($db2->f("total_days"));
+                $total += ToNumber($db2->f("total_days"));
+                $total_vac += ToNumber($db2->f("total_days"));
                 break;
             case 2:
-                $not_paid_i += $db2->f("total_days");
-                $total += $db2->f("total_days");
-                $total_pd += $db2->f("total_days");
+                $not_paid_i += ToNumber($db2->f("total_days"));
+                $total += ToNumber($db2->f("total_days"));
+                $total_pd += ToNumber($db2->f("total_days"));
                 break;
             case 3:
-                $illness_i += $db2->f("total_days");
-                $total += $db2->f("total_days");
-                $total_ill += $db2->f("total_days");
+                $illness_i += ToNumber($db2->f("total_days"));
+                $total += ToNumber($db2->f("total_days"));
+                $total_ill += ToNumber($db2->f("total_days"));
                 break;
         }
     }
@@ -173,7 +173,7 @@ while ($db->next_record()) {
     $db2->next_record();
     $total_holidays_year = floor($db2->f("total_holidays") ?: 0);
     
-    $avail = $total_holidays - $used_holidays;
+    $avail = $total_holidays - ToNumber($used_holidays);
     
     $holiday_summary[] = array(
         'user_id' => $uid,
@@ -195,7 +195,7 @@ if ($search || $action) {
              INNER JOIN users u ON u.user_id = d.user_id 
              LEFT JOIN reasons r ON r.reason_id = d.reason_id 
              WHERE d.is_paid = 0" . $search;
-    if ($show_user_id != 0) {
+    if (ToNumber($show_user_id) != 0) {
         $sql2 .= " AND d.user_id=" . ToSQL($show_user_id, INTEGER);
     }
     $sql2 .= " ORDER BY d.start_date DESC";

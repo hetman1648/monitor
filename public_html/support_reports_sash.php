@@ -117,7 +117,7 @@
 		$sql .= " 	AND f.admin_id = " . $db->tosql($user_id,INTEGER);
 		$db->query($sql);
 		if ($db->next_record()) {
-			$rating = 100 * round($db->f("feedback_rating"),2);
+			$rating = 100 * round(ToNumber($db->f("feedback_rating")),2);
 			$report_array[$user_id]["feedback_rating"] = (int)$rating;
 			if ($rating == 0) {
 				unset($report_array[$user_id]["feedback_rating"]);
@@ -365,7 +365,8 @@
 			//if ($support_id == 10489) { var_dump($suppourt_messages);echo"\r\n<br>";exit;}
 			
 			$timeonticket = 0;
-			while (list($first_key,$support_array) = each($suppourt_messages)) {
+			while (($first_key = key($suppourt_messages)) !== null) {
+				$support_array = current($suppourt_messages); next($suppourt_messages);
 				$first_message_id = $support_array[SUPPORT_MESSAGE];
 				$first_unix_date = $support_array[SUPPORT_UNIX];
 				$first_status_id = $support_array[SUPPORT_STATUS];
@@ -373,7 +374,8 @@
 				$first_admin_to = $support_array[SUPPORT_ADMINTO];
 				if ($first_status_id == TICKET_STATUS_ANSWERED) { continue;}
 				/**/
-				if (list($second_key,$support_array) = each($suppourt_messages)) {
+				if (($second_key = key($suppourt_messages)) !== null) {
+					$support_array = current($suppourt_messages); next($suppourt_messages);
 					$second_message_id = $support_array[SUPPORT_MESSAGE];
 					$second_unix_date = $support_array[SUPPORT_UNIX];
 					$second_status_id = $support_array[SUPPORT_STATUS];

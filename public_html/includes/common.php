@@ -92,6 +92,8 @@
 
 	$doc_path = "./documents/";
 		
+	// PHP 8 no longer falls back to the system zone (5.6 picked up Europe/London from it); php-cgi8.4 has none set
+	date_default_timezone_set("Europe/London");
 	ini_set('session.gc_maxlifetime', '21600');
 	session_start();	 
 	

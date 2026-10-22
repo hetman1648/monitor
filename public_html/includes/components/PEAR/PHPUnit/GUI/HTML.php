@@ -73,6 +73,7 @@ class PHPUnit_GUI_HTML
     *                 be using the SetupDecorator, which detects them automatically
     *                 when calling getSuitesFromDir()
     */
+    function __construct() { $a = func_get_args(); self::PHPUnit_GUI_HTML(...$a); } // PHP 8: "PHPUnit_GUI_HTML()" is no longer a constructor
     function PHPUnit_GUI_HTML($suites = array())
     {
         if (!is_array($suites)) {

@@ -66,7 +66,7 @@
         $T = new iTemplate("./templates",array("page"=>"lunches_edit_order.html"));
 /*	echo $menu_date."<BR>".date("G")."<BR>".date("Y-m-d");*/
 
-	if (($menu_date==date("Y-m-d") && date("G")<13 && $is_blocked==0) || ($menu_date>date("Y-m-d") && $is_blocked==0) ) $order_time=true; else $order_time=false;
+	if (($menu_date==date("Y-m-d") && date("G")<13 && ToNumber($is_blocked)==0) || ($menu_date>date("Y-m-d") && ToNumber($is_blocked)==0) ) $order_time=true; else $order_time=false;
 
 	//echo $order_time;
  	if ($menu_id>0 && ($is_blocked!=1 || $edit) && ($order_time || $edit))
@@ -119,7 +119,7 @@ function FormShow($user_id, $menu_id, $order_exists, $error_message, $edit_perms
 
 //	echo "edir params - ".$order_time;
 	//echo "bl - ".$is_blocked;
-	if ($is_blocked==0 && $edit_perms) { $edit_order=true;}
+	if (ToNumber($is_blocked)==0 && $edit_perms) { $edit_order=true;}
 	else if ($edit_perms || ($user_id==GetSessionParam("UserID") && $order_time && !$is_blocked)) {$edit_order=true;}
 		else {$edit_order=false;}
 
@@ -183,9 +183,9 @@ function FormShow($user_id, $menu_id, $order_exists, $error_message, $edit_perms
 				$T->set_var("order_qty_garnish",$db->f("garnish_qty")>0 ? $db->f("garnish_qty") : "&nbsp;");
 				$T->set_var("order_qty_salad",$db->f("salad_qty")>0 ? $db->f("salad_qty") : "&nbsp;");
 				$T->set_var("order_qty_dessert",$db->f("dessert_qty")>0 ? $db->f("dessert_qty") : "&nbsp;");
-				$T->set_var("order_total_cost",sprintf("%2.2f",$db->f("first_course_qty")*$db->f("first_course_price")+
-					$db->f("second_course_qty")*$db->f("second_course_price")+$db->f("garnish_qty")*$db->f("garnish_price")+
-					$db->f("salad_qty")*$db->f("salad_price") + $db->f("dessert_qty")*$db->f("dessert_price") ));
+				$T->set_var("order_total_cost",sprintf("%2.2f",ToNumber($db->f("first_course_qty"))*ToNumber($db->f("first_course_price"))+
+					ToNumber($db->f("second_course_qty"))*ToNumber($db->f("second_course_price"))+ToNumber($db->f("garnish_qty"))*ToNumber($db->f("garnish_price"))+
+					ToNumber($db->f("salad_qty"))*ToNumber($db->f("salad_price")) + ToNumber($db->f("dessert_qty"))*ToNumber($db->f("dessert_price")) ));
 				$T->parse("users_orders",true)	;
 			}
 
@@ -204,9 +204,9 @@ function FormShow($user_id, $menu_id, $order_exists, $error_message, $edit_perms
 			$T->set_var("ttl_order_qty_garnish",$db->f("sg"));
 			$T->set_var("ttl_order_qty_salad",$db->f("ss"));
 			$T->set_var("ttl_order_qty_dessert",$db->f("ds"));
-			$T->set_var("ttl_order_cost",sprintf("%2.2f",$db->f("s1")*$db->f("first_course_price")+
-					$db->f("s2")*$db->f("second_course_price")+$db->f("sg")*$db->f("garnish_price")+
-					$db->f("ss")*$db->f("salad_price") + $db->f("ds")*$db->f("dessert_price")  ));
+			$T->set_var("ttl_order_cost",sprintf("%2.2f",ToNumber($db->f("s1"))*ToNumber($db->f("first_course_price"))+
+					ToNumber($db->f("s2"))*ToNumber($db->f("second_course_price"))+ToNumber($db->f("sg"))*ToNumber($db->f("garnish_price"))+
+					ToNumber($db->f("ss"))*ToNumber($db->f("salad_price")) + ToNumber($db->f("ds"))*ToNumber($db->f("dessert_price"))  ));
 		   $T->parse("table_day_orders",false);
 		} else {
 		   $T->set_var("table_day_orders","");
@@ -269,7 +269,7 @@ function CheckFields()
 
 	if (strlen($date))
 	{
-	  list($year,$month,$day)=split("-",$date);
+	  list($year,$month,$day)=explode("-",$date);
 	  if ($year<2006 || $year>2010 || $month<=0 || $month>12 || $day<=0 || $day>date('t',mktime(0,0,0,$month,$day,$year)) ) $err.="incorrect date<BR>";
 	} else $err.="date field is required<BR>";
 	if (!strlen(GetParam("first_course_title")) && !strlen(GetParam("second_course_title")) &&

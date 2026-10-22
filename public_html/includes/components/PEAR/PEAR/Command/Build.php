@@ -51,6 +51,7 @@ Builds one or more extensions contained in a package.'
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Build(...$a); } // PHP 8: "PEAR_Command_Build()" is no longer a constructor
     function PEAR_Command_Build(&$ui, &$config)
     {
         parent::PEAR_Command_Common($ui, $config);
@@ -65,7 +66,7 @@ Builds one or more extensions contained in a package.'
         if (sizeof($params) < 1) {
             $params[0] = 'package.xml';
         }
-        $builder = &new PEAR_Builder($this->ui);
+        $builder = new PEAR_Builder($this->ui);
         $this->debug = $this->config->get('verbose');
         $err = $builder->build($params[0], array(&$this, 'buildCallback'));
         if (PEAR::isError($err)) {

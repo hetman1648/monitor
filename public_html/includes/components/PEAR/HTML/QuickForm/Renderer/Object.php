@@ -78,6 +78,7 @@ class HTML_QuickForm_Renderer_Object extends HTML_QuickForm_Renderer
      * @param collecthidden bool    true: collect all hidden elements
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_Renderer_Object(...$a); } // PHP 8: "HTML_QuickForm_Renderer_Object()" is no longer a constructor
     function HTML_QuickForm_Renderer_Object($collecthidden = false) 
     {
         $this->HTML_QuickForm_Renderer();

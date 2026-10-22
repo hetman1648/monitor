@@ -145,6 +145,7 @@ class DB_sybase extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_sybase(...$a); } // PHP 8: "DB_sybase()" is no longer a constructor
     function DB_sybase()
     {
         $this->DB_common();

@@ -216,7 +216,7 @@ function checkFields() {
 				$counter++;
 			}
 		}
-		if ($counter == 0) {
+		if (ToNumber($counter) == 0) {
 			$errors[] = 'The value in one field <font color="red"><b>Title</b></font> at least is required except prefix \''.$prefix.'\'.<br>';
 		}
 	}
@@ -231,7 +231,7 @@ function checkFields() {
 				$counter++;
 			}
 		}
-		if ($counter == 0) {
+		if (ToNumber($counter) == 0) {
 			$errors[] = 'The value in one field <font color="red"><b>Email</b></font> at least is required.<br>';
 		}
 	}
@@ -246,7 +246,7 @@ function checkFields() {
 				$counter++;
 			}
 		}
-		if ($counter == 0) {
+		if (ToNumber($counter) == 0) {
 			$errors[] = 'The value in one field <font color="red"><b>MCC</b></font> at least is required.<br>';
 		}
 	}

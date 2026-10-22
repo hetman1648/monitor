@@ -65,7 +65,7 @@ if (isset($_POST["action"]))
       $sql = "SELECT MAX(release_id) AS rid FROM project_releases";
       $db->query($sql);
       $db->next_record();
-      $numid = $db->Record["rid"] + 1;
+      $numid = ToNumber($db->Record["rid"]) + 1;
       
       if ( ($_POST["day"] == "") || ($_POST["day"] == "00") || ($_POST["year"] == "") )
          {

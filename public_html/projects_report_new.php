@@ -313,8 +313,8 @@
 					$t->set_var("projects",$projects);
 					$t->set_var("sub_projects",$sub_projects);
 					$t->set_var("spent_hours", Hours2HoursMins($count_hours));
-					$t->set_var("spent_hours_multiplied", number_format($count_hours * $multiplier, 2));
-					$t->set_var("hours_percents", (($total_hours>0.0001) ? sprintf("%3.1f",$count_hours/$total_hours*100) : "0.0" ) );
+					$t->set_var("spent_hours_multiplied", number_format($count_hours * ToNumber($multiplier), 2));
+					$t->set_var("hours_percents", (($total_hours>0.0001) ? sprintf("%3.1f",$count_hours/ToNumber($total_hours)*100) : "0.0" ) );
 					$t->set_var("tasks", $count_tasks);
 					$t->set_var("time_per_task",$count_tasks>0 ? Hours2HoursMins($count_hours/$count_tasks) : "");
 					$t->set_var("working_days", (isset($wd[$project_id]) && $wd[$project_id]>0 ? $wd[$project_id] : ""));
@@ -352,7 +352,7 @@
 						$sub_project_id  = $sub_record_result["project_id"];
 						$sub_count_hours = $sub_record_result["count_hours"];
 						$sub_count_tasks = $sub_record_result["count_tasks"];
-						$sub_tasks_per_day = $wd[$sub_project_id]>0 ? $sub_count_tasks/$wd[$sub_project_id] : 0;
+						$sub_tasks_per_day = $wd[$sub_project_id]>0 ? ToNumber($sub_count_tasks)/$wd[$sub_project_id] : 0;
 
 						$t->set_var("sproject_title", $sub_project_title);
 
@@ -368,12 +368,12 @@
 						$t->set_var("projects",$projects);
 						$t->set_var("sub_projects",$sub_projects);
 						$t->set_var("sspent_hours", Hours2HoursMins($sub_count_hours));
-						$t->set_var("sspent_hours_multiplied", number_format($sub_count_hours * $multiplier, 2));
-						$t->set_var("shours_percents", (($total_hours>0.0001) ? sprintf("%3.1f",$sub_count_hours/$total_hours*100) : "0.0" ) );
+						$t->set_var("sspent_hours_multiplied", number_format(ToNumber($sub_count_hours) * ToNumber($multiplier), 2));
+						$t->set_var("shours_percents", (($total_hours>0.0001) ? sprintf("%3.1f",ToNumber($sub_count_hours)/ToNumber($total_hours)*100) : "0.0" ) );
 						$t->set_var("stasks", $sub_count_tasks);
-						$t->set_var("stime_per_task",$sub_count_tasks>0 ? Hours2HoursMins($sub_count_hours/$sub_count_tasks) : "");
+						$t->set_var("stime_per_task",$sub_count_tasks>0 ? Hours2HoursMins(ToNumber($sub_count_hours)/ToNumber($sub_count_tasks)) : "");
 						$t->set_var("sworking_days",$wd[$sub_project_id]);
-						$t->set_var("shours_per_day",$wd[$sub_project_id]>0 ? Hours2HoursMins($sub_count_hours/$wd[$sub_project_id]) : "");
+						$t->set_var("shours_per_day",$wd[$sub_project_id]>0 ? Hours2HoursMins(ToNumber($sub_count_hours)/$wd[$sub_project_id]) : "");
 						$t->set_var("stasks_per_day",sprintf("%3.1f",$sub_tasks_per_day));
 						
 						$sreaction_time = (isset($rh[$sub_project_id]) ? reaction_output($rh[$sub_project_id]) : "");
@@ -398,11 +398,11 @@
 			//TOTAL TIME, TASKS
 			$t->set_var("total_tasks",$total_tasks);
 			$t->set_var("total_hours",Hours2HoursMins($total_hours));
-			$t->set_var("total_hours_multiplied",number_format($total_hours*$multiplier,2));
+			$t->set_var("total_hours_multiplied",number_format(ToNumber($total_hours)*ToNumber($multiplier),2));
 			$t->set_var("total_working_days",$total_working_days);
-			$t->set_var("mh_per_day",$total_working_days>0 ? Hours2HoursMins($total_hours/$total_working_days) : "");
-			$t->set_var("av_tasks_per_day",$total_working_days>0 ? sprintf("%3.1f",$total_tasks/$total_working_days) : "");
-			$t->set_var("av_time_per_task",$total_tasks>0 ? Hours2HoursMins($total_hours/$total_tasks) : "");
+			$t->set_var("mh_per_day",$total_working_days>0 ? Hours2HoursMins(ToNumber($total_hours)/ToNumber($total_working_days)) : "");
+			$t->set_var("av_tasks_per_day",$total_working_days>0 ? sprintf("%3.1f",ToNumber($total_tasks)/ToNumber($total_working_days)) : "");
+			$t->set_var("av_time_per_task",$total_tasks>0 ? Hours2HoursMins(ToNumber($total_hours)/ToNumber($total_tasks)) : "");
 
 			$t->parse("result", false);
 			////////////////////////////////////////////////////////////
@@ -441,7 +441,7 @@
 						$t->set_var("dev_name",$record_result["user_name"]);
 						$t->set_var("dev_user_id",$dev_user_id);
 						$t->set_var("dev_spent_hours",Hours2HoursMins($dev_spent_hours));
-						$t->set_var("dev_spent_hours_multiplied",number_format($dev_spent_hours*$multiplier,2)); 
+						$t->set_var("dev_spent_hours_multiplied",number_format($dev_spent_hours*ToNumber($multiplier),2)); 
 						$t->set_var("dev_count_tasks",$dev_count_tasks);
 						$t->set_var("dev_time_per_task",$dev_count_tasks>0 ? Hours2HoursMins($dev_spent_hours/$dev_count_tasks) : "");
 						$t->set_var("dev_working_days",$wdp[$project_selected][$dev_user_id]);
@@ -480,7 +480,7 @@
 				if ($db->next_record()) {
 				  $person_total_hours = $db->Record["count_hours"];
 				  $person_total_tasks = $db->Record["count_tasks"];
-				  $person_av_time_per_task = $person_total_tasks>0 ? $person_total_hours/$person_total_tasks : 0;
+				  $person_av_time_per_task = $person_total_tasks>0 ? ToNumber($person_total_hours)/ToNumber($person_total_tasks) : 0;
 				  $person_av_hours_per_day = 0;
 				}
 
@@ -521,12 +521,12 @@
 
 						$t->set_var("project_id", $pproject_id);
 						$t->set_var("pspent_hours", Hours2HoursMins($pcount_hours));
-						$t->set_var("pspent_hours_multiplied",number_format($pcount_hours*$multiplier,2));
-						$t->set_var("phours_percents", (($person_total_hours>0.0001) ? sprintf("%3.1f",$pcount_hours/$person_total_hours*100) : "0.0" ) );
-						$t->set_var("ptime_per_task", $pcount_tasks>0 ? Hours2HoursMins($pcount_hours/$pcount_tasks) : "");
+						$t->set_var("pspent_hours_multiplied",number_format(ToNumber($pcount_hours)*ToNumber($multiplier),2));
+						$t->set_var("phours_percents", (($person_total_hours>0.0001) ? sprintf("%3.1f",ToNumber($pcount_hours)/ToNumber($person_total_hours)*100) : "0.0" ) );
+						$t->set_var("ptime_per_task", $pcount_tasks>0 ? Hours2HoursMins(ToNumber($pcount_hours)/ToNumber($pcount_tasks)) : "");
 						$t->set_var("pworking_days", $wdp[$pproject_id][$person_selected]);
-						$t->set_var("phours_per_day",$wdp[$pproject_id][$person_selected]>0 ? Hours2HoursMins($pcount_hours/$wdp[$pproject_id][$person_selected]) : "");
-						$t->set_var("ptasks_per_day",sprintf("%3.1f",$wdp[$pproject_id][$person_selected]>0 ? $pcount_tasks/$wdp[$pproject_id][$person_selected] : 0));
+						$t->set_var("phours_per_day",$wdp[$pproject_id][$person_selected]>0 ? Hours2HoursMins(ToNumber($pcount_hours)/$wdp[$pproject_id][$person_selected]) : "");
+						$t->set_var("ptasks_per_day",sprintf("%3.1f",$wdp[$pproject_id][$person_selected]>0 ? ToNumber($pcount_tasks)/$wdp[$pproject_id][$person_selected] : 0));
 						$t->set_var("preaction_time",isset($rhp[$pproject_id][$person_selected]) ? reaction_output($rhp[$pproject_id][$person_selected]) : "");
 						$t->set_var("ptasks", $pcount_tasks);
 
@@ -558,13 +558,13 @@
 
 							$t->set_var("pproject_id", $sub_project_id);
 							$t->set_var("psspent_hours", Hours2HoursMins($sub_count_hours));
-							$t->set_var("psspent_hours_multiplied",number_format($sub_count_hours*$multiplier,2));
-							$t->set_var("pshours_percents", (($person_total_hours>0.0001) ? sprintf("%3.1f",$sub_count_hours/$person_total_hours*100) : "0.0" ) );
-							$t->set_var("pstime_per_task", $sub_count_tasks>0 ? Hours2HoursMins($sub_count_hours/$sub_count_tasks) : "");
+							$t->set_var("psspent_hours_multiplied",number_format(ToNumber($sub_count_hours)*ToNumber($multiplier),2));
+							$t->set_var("pshours_percents", (($person_total_hours>0.0001) ? sprintf("%3.1f",ToNumber($sub_count_hours)/ToNumber($person_total_hours)*100) : "0.0" ) );
+							$t->set_var("pstime_per_task", $sub_count_tasks>0 ? Hours2HoursMins(ToNumber($sub_count_hours)/ToNumber($sub_count_tasks)) : "");
 							$t->set_var("psworking_days", $wdp[$sub_project_id][$person_selected]);
 
-							$t->set_var("pshours_per_day",$wdp[$sub_project_id][$person_selected]>0 ? Hours2HoursMins($sub_count_hours/$wdp[$sub_project_id][$person_selected]) : "");
-							$t->set_var("pstasks_per_day",sprintf("%3.1f",$wdp[$sub_project_id][$person_selected]>0 ? $sub_count_tasks/$wdp[$sub_project_id][$person_selected] : 0));
+							$t->set_var("pshours_per_day",$wdp[$sub_project_id][$person_selected]>0 ? Hours2HoursMins(ToNumber($sub_count_hours)/$wdp[$sub_project_id][$person_selected]) : "");
+							$t->set_var("pstasks_per_day",sprintf("%3.1f",$wdp[$sub_project_id][$person_selected]>0 ? ToNumber($sub_count_tasks)/$wdp[$sub_project_id][$person_selected] : 0));
 							$t->set_var("psreaction_time",isset($rhp[$sub_project_id][$person_selected]) ? reaction_output($rhp[$sub_project_id][$person_selected]) : "");
 
 							$t->set_var("pstasks", $sub_count_tasks);
@@ -576,12 +576,12 @@
 					}
 				  $t->set_var("person_no_records","");
 				  $t->set_var("person_total_hours",Hours2HoursMins($person_total_hours));
-				  $t->set_var("person_total_hours_multiplied",number_format($person_total_hours*$multiplier,2));
+				  $t->set_var("person_total_hours_multiplied",number_format(ToNumber($person_total_hours)*ToNumber($multiplier),2));
 				  $t->set_var("person_total_tasks",$person_total_tasks);
 				  $t->set_var("person_av_time_per_task",Hours2HoursMins($person_av_time_per_task));
 				  $t->set_var("person_ov_working_days", $wdu[$person_selected]);
-				  $t->set_var("person_av_hours_per_day",$wdu[$person_selected] ? Hours2HoursMins($person_total_hours/$wdu[$person_selected]) : "");
-				  $t->set_var("person_av_tasks_per_day",$wdu[$person_selected] ? sprintf("%3.1f",$person_total_tasks/$wdu[$person_selected]) : "");
+				  $t->set_var("person_av_hours_per_day",$wdu[$person_selected] ? Hours2HoursMins(ToNumber($person_total_hours)/$wdu[$person_selected]) : "");
+				  $t->set_var("person_av_tasks_per_day",$wdu[$person_selected] ? sprintf("%3.1f",ToNumber($person_total_tasks)/$wdu[$person_selected]) : "");
 				  $t->parse("person_records_footer",false);
 				} else {
 					$t->set_var("person_records_header", "");
@@ -639,7 +639,7 @@
 			  	{
 				    $t->set_var("task_title",$db->f("task_title"));
 				    $t->set_var("task_spent_hours",trim(Hours2HoursMins($db->f("count_hours"))));
-				    $t->set_var("task_spent_hours_multiplied",number_format($db->f("count_hours")*$multiplier,2)); 
+				    $t->set_var("task_spent_hours_multiplied",number_format(ToNumber($db->f("count_hours"))*ToNumber($multiplier),2)); 
 				    $t->set_var("task_status",$db->f("status_description"));
 				    $task_id=$db->f("task_identifier");
 

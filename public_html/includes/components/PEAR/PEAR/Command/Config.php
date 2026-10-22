@@ -91,6 +91,7 @@ displays help for all configuration parameters.
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Config(...$a); } // PHP 8: "PEAR_Command_Config()" is no longer a constructor
     function PEAR_Command_Config(&$ui, &$config)
     {
         parent::PEAR_Command_Common($ui, $config);

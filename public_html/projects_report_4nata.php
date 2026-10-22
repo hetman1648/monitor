@@ -133,7 +133,7 @@
 	}
 	
 	if (strlen($submit) && $team_id_selected && $manager_id) {
-		$t->set_var("total_columns", $users_count + 2);
+		$t->set_var("total_columns", ToNumber($users_count) + 2);
 			
 		$sql  = " SELECT user_id, CONCAT(first_name,' ', last_name) as person ";
 		$sql .= " FROM users ";
@@ -167,7 +167,7 @@
 			$sql .= " AND t.project_id IN (" . implode(",", $project_ids) . ")";				
 		}
 		if ($filter_task) {
-			$sql .= " AND t.task_title LIKE '%" . ToSQL($filter_task, TEXT, false, false) . "%'";
+			$sql .= " AND t.task_title LIKE '%" . ToSQL($filter_task, "text", false, false) . "%'";
 		}
 		$sql .= " GROUP BY tr.user_id, t.task_id ";
 		$sql .= " ORDER BY t.task_id ";
@@ -182,7 +182,7 @@
 				$sum_hours  = $db->f("sum_hours");
 				$tasks[$task_id]["title"] = $task_title;
 				if (isset($tasks[$task_id]["users"][$user_id])) {
-					$tasks[$task_id]["users"][$user_id] += $sum_hours;		
+					$tasks[$task_id]["users"][$user_id] += ToNumber($sum_hours);		
 				} else {
 					$tasks[$task_id]["users"][$user_id] = $sum_hours;
 				}

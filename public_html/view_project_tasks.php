@@ -215,7 +215,7 @@ while ($db->next_record()) {
         'is_periodic' => ($db->f("task_type_id") == 3),
         'is_overdue' => $is_overdue
     );
-    $total_time += $db->f("actual_hours");
+    $total_time += ToNumber($db->f("actual_hours"));
 }
 
 $total_time_formatted = to_hours($total_time);
@@ -286,7 +286,7 @@ if (!empty($task_ids_list)) {
     while ($db->next_record()) {
         $tid = (int)$db->f("task_id");
         $rdate = $db->f("rdate");
-        $hours = round($db->f("hours"), 2);
+        $hours = round(ToNumber($db->f("hours")), 2);
         if (isset($timeline_data[$tid]) && $rdate && $rdate !== '0000-00-00') {
             $timeline_data[$tid]['events'][] = array('date' => $rdate, 'type' => 'time', 'hours' => $hours);
             if ($rdate < $timeline_min_date) $timeline_min_date = $rdate;
@@ -343,7 +343,7 @@ if (!empty($task_ids_list)) {
     $db->query($sql);
     while ($db->next_record()) {
         $time_raw[] = array(
-            'hours' => round($db->f("spent_hours"), 4),
+            'hours' => round(ToNumber($db->f("spent_hours")), 4),
             'date' => $db->f("report_date"),
             'uid' => (int)$db->f("user_id"),
             'uname' => $db->f("user_name"),

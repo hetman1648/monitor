@@ -130,6 +130,7 @@ class DB_common extends PEAR
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_common(...$a); } // PHP 8: "DB_common()" is no longer a constructor
     function DB_common()
     {
         $this->PEAR('DB_Error');
@@ -247,7 +248,7 @@ class DB_common extends PEAR
     function quoteString($string)
     {
         $string = $this->quote($string);
-        if ($string{0} == "'") {
+        if ($string[0] == "'") {
             return substr($string, 1, -1);
         }
         return $string;
@@ -960,7 +961,7 @@ class DB_common extends PEAR
         if ($result === DB_OK || DB::isError($result)) {
             return $result;
         } else {
-            $tmp =& new DB_result($this, $result);
+            $tmp = new DB_result($this, $result);
             return $tmp;
         }
     }
@@ -1163,7 +1164,7 @@ class DB_common extends PEAR
             if ($result === DB_OK || DB::isError($result)) {
                 return $result;
             } else {
-                $tmp =& new DB_result($this, $result);
+                $tmp = new DB_result($this, $result);
                 return $tmp;
             }
         }

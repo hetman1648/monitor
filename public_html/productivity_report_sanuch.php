@@ -458,9 +458,9 @@ function custome_bonus_manager(&$users) {
 		if (!$bonus["bonus_manager_used"]) { continue; }
 		
 		$species_id = $bonus["species_id"];
-		if (!isset($team_projects[$species_id]) && $species_id != 0) { continue; }
+		if (!isset($team_projects[$species_id]) && ToNumber($species_id) != 0) { continue; }
 		$project_name = "";
-		if ($species_id != 0) {
+		if (ToNumber($species_id) != 0) {
 			list($project_name) = $team_projects[$species_id];
 			$project_name = strtolower(str_replace(" ","_",$project_name));
 		}
@@ -584,7 +584,8 @@ function get_previous_day($report_days, $current_day)
 		if (isset($arr) && isset($arr["key"])) {
 			$previous_day = $arr["key"];
 		}
-		$arr = each($report_days);
+		$arr = (key($report_days) === null) ? false : array("key" => key($report_days), "value" => current($report_days));
+		next($report_days);
 		$report_day = $arr["key"];
 		$report_time = $arr["value"];
 		$next_elem = $arr;
@@ -617,7 +618,7 @@ function sub_time($time, $sub) {
 	foreach ($res_arr as $key=>$res_val) {
 		if ($res_arr[$key]<10) {
 			$res_arr[$key] = "0".$res_arr[$key];
-		} elseif ($res_arr[$key]==0) {
+		} elseif (ToNumber($res_arr[$key])==0) {
 			$res_arr[$key] == "00";
 		}
 	}
@@ -660,7 +661,7 @@ function select_custome_work($user_id,$year_selected,$month_selected) {
 		$db->query($sql,__FILE__,__LINE__);
 		
 		if ($db->next_record()) {
-			$result = round($db->f(0));
+			$result = round(ToNumber($db->f(0)));
 		}
 	}
 	
@@ -688,7 +689,7 @@ function select_viart_hours($user_id,$year_selected,$month_selected) {
 		$db->query($sql,__FILE__,__LINE__);
 		
 		if ($db->next_record()) {
-			$result = round($db->f(0) * $coefficient);
+			$result = round(ToNumber($db->f(0)) * ToNumber($coefficient));
 		}
 	}
 	
@@ -715,7 +716,7 @@ function select_sayu_hours($user_id,$year_selected,$month_selected) {
 		$db->query($sql,__FILE__,__LINE__);
 		
 		if ($db->next_record()) {
-			$result = round($db->f(0) * $coefficient);
+			$result = round(ToNumber($db->f(0)) * ToNumber($coefficient));
 		}
 	}
 	
@@ -734,7 +735,7 @@ function select_bugs($user_id,$year_selected,$month_selected) {
 	
 	$result = 0;
 	if ($db->next_record()) {
-		$result = round($db->f(0) * $bonus_array["bonus_bug"]);
+		$result = round(ToNumber($db->f(0)) * $bonus_array["bonus_bug"]);
 	}
 	
 	return $result;
@@ -767,15 +768,15 @@ function select_vacation($user_id,$year_selected,$month_selected,$days_in_month)
 	$sql.= " LEFT JOIN national_holidays nh ON (nh.holiday_date>=dof.start_date AND nh.holiday_date<=dof.end_date AND DATE_FORMAT(nh.holiday_date, '%m')=".ToSQL($month_selected, "integer");
 	$sql.= " AND DAYOFWEEK(nh.holiday_date) NOT IN (1,7)) ";
 	$sql.= " WHERE dof.user_id=".ToSQL($user_id, "integer");
-	$sql.= " AND DATE_FORMAT(dof.start_date, '%Y')*12+DATE_FORMAT(dof.start_date, '%m') <= ".ToSQL($year_selected*12+$month_selected, "integer");
-	$sql.= " AND DATE_FORMAT(dof.end_date, '%Y')*12+DATE_FORMAT(dof.end_date, '%m') >= ".ToSQL($year_selected*12+$month_selected, "integer");
+	$sql.= " AND DATE_FORMAT(dof.start_date, '%Y')*12+DATE_FORMAT(dof.start_date, '%m') <= ".ToSQL(ToNumber($year_selected)*12+ToNumber($month_selected), "integer");
+	$sql.= " AND DATE_FORMAT(dof.end_date, '%Y')*12+DATE_FORMAT(dof.end_date, '%m') >= ".ToSQL(ToNumber($year_selected)*12+ToNumber($month_selected), "integer");
 	$sql.= " AND (dof.reason_id IN (1,2) OR dof.is_paid=1) ";
 	$sql.= " GROUP BY dof.period_id ";
 	$sql.= ") AS x ";
 	$db->query($sql,__FILE__,__LINE__);
 	
 	if ($db->next_record()) {
-		$result = $db->f(0) * $bonus_array["bonus_other"];
+		$result = ToNumber($db->f(0)) * $bonus_array["bonus_other"];
 	}
 	
 	return $result;
@@ -904,7 +905,7 @@ function viart_tickets_points($user_id,$year_selected,$month_selected) {
 				} while ($previous_day > $previous_message_day && $previous_day);
 			}
 
-			if ($delayed_days == 0) {
+			if (ToNumber($delayed_days) == 0) {
 				$users[$user_id]["tickets"]++;
 				$users[$user_id]["tickets_points"] += $coefficients[$delayed_days];
 			} else {
@@ -935,17 +936,17 @@ function support_tickets_points($user_id,$year_selected,$month_selected) {
 	$sql .= "	AND DATE_FORMAT(si.update_date,'%Y')=" . ToSQL($year_selected,"string");
 	$db->query($sql,__FILE__,__LINE__);
 	while($db->next_record()) {
-		$type_bonus_id = $db->f("type_bonus_id") - 1;
+		$type_bonus_id = ToNumber($db->f("type_bonus_id")) - 1;
 		$count_bonus = $db->f("count_bonus");
 		
-		if ($type_bonus_id == 0) {
-			$users[$user_id]["tickets"] += $count_bonus;
-			$users[$user_id]["tickets_points"] += $count_bonus * $coefficients[$type_bonus_id];
+		if (ToNumber($type_bonus_id) == 0) {
+			$users[$user_id]["tickets"] += ToNumber($count_bonus);
+			$users[$user_id]["tickets_points"] += ToNumber($count_bonus) * $coefficients[$type_bonus_id];
 		} else if ($type_bonus_id != 998) {
-			$users[$user_id]["tickets_delayed"]+= $count_bonus;
-			$users[$user_id]["tickets_delayed_points"] += $count_bonus * $coefficients[$type_bonus_id];
+			$users[$user_id]["tickets_delayed"]+= ToNumber($count_bonus);
+			$users[$user_id]["tickets_delayed_points"] += ToNumber($count_bonus) * $coefficients[$type_bonus_id];
 		} else {
-			$users[$user_id]["feedback_rating"] = $count_bonus / 100;
+			$users[$user_id]["feedback_rating"] = ToNumber($count_bonus) / 100;
 		}
 	}
 	
@@ -977,7 +978,7 @@ function select_manual_hours($user_id,$year_selected,$month_selected) {
 		$db->query($sql,__FILE__,__LINE__);
 		
 		if ($db->next_record()) {
-			$result = round($db->f(0) * $coefficient);
+			$result = round(ToNumber($db->f(0)) * ToNumber($coefficient));
 		}
 	}
 	

@@ -68,6 +68,7 @@ class PEAR_Command_Common extends PEAR
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Common(...$a); } // PHP 8: "PEAR_Command_Common()" is no longer a constructor
     function PEAR_Command_Common(&$ui, &$config)
     {
         parent::PEAR();
@@ -134,7 +135,7 @@ class PEAR_Command_Common extends PEAR
         while (list($option, $info) = each($this->commands[$command]['options'])) {
             $larg = $sarg = '';
             if (isset($info['arg'])) {
-                if ($info['arg']{0} == '(') {
+                if ($info['arg'][0] == '(') {
                     $larg = '==';
                     $sarg = '::';
                     $arg = substr($info['arg'], 1, -1);
@@ -195,7 +196,7 @@ class PEAR_Command_Common extends PEAR
             $help = "Options:\n";
             foreach ($this->commands[$command]['options'] as $k => $v) {
                 if (isset($v['arg'])) {
-                    if ($v['arg']{0} == '(') {
+                    if ($v['arg'][0] == '(') {
                         $arg = substr($v['arg'], 1, -1);
                         $sapp = " [$arg]";
                         $lapp = "[=$arg]";

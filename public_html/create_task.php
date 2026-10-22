@@ -204,7 +204,7 @@ if ($action == "insert") {
             $hourly_charge = $db->f("hourly_charge");
             $client_id = $db->f("client_id");
             $task_domain = $db->f("task_domain_url");
-            $priority_id = $db->f("priority_id") - 1;
+            $priority_id = ToNumber($db->f("priority_id")) - 1;
             if ($priority_id <= 0) $priority_id = 1;
         }
         

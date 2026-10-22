@@ -98,6 +98,7 @@ class HTML_QuickForm_Renderer_ITStatic extends HTML_QuickForm_Renderer
     *
     * @param object     An HTML_Template_IT or other compatible Template object to use
     */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_Renderer_ITStatic(...$a); } // PHP 8: "HTML_QuickForm_Renderer_ITStatic()" is no longer a constructor
     function HTML_QuickForm_Renderer_ITStatic(&$tpl)
     {
         $this->HTML_QuickForm_Renderer();

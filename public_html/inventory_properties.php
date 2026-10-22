@@ -84,10 +84,10 @@ if (!GetSessionParam("UserID")) {
 
 	$db->query("SELECT COUNT(*) as count FROM (".$sql.") xxx",__FILE__,__LINE__);
     $db->next_record();
-    $page_col	= (int)ceil($db->Record['count']/$records_per_page);
+    $page_col	= (int)ceil(ToNumber($db->Record['count'])/$records_per_page);
     $T->set_var("pages_navigator", getPageLinks($page_col, $page_num, $_SERVER['QUERY_STRING']));
 
-    $limit		= " LIMIT ".($page_num - 1)*$records_per_page.", ".$records_per_page;
+    $limit		= " LIMIT ".(ToNumber($page_num) - 1)*$records_per_page.", ".$records_per_page;
     $sql		.= $limit;
 
 	$a = 0;
@@ -152,7 +152,7 @@ function getPageLinks($page_col, $page_num, $query)
 	}
 	if ($page_num <= 8)
 	{
-		for ($i = 1; $i <= max($page_num + 2, 5); $i++) $html_result .= ' '.getPageLink($i);
+		for ($i = 1; $i <= max(ToNumber($page_num) + 2, 5); $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
 		for ($i = $page_col - 4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
 	}
@@ -160,7 +160,7 @@ function getPageLinks($page_col, $page_num, $query)
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_num+2; $i++) $html_result .= ' '.getPageLink($i);
+		for ($i = ToNumber($page_num) - 2; $i <= ToNumber($page_num)+2; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
 		for ($i = $page_col-4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
 	}
@@ -168,7 +168,7 @@ function getPageLinks($page_col, $page_num, $query)
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
+		for ($i = ToNumber($page_num) - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
 	}
     if (strlen($html_result)) { $html_result = "Page ".$html_result;}
 	return $html_result;

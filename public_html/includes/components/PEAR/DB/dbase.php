@@ -144,6 +144,7 @@ class DB_dbase extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_dbase(...$a); } // PHP 8: "DB_dbase()" is no longer a constructor
     function DB_dbase()
     {
         $this->DB_common();
@@ -273,7 +274,7 @@ class DB_dbase extends DB_common
     {
         // emulate result resources
         $this->res_row[(int)$this->result] = 0;
-        $tmp =& new DB_result($this, $this->result++);
+        $tmp = new DB_result($this, $this->result++);
         return $tmp;
     }
 

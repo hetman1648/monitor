@@ -58,7 +58,7 @@
 		$web_address	= $db2->Record['web_address'];
 		$is_active		= $db2->Record['is_active'];
 		$account_mcc	= $db2->Record['account_mcc'];
-		$google_id		= trim(ereg_replace("[- ]","",$db2->Record['google_id']));
+		$google_id		= trim(preg_replace("/[- ]/","",$db2->Record['google_id']));
 
 		$sql = "SELECT * FROM clients WHERE client_type=2 AND sayu_user_id=".ToSQLO($sayu_user_id,"integer",false,false);
 		$dbo->query($sql,__FILE__,__LINE__);
@@ -67,11 +67,11 @@
 			if ($client_name	!= $dbo->f("client_name") ||
 				$client_email	!= $dbo->f("client_email") ||
 				$account_mcc	!= $dbo->f("account_mcc") ||
-				$google_id		!= trim(ereg_replace("[- ]","",$dbo->Record['google_id']))) {					$sql = "UPDATE clients
-							SET	client_name		='".mysql_escape_string($client_name)."',
-								client_email	='".mysql_escape_string($client_email)."',
+				$google_id		!= trim(preg_replace("/[- ]/","",$dbo->Record['google_id']))) {					$sql = "UPDATE clients
+							SET	client_name		='".$db->escape($client_name)."',
+								client_email	='".$db->escape($client_email)."',
 								date_added		=".ToSQLO($date_added,"date").",
-								client_company	='".mysql_escape_string($client_company)."',
+								client_company	='".$db->escape($client_company)."',
 								client_type		=".ToSQLO($client_type,"integer",false,false).",
 								is_active		=".ToSQLO($is_active,"integer",false).",
 								account_mcc		=".ToSQLO($account_mcc,"string",true,true).",
@@ -81,10 +81,10 @@
 		else {
 			$sql = "INSERT INTO clients
 					SET sayu_user_id	=".ToSQLO($sayu_user_id,"integer",false).",
-						client_name		='".mysql_escape_string($client_name)."',
-						client_email	='".mysql_escape_string($client_email)."',
+						client_name		='".$db->escape($client_name)."',
+						client_email	='".$db->escape($client_email)."',
 						date_added		=".ToSQLO($date_added,"date").",
-						client_company	='".mysql_escape_string($client_company)."',
+						client_company	='".$db->escape($client_company)."',
 						client_type		=".ToSQLO($client_type,"integer",false).",
 						is_active		=".ToSQLO($is_active,"integer",false).",
 						account_mcc		=".ToSQLO($account_mcc,"string",true,true).",
@@ -162,19 +162,15 @@ function ToSQLO($value, $type, $use_null = true, $is_delimiters = true)
 	elseif ($type == "number") {return doubleval($value);}
 	elseif ($type == "integer") {return intval($value);}
 	elseif ($type == "date") {
-		if (ereg("([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})",$value,$t)){
+		if (preg_match("~([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})~",$value,$t)){
 			if (checkdate($t[3],$t[5],$t[1])) { $value = date("Y-m-d", mktime(0,0,0,$t[3],$t[5],$t[1]));}
 				else { $value = "0000-00-00";}
 		} else { $value = "0000-00-00";}
 		$value = "'" . $value . "'";
 	} else {
-		if(get_magic_quotes_gpc() == 0) {
+		// magic_quotes_gpc is always off (removed in PHP 5.4)
 			$value = str_replace("'", "''", $value);
 			$value = str_replace("\\", "\\\\", $value);
-		} else {
-			$value = str_replace("\\'", "''", $value);
-			$value = str_replace("\\\"", "\"", $value);
-		}
 		//if ($is_delimiters) { $value = "'" . $value . "'";}
 		$value = "'" . $value . "'";
 	}

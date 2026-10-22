@@ -141,6 +141,7 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
     *
     * @access public
     */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_Renderer_Default(...$a); } // PHP 8: "HTML_QuickForm_Renderer_Default()" is no longer a constructor
     function HTML_QuickForm_Renderer_Default()
     {
         $this->HTML_QuickForm_Renderer();

@@ -1,4 +1,4 @@
-<?
+<?php 
 /*
 utf8 1.0
 Copyright: Left
@@ -79,7 +79,7 @@ Class utf8{
   var $utfMap = array();
 
   //Constructor
-  function utf8($charset=CP1251){    $this->loadCharset($charset);
+  function __construct($charset=CP1251){    $this->loadCharset($charset);
   }
 
   //Load charset

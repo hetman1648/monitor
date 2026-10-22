@@ -55,6 +55,7 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
      * @access    public
      * @return    void
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_textarea(...$a); } // PHP 8: "HTML_QuickForm_textarea()" is no longer a constructor
     function HTML_QuickForm_textarea($elementName=null, $elementLabel=null, $attributes=null)
     {
         HTML_QuickForm_element::HTML_QuickForm_element($elementName, $elementLabel, $attributes);

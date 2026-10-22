@@ -29,6 +29,7 @@ class EsendexSendService
 	var $password;
 	var $account;
 
+	function __construct() { $a = func_get_args(); self::EsendexSendService(...$a); } // PHP 8: "EsendexSendService()" is no longer a constructor
 	function EsendexSendService($username, $password, $account, $secure = false)
 	{
 		$this->username = $username;

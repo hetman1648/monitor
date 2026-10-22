@@ -109,7 +109,7 @@
 
     	$sql = "SELECT GROUP_CONCAT(project_id SEPARATOR ', ') as projectid FROM projects WHERE project_id=".ToSQL($project_selected,"integer")." OR parent_project_id=".ToSQL($project_selected,"integer");
 			
-			if ($subproject_selected != 0) {
+			if (ToNumber($subproject_selected) != 0) {
 				$sql = "SELECT GROUP_CONCAT(project_id SEPARATOR ', ') as projectid FROM projects WHERE project_id=".ToSQL($subproject_selected,"integer");
 			}
 			
@@ -119,7 +119,7 @@
     	//$sqlproject .= " AND t.project_id in ".ToSQL($project_selected,"integer")." AND prc.is_closed=0 ";
     	$sqlproject .= " AND t.project_id in (".$projects.") AND prc.is_closed=0 ";
     	$search .="&project_selected=".$project_selected;
-			if ($subproject_selected != 0) 
+			if (ToNumber($subproject_selected) != 0) 
 				$search .="&subproject_selected=".$subproject_selected;
     }
 
@@ -261,11 +261,11 @@
 		$navigator = "";
 		
 		if ($records_per_page != 'all') {
-			$page_count = (int)ceil($count_record/$records_per_page);
+			$page_count = (int)ceil($count_record/ToNumber($records_per_page));
 			$query_string = ((strtolower($_SERVER['QUERY_STRING'])<>"undefined" && strlen($_SERVER['QUERY_STRING'])>0)?$_SERVER['QUERY_STRING']:"");
 			$navigator = getPageLinks($page_count, $records_per_page, $page_num, $search, $period_selected, $start_date, $end_date);
 					
-			$limit = " LIMIT ".($page_num - 1)*$records_per_page.", ".$records_per_page;
+			$limit = " LIMIT ".(ToNumber($page_num) - 1)*ToNumber($records_per_page).", ".$records_per_page;
 		} 
 		
 		if ($navigator) {
@@ -290,16 +290,16 @@
 
 			while($db->next_record()){
 				$sayu_cost = $db->Record["sayu_cost"];
-				$total_time = floor($db->Record["total_time"]) . ":" . sprintf("%02d", round(($db->Record["total_time"] - floor($db->Record["total_time"])) * 60));
+				$total_time = floor(ToNumber($db->Record["total_time"])) . ":" . sprintf("%02d", round((ToNumber($db->Record["total_time"]) - floor(ToNumber($db->Record["total_time"]))) * 60));
 				$client_name = "";
 				if ($db->Record["client_name"] <> "") {
 					$client_name = (strlen($db->Record["client_name"])>27?substr($db->Record["client_name"],0,24)."&#8230;":$db->Record["client_name"]);
 					
 				} else { $client_name = "<i>noname</i>";}
 
-				$total_hours += $db->Record["total_time"];
-				$total_tasks += $db->Record["task_count"];
-				$total_cost += $db->Record["sayu_cost"];
+				$total_hours += ToNumber($db->Record["total_time"]);
+				$total_tasks += ToNumber($db->Record["task_count"]);
+				$total_cost += ToNumber($db->Record["sayu_cost"]);
 		        $t->set_var(array(	
 									"client_name"			=> $client_name,
 									"search"			=> $search,
@@ -849,7 +849,7 @@ function getPageLinks($page_col, $records_per_page, $page_num, $query, $period_s
 	}
 	if ($page_num <= 8)
 	{
-		for ($i = 1; $i <= max($page_num + 2, 5); $i++) $html_result .= ' '.getPageLink($i);
+		for ($i = 1; $i <= max(ToNumber($page_num) + 2, 5); $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
 		for ($i = $page_col - 4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
 	}
@@ -857,7 +857,7 @@ function getPageLinks($page_col, $records_per_page, $page_num, $query, $period_s
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_num+2; $i++) $html_result .= ' '.getPageLink($i);
+		for ($i = ToNumber($page_num) - 2; $i <= ToNumber($page_num)+2; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
 		for ($i = $page_col-4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
 	}
@@ -865,7 +865,7 @@ function getPageLinks($page_col, $records_per_page, $page_num, $query, $period_s
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
+		for ($i = ToNumber($page_num) - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i);
 	}
 	
 	return $html_result;

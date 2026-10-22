@@ -88,6 +88,7 @@ class OS_Guess
     var $release;
     var $extra;
 
+    function __construct() { $a = func_get_args(); self::OS_Guess(...$a); } // PHP 8: "OS_Guess()" is no longer a constructor
     function OS_Guess($uname = null)
     {
         list($this->sysname,
@@ -190,7 +191,7 @@ class OS_Guess
         $cpp = popen("/usr/bin/cpp $tmpfile", "r");
         $major = $minor = 0;
         while ($line = fgets($cpp, 1024)) {
-            if ($line{0} == '#' || trim($line) == '') {
+            if ($line[0] == '#' || trim($line) == '') {
                 continue;
             }
             if (list($major, $minor) = explode(' ', trim($line))) {

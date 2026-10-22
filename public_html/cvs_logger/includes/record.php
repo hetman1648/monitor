@@ -29,7 +29,7 @@ class VA_Record
 	var $events_parameters = array();
 
 	//-- constructor
-	function VA_Record($table_name, $record_name = "") {
+	function __construct($table_name, $record_name = "") {
 		$this->table_name = $table_name;
 		$this->set_record_name($record_name);
 		$this->errors = "";

@@ -30,7 +30,7 @@ if ($db->next_record())
     $h_d = $db->Record["holiday_date"];
     $this_year = date('Y');
     $arr_h_d = explode("-",$h_d);
-    if ($arr_h_d[1]!=0 && $arr_h_d[2]!=0){
+    if (ToNumber($arr_h_d[1])!=0 && ToNumber($arr_h_d[2])!=0){
     $holiday_date = date("jS F", mktime(0,0,0,$arr_h_d[1],$arr_h_d[2],0));
     //echo $holiday_date;
     //$T->set_var("holiday_date", $db->Record["holiday_date"]);

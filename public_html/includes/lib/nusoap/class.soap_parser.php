@@ -55,6 +55,7 @@ class soap_parser extends nusoap_base {
 	* @param    string $decode_utf8 whether to decode UTF-8 to ISO-8859-1
 	* @access   public
 	*/
+	function __construct() { $a = func_get_args(); self::soap_parser(...$a); } // PHP 8: "soap_parser()" is no longer a constructor
 	function soap_parser($xml,$encoding='UTF-8',$method='',$decode_utf8=true){
 		parent::nusoap_base();
 		$this->xml = $xml;

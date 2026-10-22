@@ -90,6 +90,7 @@ class PEAR_Registry extends PEAR
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Registry(...$a); } // PHP 8: "PEAR_Registry()" is no longer a constructor
     function PEAR_Registry($pear_install_dir = PEAR_INSTALL_DIR)
     {
         parent::PEAR();
@@ -368,7 +369,7 @@ class PEAR_Registry extends PEAR
             return $pkglist;
         }
         while ($ent = readdir($dp)) {
-            if ($ent{0} == '.' || substr($ent, -4) != '.reg') {
+            if ($ent[0] == '.' || substr($ent, -4) != '.reg') {
                 continue;
             }
             $pkglist[] = substr($ent, 0, -4);

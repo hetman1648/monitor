@@ -106,6 +106,7 @@ class PEAR_Installer extends PEAR_Downloader
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Installer(...$a); } // PHP 8: "PEAR_Installer()" is no longer a constructor
     function PEAR_Installer(&$ui)
     {
         parent::PEAR_Common();
@@ -165,7 +166,7 @@ class PEAR_Installer extends PEAR_Downloader
                 include_once "OS/Guess.php";
                 $os = new OS_Guess();
             }
-            if (strlen($atts['platform']) && $atts['platform']{0} == '!') {
+            if (strlen($atts['platform']) && $atts['platform'][0] == '!') {
                 $negate = true;
                 $platform = substr($atts['platform'], 1);
             } else {
@@ -606,7 +607,7 @@ class PEAR_Installer extends PEAR_Downloader
         } else {
             $this->installroot = '';
         }
-        $this->registry = &new PEAR_Registry($php_dir);
+        $this->registry = new PEAR_Registry($php_dir);
         //  ==> XXX should be removed later on
         $flag_old_format = false;
 
@@ -638,7 +639,7 @@ class PEAR_Installer extends PEAR_Downloader
                 $dp = opendir($tmpdir);
                 do {
                     $pkgdir = readdir($dp);
-                } while ($pkgdir{0} == '.');
+                } while ($pkgdir[0] == '.');
 
                 $descfile = $tmpdir . DIRECTORY_SEPARATOR . $pkgdir . DIRECTORY_SEPARATOR . 'package.xml';
                 $flag_old_format = true;
@@ -787,7 +788,7 @@ class PEAR_Installer extends PEAR_Downloader
             // {{{ compile and install source files
             if ($this->source_files > 0 && empty($options['nobuild'])) {
                 $this->log(1, "$this->source_files source files, building");
-                $bob = &new PEAR_Builder($this->ui);
+                $bob = new PEAR_Builder($this->ui);
                 $bob->debug = $this->debug;
                 $built = $bob->build($descfile, array(&$this, '_buildCallback'));
                 if (PEAR::isError($built)) {
@@ -900,13 +901,13 @@ class PEAR_Installer extends PEAR_Downloader
         } else {
             $this->installroot = '';
         }
-        $this->registry = &new PEAR_Registry($php_dir);
+        $this->registry = new PEAR_Registry($php_dir);
         $filelist = $this->registry->packageInfo($package, 'filelist');
         if ($filelist == null) {
             return $this->raiseError("$package not installed");
         }
         if (empty($options['nodeps'])) {
-            $depchecker = &new PEAR_Dependency($this->registry);
+            $depchecker = new PEAR_Dependency($this->registry);
             $error = $depchecker->checkPackageUninstall($errors, $warning, $package);
             if ($error) {
                 return $this->raiseError($errors . 'uninstall failed');
@@ -966,9 +967,9 @@ class PEAR_Installer extends PEAR_Downloader
     function checkDeps(&$pkginfo, &$errors)
     {
         if (empty($this->registry)) {
-            $this->registry = &new PEAR_Registry($this->config->get('php_dir'));
+            $this->registry = new PEAR_Registry($this->config->get('php_dir'));
         }
-        $depchecker = &new PEAR_Dependency($this->registry);
+        $depchecker = new PEAR_Dependency($this->registry);
         $error = $errors = '';
         $failed_deps = $optional_deps = array();
         if (is_array($pkginfo['release_deps'])) {

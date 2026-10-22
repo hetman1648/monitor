@@ -7,7 +7,7 @@
 		{
 			$hidden_parameters = "";
 			reset($variables);
-			while (list($key, $value) = each($variables)) {
+			foreach ($variables as $key => $value) {
 				$remove = false;
 				if (is_array($remove_parameters)) {
 					for ($i = 0; $i < sizeof($remove_parameters); $i++) {
@@ -411,11 +411,8 @@
 
 	function strip($value)
 	{
-		if (get_magic_quotes_gpc() == 0) {
+		// magic_quotes_gpc is always off (removed in PHP 5.4)
 	    	return $value;
-		} else {
-			return stripslashes($value);
-		}
 	}
 
 	function call_event($events, $event_name, $additional_parameters = "")
@@ -895,7 +892,7 @@
 		if ($icons_enable && is_array($icons_codes)) { // replace emotion icons
 			$message = str_replace($icons_codes, $icons_tags, $message);
 		}
-		$msg_strings = split("\n", $message);
+		$msg_strings = explode("\n", $message);
 		$message     = "";
 		$last_level  = 0;
 		$ln = 0;

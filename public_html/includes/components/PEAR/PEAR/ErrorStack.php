@@ -243,6 +243,7 @@ class PEAR_ErrorStack {
      *                 defaults to {@link getFileLine()}
      * @param boolean  $throwPEAR_Error
      */
+    function __construct() { $a = func_get_args(); self::PEAR_ErrorStack(...$a); } // PHP 8: "PEAR_ErrorStack()" is no longer a constructor
     function PEAR_ErrorStack($package, $msgCallback = false, $contextCallback = false,
                          $throwPEAR_Error = false)
     {
@@ -282,7 +283,7 @@ class PEAR_ErrorStack {
                 false, $trace);
         }
         return $GLOBALS['_PEAR_ERRORSTACK_SINGLETON'][$package] =
-            &new $stackClass($package, $msgCallback, $contextCallback, $throwPEAR_Error);
+            new $stackClass($package, $msgCallback, $contextCallback, $throwPEAR_Error);
     }
 
     /**

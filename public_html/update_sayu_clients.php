@@ -67,12 +67,12 @@ INSERT INTO
 VALUES
 	( 
 	'.$db2->Record['viart_user_id'].
-	' , \''.mysql_escape_string($db2->Record['client_name']).
+	' , \''.$db->escape($db2->Record['client_name']).
 	'\' , \''.$db2->Record['client_email'].
 	'\' , \''.$db2->Record['date_added'].
-	'\' , \''.mysql_escape_string($db2->Record['client_company']).
+	'\' , \''.$db->escape($db2->Record['client_company']).
 	'\' , '.$db2->Record['client_type'].
-	' , \''.mysql_escape_string($db2->Record['web_address']).
+	' , \''.$db->escape($db2->Record['web_address']).
 	'\' , '.$db2->Record['is_active'].'
 	)';
 	$db->query($sql);

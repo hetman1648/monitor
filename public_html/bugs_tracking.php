@@ -170,7 +170,7 @@
 		t.task_status_id as status,
 		t.task_id as task_id,
 		b.bug_id as bug_id,
-		\''.mysql_escape_string($preg = preg_replace('|&?close=close&bug_id=[[:digit:]]+|', '' ,getenv('QUERY_STRING'))).(((substr($preg, -1) == '?')|| $preg == '') ? '' : '&').'close=close&bug_id='.'\'  as query
+		\''.$db->escape($preg = preg_replace('|&?close=close&bug_id=[[:digit:]]+|', '' ,getenv('QUERY_STRING'))).(((substr($preg, -1) == '?')|| $preg == '') ? '' : '&').'close=close&bug_id='.'\'  as query
 		FROM bugs b JOIN users u ON b.user_id = u.user_id
 		JOIN users u2 ON b.issued_user_id = u2.user_id LEFT JOIN
 		users u3 ON b.resolved_user_id = u3.user_id JOIN tasks t ON t.task_id = b.task_id

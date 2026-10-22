@@ -467,7 +467,7 @@ class DB
             return $tmp;
         }
 
-        @$obj =& new $classname;
+        @$obj = new $classname;
 
         foreach ($options as $option => $value) {
             $test = $obj->setOption($option, $value);
@@ -544,7 +544,7 @@ class DB
             return $tmp;
         }
 
-        @$obj =& new $classname;
+        @$obj = new $classname;
 
         foreach ($options as $option => $value) {
             $test = $obj->setOption($option, $value);
@@ -880,6 +880,7 @@ class DB_Error extends PEAR_Error
      *
      * @see PEAR_Error
      */
+    function __construct() { $a = func_get_args(); self::DB_Error(...$a); } // PHP 8: "DB_Error()" is no longer a constructor
     function DB_Error($code = DB_ERROR, $mode = PEAR_ERROR_RETURN,
                       $level = E_USER_NOTICE, $debuginfo = null)
     {
@@ -1016,6 +1017,7 @@ class DB_result
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_result(...$a); } // PHP 8: "DB_result()" is no longer a constructor
     function DB_result(&$dbh, $result, $options = array())
     {
         $this->autofree    = $dbh->options['autofree'];
@@ -1121,7 +1123,7 @@ class DB_result
                 if ($object_class == 'stdClass') {
                     $arr = (object) $arr;
                 } else {
-                    $arr = &new $object_class($arr);
+                    $arr = new $object_class($arr);
                 }
             }
             return $arr;
@@ -1366,6 +1368,7 @@ class DB_row
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_row(...$a); } // PHP 8: "DB_row()" is no longer a constructor
     function DB_row(&$arr)
     {
         foreach ($arr as $key => $value) {

@@ -66,6 +66,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
      * @access    public
      * @return    void
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_select(...$a); } // PHP 8: "HTML_QuickForm_select()" is no longer a constructor
     function HTML_QuickForm_select($elementName=null, $elementLabel=null, $options=null, $attributes=null)
     {
         HTML_QuickForm_element::HTML_QuickForm_element($elementName, $elementLabel, $attributes);
@@ -105,7 +106,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
     function setSelected($values)
     {
         if (is_string($values) && $this->getMultiple()) {
-            $values = split("[ ]?,[ ]?", $values);
+            $values = preg_split("/[ ]?,[ ]?/", $values);
         }
         if (is_array($values)) {
             $this->_values = array_values($values);

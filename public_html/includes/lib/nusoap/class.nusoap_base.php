@@ -52,6 +52,7 @@ require_once('class.soap_server.php');*/
 
 // class variable emulation
 // cf. http://www.webkreator.com/php/techniques/php-static-class-variables.html
+$GLOBALS['_transient']['static']['nusoap_base'] = new stdClass(); // PHP 8 no longer creates it on assignment
 $GLOBALS['_transient']['static']['nusoap_base']->globalDebugLevel = 9;
 
 /**
@@ -202,6 +203,7 @@ class nusoap_base {
 	*
 	* @access	public
 	*/
+	function __construct() { $a = func_get_args(); self::nusoap_base(...$a); } // PHP 8: "nusoap_base()" is no longer a constructor
 	function nusoap_base() {
 		$this->debugLevel = $GLOBALS['_transient']['static']['nusoap_base']->globalDebugLevel;
 	}

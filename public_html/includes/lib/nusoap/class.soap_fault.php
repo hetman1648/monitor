@@ -45,6 +45,7 @@ class soap_fault extends nusoap_base {
     * @param string $faultstring human readable error message
     * @param mixed $faultdetail detail, typically a string or array of string
 	*/
+	function __construct() { $a = func_get_args(); self::soap_fault(...$a); } // PHP 8: "soap_fault()" is no longer a constructor
 	function soap_fault($faultcode,$faultactor='',$faultstring='',$faultdetail=''){
 		parent::nusoap_base();
 		$this->faultcode = $faultcode;

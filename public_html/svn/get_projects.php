@@ -58,7 +58,7 @@ $sql = "SELECT user_id,first_name,last_name,web_clients_resource FROM users WHER
 $db->query($sql);
 while($db->next_record()) {
     if ($db->f("web_clients_resource")){ 
-        $users[$db->f("user_id")] = 8 * $db->f("web_clients_resource") / 100; //8 hours per day is 100%
+        $users[$db->f("user_id")] = 8 * ToNumber($db->f("web_clients_resource")) / 100; //8 hours per day is 100%
     }
     $users_names[$db->f("user_id")] = $db->f("first_name") . " " . $db->f("last_name");
 }
@@ -74,7 +74,7 @@ for ($c = 0; $c < $calendar_days; $c++) {
     
     //we need to find out how many slots are left today
     $slots_left_today = 8;
-    if ($c ==0) {
+    if (ToNumber($c) ==0) {
         $now          = strtotime(date("Y-m-d H:00",time()));
         $end_of_today = strtotime(date("Y-m-d",time()) . " 17:00") ;
         $slots_left_today = ($end_of_today - $now) / 60 / 60; 
@@ -85,7 +85,7 @@ for ($c = 0; $c < $calendar_days; $c++) {
     foreach ($users as $user_id => $allocation) {
     	//echo $user_id."\n";
         for ($i =0; $i < $allocation; $i++){
-            if ($c ==0) { //first day of calendar is today
+            if (ToNumber($c) ==0) { //first day of calendar is today
                 if ($i >= $slots_left_today) break; //if it's tonight then no slots left - skip to tomorrow   
             }
             $time_slot = $dta + $i * 60 * 60;
@@ -204,7 +204,7 @@ while ($allocate_left) {
         	//echo "completion: $completion<br>";        	
         	//echo "hours_to_allocate before:$hours_to_allocate<br>";
         	
-            $hours_to_allocate = $hours_to_allocate - round($hours_to_allocate * $completion / 100);
+            $hours_to_allocate = ToNumber($hours_to_allocate) - round(ToNumber($hours_to_allocate) * $completion / 100);
             //echo "hours_to_allocate after:$hours_to_allocate<hr>";
 
             if (($hours_to_allocate > 0) && ($hours_to_allocate < 1)) $hours_to_allocate = 1;
@@ -418,7 +418,7 @@ $days_to_display = $weeks_to_display * 7; //TODO: parameter sent via GET
                 if (!$completion) $completion = "0";
                 $completion .= "%";
 
-                 if(!($estimate * 1)) {
+                 if(!((float) $estimate)) {
                     if ($is_allocated) {
                         $estimate         = "1 day?";
                         $estimated_slotes = 8;
@@ -452,11 +452,11 @@ $days_to_display = $weeks_to_display * 7; //TODO: parameter sent via GET
             <td class="dependancyCell" id="dep<?php echo $task_id; ?>">
                 <?php if ($dependent_id) { ?>
                     <i class="icon-circle-arrow-right"></i> <?php echo $tasks_counter[$dependent_id]; ?>
-                <? } else { ?>
+                <?php  } else { ?>
                 <a href="#" id="dep<?php echo $task_id; ?>Icon" class="lnkDependancy" title ="Make task completion '<?php echo $task_title; ?>' dependent on some other task ">
                     <i class="icon-arrow-right" ></i>
                 </a>
-                <? } ?>
+                <?php  } ?>
             </td>
             <?php
                 $cur_timestamp = strtotime(date("Y-m-d",time()) . " 09:00");  // we assume that the first slot is for 9:00

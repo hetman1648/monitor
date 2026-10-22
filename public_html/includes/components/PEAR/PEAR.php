@@ -150,6 +150,7 @@ class PEAR
      * @access public
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::PEAR(...$a); } // PHP 8: "PEAR()" is no longer a constructor
     function PEAR($error_class = null)
     {
         $classname = strtolower(get_class($this));
@@ -537,10 +538,10 @@ class PEAR
             $ec = 'PEAR_Error';
         }
         if ($skipmsg) {
-            $a = &new $ec($code, $mode, $options, $userinfo);
+            $a = new $ec($code, $mode, $options, $userinfo);
             return $a;
         } else {
-            $a = &new $ec($message, $code, $mode, $options, $userinfo);
+            $a = new $ec($message, $code, $mode, $options, $userinfo);
             return $a;
         }
     }
@@ -809,6 +810,7 @@ class PEAR_Error
      * @access public
      *
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Error(...$a); } // PHP 8: "PEAR_Error()" is no longer a constructor
     function PEAR_Error($message = 'unknown error', $code = null,
                         $mode = null, $options = null, $userinfo = null)
     {

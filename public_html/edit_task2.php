@@ -76,7 +76,7 @@ if ($client_id !== "") {
 		$client_company	= $db->Record['client_company'];
 		$client_email	= $db->Record['client_email'];
 		if ($client_email) {
-			$temp = split("[;]",$client_email);
+			$temp = explode(";",$client_email);
 			if (strlen($temp[0])) {
 				$client_email	= ($temp[0]?"<br>&nbsp;".$temp[0]:"");
 				unset($temp);
@@ -104,7 +104,7 @@ if ($client_id !== "") {
 		$client_company	= $db->Record['client_company'];
 		$client_email	= $db->Record['client_email'];
 		if ($client_email) {
-			$temp = split("[;]",$client_email);
+			$temp = explode(";",$client_email);
 			if (strlen($temp[0])) {
 				$client_email	= ($temp[0]?"<br>&nbsp;".$temp[0]:"");
 				unset($temp);
@@ -385,7 +385,7 @@ function Form_Show() {
 
 	while($db->next_record())
 	{
-		$max_priority = $db->Record["max_priority"]+1;
+		$max_priority = ToNumber($db->Record["max_priority"])+1;
 		$r_user_id    = $db->Record["responsible_user_id"];
 		if (!$max_priority) $max_priority = 1;
 		$users_priorities .= "dicUsers[$r_user_id] = $max_priority;\n";
@@ -473,9 +473,9 @@ function Form_Show() {
 				$type = @$types_array[$i];
 				$planed_date = @$planed_array[$i];
 
-				if ($planed_date < $today && $status != 1 && $type!=1 && $type!=3 && $type!=0)
+				if ($planed_date < $today && $status != 1 && $type!=1 && $type!=3 && ToNumber($type)!=0)
 				$statuses .= "Deadline;";
-				elseif ($planed_date == $today && $status != 1 &&  $status != 4 && $type!=1 && $type!=3 && $type!=0)
+				elseif ($planed_date == $today && $status != 1 &&  $status != 4 && $type!=1 && $type!=3 && ToNumber($type)!=0)
 				$statuses .= "Today;";
 				else
 				$statuses .= @$statuses_classes[$status].";";
@@ -681,7 +681,7 @@ function Form_Show() {
 			 $btn = "<input type='button' class='btnStop' value='Stop Task' onClick=\"javascript:startTask($fldtask_id,'Stop','$sfldtask_title',true,$fldcompletion,'$sfldtask_title',0,'index.php')\">";
 		    $T->set_var("start_button", $btn);		
 		} else {
-		    if ($fldresponsible_user_id == GetSessionParam("UserID") && !(is_manager($fldresponsible_user_id) && $fld_is_planned==0)) {
+		    if ($fldresponsible_user_id == GetSessionParam("UserID") && !(is_manager($fldresponsible_user_id) && ToNumber($fld_is_planned)==0)) {
 			$T->parse("start_button",false);
 		    } elseif ($fldresponsible_user_id<>GetSessionParam("UserID") && GetSessionParam("privilege_id") >= PRIV_ARCHITECT) {
 			$T->parse("start_button",false);
@@ -925,17 +925,17 @@ function Form_Show() {
 		if ($estimated_hours)
 		{
 			if ($estimated_hours>0 && $estimated_hours<1) {
-				$estimated_hours_title = round($estimated_hours*60)." min";
+				$estimated_hours_title = round(ToNumber($estimated_hours)*60)." min";
 			} elseif ($estimated_hours==1) {
 				$estimated_hours_title = "1 hour";
 			} elseif ($estimated_hours>1 && $estimated_hours<16) {
-				if (fmod($estimated_hours,1)) {
+				if (fmod(ToNumber($estimated_hours),1)) {
 					$estimated_hours_title = sprintf("%1.2f hours",$estimated_hours);
 				} else {
-					$estimated_hours_title = floor($estimated_hours)." hours";
+					$estimated_hours_title = floor(ToNumber($estimated_hours))." hours";
 				}
 			} elseif ($estimated_hours>=16) {
-				$estimated_hours_title.= ( fmod($estimated_hours,8) ? sprintf("%1.2f days",$estimated_hours/8) : floor($estimated_hours/8)." days");
+				$estimated_hours_title.= ( fmod(ToNumber($estimated_hours),8) ? sprintf("%1.2f days",ToNumber($estimated_hours)/8) : floor(ToNumber($estimated_hours)/8)." days");
 			}
 		}
 		$T->set_var("estimated_hours", $estimated_hours_title);
@@ -1001,13 +1001,13 @@ function Form_Show() {
 				$T->set_var("subtask_name", $db->f("task_title"));
 				$time_spent = $db->f("actual_hours");
 				
-				$total_time_spent += $time_spent;
+				$total_time_spent += ToNumber($time_spent);
 				$T->set_var("subtask_time", $time_spent>0 ? to_hours($time_spent) : "0:00");
 				$T->parse("subtasks_row", true);
 
 			} while ($db->next_record());
 
-			$total_time_spent+=$db->f("main_actual_hours");
+			$total_time_spent+=ToNumber($db->f("main_actual_hours"));
 			$T->set_var("total_time_spent", $total_time_spent>0 ? to_hours($total_time_spent) : "0:00");
 			$T->parse("subtasks", false);
 		} else {
@@ -1092,7 +1092,7 @@ function Form_Show() {
 		}
 	}
 
-	if ($attach_count != 0) {
+	if (ToNumber($attach_count) != 0) {
 		$T->set_var("task_attachments_header", "Task attachments:");
 	} else {
 		$T->set_var("task_attachments_header", "");
@@ -1175,7 +1175,7 @@ function MessagesShow()
 						$T->parse("attachments",true);
 					}
 				}
-				if ($attach_count != 0) {
+				if (ToNumber($attach_count) != 0) {
 					$T->set_var("attachments_header", "Attachments:");
 				} else {
 					$T->set_var("attachments_header", "");

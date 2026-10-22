@@ -46,6 +46,7 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
      * @access    public
      * @return    void
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_text(...$a); } // PHP 8: "HTML_QuickForm_text()" is no longer a constructor
     function HTML_QuickForm_text($elementName=null, $elementLabel=null, $attributes=null)
     {
         HTML_QuickForm_input::HTML_QuickForm_input($elementName, $elementLabel, $attributes);

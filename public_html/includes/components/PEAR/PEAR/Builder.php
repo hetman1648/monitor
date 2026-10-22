@@ -50,6 +50,7 @@ class PEAR_Builder extends PEAR_Common
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Builder(...$a); } // PHP 8: "PEAR_Builder()" is no longer a constructor
     function PEAR_Builder(&$ui)
     {
         parent::PEAR_Common();
@@ -165,7 +166,7 @@ class PEAR_Builder extends PEAR_Common
 
         $ret = true;
         while (($ent = readdir($d)) !== false) {
-            if ($ent{0} == '.')
+            if ($ent[0] == '.')
                 continue;
 
             $full = $dirname . DIRECTORY_SEPARATOR . $ent;

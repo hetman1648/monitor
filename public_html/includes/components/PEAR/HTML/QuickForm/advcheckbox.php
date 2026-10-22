@@ -77,6 +77,7 @@ class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
      * @access    public
      * @return    void
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_advcheckbox(...$a); } // PHP 8: "HTML_QuickForm_advcheckbox()" is no longer a constructor
     function HTML_QuickForm_advcheckbox($elementName=null, $elementLabel=null, $text=null, $attributes=null, $values=null)
     {
         $this->HTML_QuickForm_checkbox($elementName, $elementLabel, $text, $attributes);

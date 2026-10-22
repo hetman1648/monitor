@@ -35,6 +35,7 @@ class PEAR_Packager extends PEAR_Common
 {
     // {{{ constructor
 
+    function __construct() { $a = func_get_args(); self::PEAR_Packager(...$a); } // PHP 8: "PEAR_Packager()" is no longer a constructor
     function PEAR_Packager()
     {
         parent::PEAR_Common();
@@ -121,7 +122,7 @@ class PEAR_Packager extends PEAR_Common
         // {{{ TAR the Package -------------------------------------------
         $ext = $compress ? '.tgz' : '.tar';
         $dest_package = getcwd() . DIRECTORY_SEPARATOR . $pkgver . $ext;
-        $tar =& new Archive_Tar($dest_package, $compress);
+        $tar = new Archive_Tar($dest_package, $compress);
         $tar->setErrorHandling(PEAR_ERROR_RETURN); // XXX Don't print errors
         // ----- Creates with the package.xml file
         $ok = $tar->createModify(array($newpkgfile), '', $tmpdir);

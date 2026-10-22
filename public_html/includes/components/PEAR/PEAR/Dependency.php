@@ -50,6 +50,7 @@ class PEAR_Dependency
      * @param  object Registry object
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Dependency(...$a); } // PHP 8: "PEAR_Dependency()" is no longer a constructor
     function PEAR_Dependency(&$registry)
     {
         $this->registry = &$registry;

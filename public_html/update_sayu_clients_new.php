@@ -73,12 +73,12 @@ $db->query($sql,__FILE__,__LINE__);
 while($db2->next_record()) {
 	$sql= " INSERT INTO tsayu_clients
 			SET	viart_user_id	=".$db2->Record['viart_user_id'].",
-				client_name		='".mysql_escape_string($db2->Record['client_name'])."',
+				client_name		='".$db->escape($db2->Record['client_name'])."',
 				client_email	='".$db2->Record['client_email']."',
 				date_added		='".$db2->Record['date_added']."',
-				client_company	='".mysql_escape_string($db2->Record['client_company'])."',
+				client_company	='".$db->escape($db2->Record['client_company'])."',
 				client_type		=".$db2->Record['client_type'].",
-				web_address		='".mysql_escape_string($db2->Record['web_address'])."',
+				web_address		='".$db->escape($db2->Record['web_address'])."',
 				is_active		=".$db2->Record['is_active'].",
 				account_mcc		='".$db2->Record['account_mcc']."',
 				google_id		='".$db2->Record['google_id']."'";
@@ -169,21 +169,21 @@ $db->query("DROP TABLE IF EXISTS tsayu_clients");
 			{
 					$update_old = true;
 	    			$sql = "UPDATE clients
-								SET	client_name		='".mysql_escape_string($db2->f("client_name"))."',
-									client_email	='".mysql_escape_string($db2->f("client_email"))."',
-									client_company	='".mysql_escape_string($db2->f("client_company"))."',
+								SET	client_name		='".$db->escape($db2->f("client_name"))."',
+									client_email	='".$db->escape($db2->f("client_email"))."',
+									client_company	='".$db->escape($db2->f("client_company"))."',
 									account_mcc		=".ToSQLO($db2->f("account_mcc"),"string",true,true).",
-									google_id		='".trim(ereg_replace("[- ]","",$db2->f("google_id")))."',
+									google_id		='".trim(preg_replace("/[- ]/","",$db2->f("google_id")))."',
 									is_active		=".ToSQLO($db->f("is_active"),"integer",false,false).",
 									google_accounts_emails =".ToSQLO($db2->f("google_accounts_emails"),"string",true,true)."
 								WHERE	sayu_user_id=".ToSQLO($db->f("sayu_user_id"),"integer",false,false);
 					$message .= $db->f("client_name")."(".$db->f("sayu_user_id").")[".$db->f("sayu_user_id")."]\r\n";
 					$message .= $dbo->f("client_name")."(".$dbo->f("sayu_user_id").") [".$dbo->f("sayu_user_id")."]\n";
 					$message .= "UPDATE clients \n";
-					$message .= "SET	client_name		='".mysql_escape_string($dbo->f("client_name"))."', \n";
-					$message .= "client_email	='".mysql_escape_string($dbo->f("client_email"))."', \n";
+					$message .= "SET	client_name		='".$db->escape($dbo->f("client_name"))."', \n";
+					$message .= "client_email	='".$db->escape($dbo->f("client_email"))."', \n";
 					$message .= "date_added		=".ToSQLO($dbo->f("date_added"),"date").", \n";
-					$message .= "client_company	='".mysql_escape_string($dbo->f("client_company"))."', \n";
+					$message .= "client_company	='".$db->escape($dbo->f("client_company"))."', \n";
 					$message .= "client_type	=".ToSQLO($dbo->f("client_type"),"integer",false,false).", \n";
 					$message .= "is_active		=".ToSQLO($dbo->f("is_active"),"integer",false).", \n";
 					$message .= "account_mcc	=".ToSQLO($dbo->f("account_mcc"),"string",true,true).", \n";
@@ -237,16 +237,16 @@ $db->query("DROP TABLE IF EXISTS tsayu_clients");
 		$web_address	= str_replace("http://","",$db2->Record['web_address']);
 		$is_active		= $db2->Record['is_active'];
 		$account_mcc	= $db2->Record['account_mcc'];
-		$google_id		= trim(ereg_replace("[- ]","",$db2->Record['google_id']));
+		$google_id		= trim(preg_replace("/[- ]/","",$db2->Record['google_id']));
 		$google_accounts_emails = $db2->Record["google_accounts_emails"];
 
 
 		$client_email = preg_replace("/[a-z0-9-]*(\.)+[a-z0-9-]*@sayu.co.uk/","",$client_email);
-		$emails  = split("[;]",$client_email);
+		$emails  = explode(";",$client_email);
 		sort(array_unique($emails));
 		$temp = array_shift($emails);
 		if ($temp && strlen($temp) > 0 && $temp != "") { array_push($emails,$temp);}
-		$googles = split ("[;]",$google_id);
+		$googles = explode(";",$google_id);
 		sort(array_unique($googles));
 		$temp = array_shift($googles);
 		if ($temp && strlen($temp) > 0) { array_push($googles,$temp);}
@@ -288,20 +288,20 @@ $db->query("DROP TABLE IF EXISTS tsayu_clients");
 			$note = $db->f("notes");
 			$note .= "\nClientID=".$sayu_user_id."\t\r\n";
 			$message .= $dbo->f("client_name")."(".$dbo->f("client_id").")\r\n";
-			$message .= "UPDATE clients\r\n SET	client_name		='".mysql_escape_string($dbo->f("client_name"))."', \r\n";
-			$message .= "client_email	='".mysql_escape_string($dbo->f("client_email"))."',\r\n date_added		=".ToSQLO($dbo->f("date_added"),"date").",\r\n";
-			$message .= "client_company	='".mysql_escape_string($dbo->f("client_company"))."',\r\n client_type		=".ToSQLO($dbo->f("client_type"),"integer",false,false).",\r\n";
+			$message .= "UPDATE clients\r\n SET	client_name		='".$db->escape($dbo->f("client_name"))."', \r\n";
+			$message .= "client_email	='".$db->escape($dbo->f("client_email"))."',\r\n date_added		=".ToSQLO($dbo->f("date_added"),"date").",\r\n";
+			$message .= "client_company	='".$db->escape($dbo->f("client_company"))."',\r\n client_type		=".ToSQLO($dbo->f("client_type"),"integer",false,false).",\r\n";
 			$message .= "is_active		=".ToSQLO($dbo->f("is_active"),"integer",false).",\r\n 	account_mcc		=".ToSQLO($dbo->f("account_mcc"),"string",true,true).",\r\n";
 			$message .= "google_id		=".ToSQLO($dbo->f("google_id"),"string",true,true)." \r\n";
 			$message .= "user_id=".ToSQLO($sayu_user_id,"integer",false)."\r\n";
 			$sql = "UPDATE clients
-							SET	client_name		='".mysql_escape_string($client_name)."',
-								client_email	='".mysql_escape_string($dbo->f("client_email"))."',
-								client_company	='".mysql_escape_string($client_company)."',
+							SET	client_name		='".$db->escape($client_name)."',
+								client_email	='".$db->escape($dbo->f("client_email"))."',
+								client_company	='".$db->escape($client_company)."',
 								client_type		=".ToSQLO($client_type,"integer",false,false).",
 								is_active		=".ToSQLO($is_active,"integer",false).",
 								account_mcc		=".ToSQLO($account_mcc,"string",true,true).",
-								google_id		='".trim(ereg_replace("[- ]","",$db2->Record['google_id']))."',
+								google_id		='".trim(preg_replace("/[- ]/","",$db2->Record['google_id']))."',
 								notes			=".ToSQLO($note,"string",true,true)."
 							WHERE	client_id=".ToSQLO($client_id,"integer",false,false);
 			$sql_web = "SELECT * FROM clients_sites WHERE client_id = " . ToSQL($client_id,"number");
@@ -319,14 +319,14 @@ $db->query("DROP TABLE IF EXISTS tsayu_clients");
 		elseif ($db->num_rows() == 0) {
 			$sql = "INSERT INTO clients
 					SET sayu_user_id	=".ToSQLO($sayu_user_id,"integer",false).",
-						client_name		=".ToSQLO(mysql_escape_string($client_name),"string",true,true).",
+						client_name		=".ToSQLO($db->escape($client_name),"string",true,true).",
 						client_email	=".ToSQLO($client_email,"string",true,true).",
 						date_added		=".ToSQLO($date_added,"date").",
-						client_company	=".ToSQLO(mysql_escape_string($client_company),"string",true,true).",
+						client_company	=".ToSQLO($db->escape($client_company),"string",true,true).",
 						client_type		=".ToSQLO($client_type,"integer",false).",
 						is_active		=".ToSQLO($is_active,"integer",false).",
 						account_mcc		=".ToSQLO($account_mcc,"string",true,true).",
-						google_id		='".trim(ereg_replace("[- ]","",$db2->Record['google_id']))."',
+						google_id		='".trim(preg_replace("/[- ]/","",$db2->Record['google_id']))."',
 						google_accounts_emails = ".ToSQLO($google_accounts_emails,"string",true,true);
 			$update_new = true;
 			$message .= "$client_name [$sayu_user_id]\n";
@@ -339,7 +339,7 @@ $db->query("DROP TABLE IF EXISTS tsayu_clients");
 			$message .= "client_type	=".ToSQLO($client_type,"integer",false).",\n ";
 			$message .= "is_active		=".ToSQLO($is_active,"integer",false).",\n ";
 			$message .= "account_mcc	=".ToSQLO($account_mcc,"string",true,true).",\n ";
-			$message .= "google_id		='".trim(ereg_replace("[- ]","",$db2->Record['google_id']))."'\n";
+			$message .= "google_id		='".trim(preg_replace("/[- ]/","",$db2->Record['google_id']))."'\n";
 			$message .= "google_accounts_emails =".ToSQLO($google_accounts_emails,"string",true,true)."\r\n ";
 		}			
 		else {}//many clients :(
@@ -391,19 +391,15 @@ function ToSQLO($value, $type, $use_null = true, $is_delimiters = true)
 	elseif ($type == "number") {return doubleval($value);}
 	elseif ($type == "integer") {return intval($value);}
 	elseif ($type == "date") {
-		if (ereg("([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})",$value,$t)){
+		if (preg_match("~([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})~",$value,$t)){
 			if (checkdate($t[3],$t[5],$t[1])) { $value = date("Y-m-d", mktime(0,0,0,$t[3],$t[5],$t[1]));}
 				else { $value = "0000-00-00";}
 		} else { $value = "0000-00-00";}
 		$value = "'" . $value . "'";
 	} else {
-		if(get_magic_quotes_gpc() == 0) {
+		// magic_quotes_gpc is always off (removed in PHP 5.4)
 			$value = str_replace("'", "''", $value);
 				$value = str_replace("\\", "\\\\", $value);
-		} else {
-			$value = str_replace("\\'", "''", $value);
-			$value = str_replace("\\\"", "\"", $value);
-		}
 		//if ($is_delimiters) { $value = "'" . $value . "'";}
 		$value = "'" . $value . "'";
 	}

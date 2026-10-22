@@ -71,7 +71,7 @@
 		$sql = "SELECT MAX(period_id) AS period_id FROM days_off";
 		$db->query($sql);
 		$db->next_record();
-		$period_id = $db->Record["period_id"] + 1;
+		$period_id = ToNumber($db->Record["period_id"]) + 1;
 
 		$user_id = intval($person_selected);
 
@@ -130,7 +130,7 @@
 		$T->set_var("vacation_title", $db->Record["period_title"]);
 		$sql2 = "SELECT reason_name, reason_id FROM reasons";
 		$db2->query($sql2);
-		if ($is_paid == 0) {
+		if (ToNumber($is_paid) == 0) {
 			while ($db2->next_record()) {
 				if ($db2->Record["reason_id"] == $db->Record["reason_id"]) $reason_type_option .= "<option selected>".$db2->Record["reason_name"]."</option>\n";
 				else $reason_type_option .= "<option>".$db2->Record["reason_name"]."</option><br>";
@@ -168,7 +168,7 @@
 		$sql = "SELECT reason_name FROM reasons";
 		$db->query($sql);
 
-		if ($is_paid == 0) {
+		if (ToNumber($is_paid) == 0) {
 			while ($db->next_record()) {
 				$reason_type_option .= "<option>" . $db->Record["reason_name"] . "</option>\n";
 			}
@@ -185,7 +185,7 @@
 		$T->set_var("reason_type_option", $reason_type_option);
 		$T->set_var("total_days", "");
 		$T->set_var("delete_button", "");
-		if ($is_paid == 0) {
+		if (ToNumber($is_paid) == 0) {
 			$T->set_var("action_value", "Add Vacation");
 		} else {
 			$T->set_var("action_value", "Add Paid Period");

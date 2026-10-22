@@ -402,6 +402,7 @@ class PEAR_Config extends PEAR
      *
      * @see PEAR_Config::singleton
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Config(...$a); } // PHP 8: "PEAR_Config()" is no longer a constructor
     function PEAR_Config($user_file = '', $system_file = '')
     {
         $this->PEAR();
@@ -459,7 +460,7 @@ class PEAR_Config extends PEAR
             return $GLOBALS['_PEAR_Config_instance'];
         }
         $GLOBALS['_PEAR_Config_instance'] =
-             &new PEAR_Config($user_file, $system_file);
+             new PEAR_Config($user_file, $system_file);
         return $GLOBALS['_PEAR_Config_instance'];
     }
 

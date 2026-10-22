@@ -56,6 +56,7 @@ class Mail_sendmail extends Mail {
      *              defaults.
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::Mail_sendmail(...$a); } // PHP 8: "Mail_sendmail()" is no longer a constructor
     function Mail_sendmail($params)
     {
         if (isset($params['sendmail_path'])) $this->sendmail_path = $params['sendmail_path'];

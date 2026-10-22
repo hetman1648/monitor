@@ -197,8 +197,8 @@ while ($db->next_record()) {
         'project_id' => $db->f("project_id")
     );
     
-    $total_estimated += $estimated;
-    $total_actual += $actual;
+    $total_estimated += ToNumber($estimated);
+    $total_actual += ToNumber($actual);
 }
 
 // Get today's time report
@@ -228,13 +228,13 @@ while ($db->next_record()) {
         'end_time' => $db->f("end_time"),
         'spent_hours' => $spent
     );
-    $today_total += $spent;
+    $today_total += ToNumber($spent);
     
     // Accumulate by project
     if (!isset($today_project_summary[$project_title])) {
         $today_project_summary[$project_title] = 0;
     }
-    $today_project_summary[$project_title] += $spent;
+    $today_project_summary[$project_title] += ToNumber($spent);
 }
 // Check for currently running task and add time since started
 $running_task_time = 0;
@@ -258,14 +258,14 @@ if ($db->next_record()) {
         'start_time' => date('H:i', strtotime($db->f("started_time"))),
         'running_hours' => $running_task_time
     );
-    $today_total += $running_task_time;
+    $today_total += ToNumber($running_task_time);
     
     // Add to project summary
     $project_title = $running_task_info['project_title'];
     if (!isset($today_project_summary[$project_title])) {
         $today_project_summary[$project_title] = 0;
     }
-    $today_project_summary[$project_title] += $running_task_time;
+    $today_project_summary[$project_title] += ToNumber($running_task_time);
 }
 
 // Sort by hours descending

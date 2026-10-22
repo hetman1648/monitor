@@ -274,11 +274,11 @@ if ($submit && $start_date && $end_date) {
                 'project_id' => $pid, 'project_title' => $ptitle,
                 'count_hours' => $ch, 'count_tasks' => $ct,
                 'is_selected' => ($pid == $project_selected),
-                'hours_pct' => ($total_hours > 0.0001) ? sprintf("%3.1f", $ch / $total_hours * 100) : "0.0",
-                'time_per_task' => $ct > 0 ? Hours2HoursMins($ch / $ct) : "",
+                'hours_pct' => ($total_hours > 0.0001) ? sprintf("%3.1f", ToNumber($ch) / ToNumber($total_hours) * 100) : "0.0",
+                'time_per_task' => $ct > 0 ? Hours2HoursMins(ToNumber($ch) / ToNumber($ct)) : "",
                 'working_days' => isset($wd[$pid]) ? $wd[$pid] : 0,
-                'hours_per_day' => (isset($wd[$pid]) && $wd[$pid] > 0) ? Hours2HoursMins($ch / $wd[$pid]) : "",
-                'tasks_per_day' => (isset($wd[$pid]) && $wd[$pid] > 0) ? sprintf("%3.1f", $ct / $wd[$pid]) : "0.0",
+                'hours_per_day' => (isset($wd[$pid]) && $wd[$pid] > 0) ? Hours2HoursMins(ToNumber($ch) / $wd[$pid]) : "",
+                'tasks_per_day' => (isset($wd[$pid]) && $wd[$pid] > 0) ? sprintf("%3.1f", ToNumber($ct) / $wd[$pid]) : "0.0",
                 'reaction_time' => isset($rh[$pid]) ? reaction_output($rh[$pid]) : "",
                 'users_list' => userlist_modern($sqlfwjoin, $pid, $start_date, $end_date, $period_selected, true, $team),
                 'sub_projects' => array()
@@ -300,11 +300,11 @@ if ($submit && $start_date && $end_date) {
                     'project_id' => $spid, 'project_title' => $sptitle,
                     'count_hours' => $sch, 'count_tasks' => $sct,
                     'is_selected' => ($spid == $project_selected),
-                    'hours_pct' => ($total_hours > 0.0001) ? sprintf("%3.1f", $sch / $total_hours * 100) : "0.0",
-                    'time_per_task' => $sct > 0 ? Hours2HoursMins($sch / $sct) : "",
+                    'hours_pct' => ($total_hours > 0.0001) ? sprintf("%3.1f", ToNumber($sch) / ToNumber($total_hours) * 100) : "0.0",
+                    'time_per_task' => $sct > 0 ? Hours2HoursMins(ToNumber($sch) / ToNumber($sct)) : "",
                     'working_days' => isset($wd[$spid]) ? $wd[$spid] : 0,
-                    'hours_per_day' => (isset($wd[$spid]) && $wd[$spid] > 0) ? Hours2HoursMins($sch / $wd[$spid]) : "",
-                    'tasks_per_day' => (isset($wd[$spid]) && $wd[$spid] > 0) ? sprintf("%3.1f", $sct / $wd[$spid]) : "0.0",
+                    'hours_per_day' => (isset($wd[$spid]) && $wd[$spid] > 0) ? Hours2HoursMins(ToNumber($sch) / $wd[$spid]) : "",
+                    'tasks_per_day' => (isset($wd[$spid]) && $wd[$spid] > 0) ? sprintf("%3.1f", ToNumber($sct) / $wd[$spid]) : "0.0",
                     'reaction_time' => isset($rh[$spid]) ? reaction_output($rh[$spid]) : "",
                     'users_list' => userlist_modern($sqlfwjoin, $spid, $start_date, $end_date, $period_selected, true, $team)
                 );
@@ -331,10 +331,10 @@ if ($submit && $start_date && $end_date) {
                 $dev_records[] = array(
                     'user_id' => $duid, 'user_name' => $db->f("user_name"),
                     'count_hours' => $dch, 'count_tasks' => $dct,
-                    'time_per_task' => $dct > 0 ? Hours2HoursMins($dch / $dct) : "",
+                    'time_per_task' => $dct > 0 ? Hours2HoursMins(ToNumber($dch) / ToNumber($dct)) : "",
                     'working_days' => $dwdval,
-                    'hours_per_day' => $dwdval > 0 ? Hours2HoursMins($dch / $dwdval) : "",
-                    'tasks_per_day' => $dwdval > 0 ? sprintf("%3.1f", $dct / $dwdval) : "",
+                    'hours_per_day' => $dwdval > 0 ? Hours2HoursMins(ToNumber($dch) / $dwdval) : "",
+                    'tasks_per_day' => $dwdval > 0 ? sprintf("%3.1f", ToNumber($dct) / $dwdval) : "",
                     'reaction_time' => isset($rhp[$project_selected][$duid]) ? reaction_output($rhp[$project_selected][$duid]) : "",
                     'is_selected' => ($person_selected == $duid)
                 );
@@ -351,7 +351,7 @@ if ($submit && $start_date && $end_date) {
         if ($db->next_record()) {
             $person_total_hours = $db->Record["count_hours"];
             $person_total_tasks = $db->Record["count_tasks"];
-            $person_av_time_per_task = $person_total_tasks > 0 ? $person_total_hours / $person_total_tasks : 0;
+            $person_av_time_per_task = $person_total_tasks > 0 ? ToNumber($person_total_hours) / ToNumber($person_total_tasks) : 0;
         }
         $person_working_days_total = isset($wdu[$person_selected]) ? $wdu[$person_selected] : 0;
 
@@ -373,11 +373,11 @@ if ($submit && $start_date && $end_date) {
                     'project_id' => $ppid, 'project_title' => $db->f("project_title"),
                     'count_hours' => $pch, 'count_tasks' => $pct,
                     'is_selected' => ($ppid == $project_selected),
-                    'hours_pct' => ($person_total_hours > 0.0001) ? sprintf("%3.1f", $pch / $person_total_hours * 100) : "0.0",
-                    'time_per_task' => $pct > 0 ? Hours2HoursMins($pch / $pct) : "",
+                    'hours_pct' => ($person_total_hours > 0.0001) ? sprintf("%3.1f", ToNumber($pch) / ToNumber($person_total_hours) * 100) : "0.0",
+                    'time_per_task' => $pct > 0 ? Hours2HoursMins(ToNumber($pch) / ToNumber($pct)) : "",
                     'working_days' => $pwdval,
-                    'hours_per_day' => $pwdval > 0 ? Hours2HoursMins($pch / $pwdval) : "",
-                    'tasks_per_day' => $pwdval > 0 ? sprintf("%3.1f", $pct / $pwdval) : "0.0",
+                    'hours_per_day' => $pwdval > 0 ? Hours2HoursMins(ToNumber($pch) / $pwdval) : "",
+                    'tasks_per_day' => $pwdval > 0 ? sprintf("%3.1f", ToNumber($pct) / $pwdval) : "0.0",
                     'reaction_time' => isset($rhp[$ppid][$person_selected]) ? reaction_output($rhp[$ppid][$person_selected]) : "",
                     'sub_projects' => array()
                 );
@@ -395,11 +395,11 @@ if ($submit && $start_date && $end_date) {
                         'project_id' => $spid, 'project_title' => $db_sub->f("project_title"),
                         'count_hours' => $sch, 'count_tasks' => $sct,
                         'is_selected' => ($spid == $project_selected),
-                        'hours_pct' => ($person_total_hours > 0.0001) ? sprintf("%3.1f", $sch / $person_total_hours * 100) : "0.0",
-                        'time_per_task' => $sct > 0 ? Hours2HoursMins($sch / $sct) : "",
+                        'hours_pct' => ($person_total_hours > 0.0001) ? sprintf("%3.1f", ToNumber($sch) / ToNumber($person_total_hours) * 100) : "0.0",
+                        'time_per_task' => $sct > 0 ? Hours2HoursMins(ToNumber($sch) / ToNumber($sct)) : "",
                         'working_days' => $swdval,
-                        'hours_per_day' => $swdval > 0 ? Hours2HoursMins($sch / $swdval) : "",
-                        'tasks_per_day' => $swdval > 0 ? sprintf("%3.1f", $sct / $swdval) : "0.0",
+                        'hours_per_day' => $swdval > 0 ? Hours2HoursMins(ToNumber($sch) / $swdval) : "",
+                        'tasks_per_day' => $swdval > 0 ? sprintf("%3.1f", ToNumber($sct) / $swdval) : "0.0",
                         'reaction_time' => isset($rhp[$spid][$person_selected]) ? reaction_output($rhp[$spid][$person_selected]) : ""
                     );
                 }
@@ -579,7 +579,7 @@ if ($submit && $start_date && $end_date) {
                     <tr<?php echo $p['is_selected'] ? ' class="row-selected"' : ''; ?>>
                         <td><a href="<?php echo $link; ?>"><?php echo htmlspecialchars($p['project_title']); ?></a></td>
                         <td><?php echo Hours2HoursMins($p['count_hours']); ?></td>
-                        <td><?php echo number_format($p['count_hours'] * $multiplier, 2); ?></td>
+                        <td><?php echo number_format($p['count_hours'] * ToNumber($multiplier), 2); ?></td>
                         <td><?php echo $p['hours_pct']; ?>%</td>
                         <td><a href="<?php echo $tasks_link; ?>"><?php echo $p['count_tasks']; ?></a></td>
                         <td><?php echo $p['time_per_task']; ?></td>
@@ -603,7 +603,7 @@ if ($submit && $start_date && $end_date) {
                     <tr class="row-sub<?php echo $sp['is_selected'] ? ' row-selected' : ''; ?>">
                         <td><a href="<?php echo $slink; ?>"><?php echo htmlspecialchars($sp['project_title']); ?></a></td>
                         <td><?php echo Hours2HoursMins($sp['count_hours']); ?></td>
-                        <td><?php echo number_format($sp['count_hours'] * $multiplier, 2); ?></td>
+                        <td><?php echo number_format($sp['count_hours'] * ToNumber($multiplier), 2); ?></td>
                         <td><?php echo $sp['hours_pct']; ?>%</td>
                         <td><a href="<?php echo $stlink; ?>"><?php echo $sp['count_tasks']; ?></a></td>
                         <td><?php echo $sp['time_per_task']; ?></td>
@@ -625,13 +625,13 @@ if ($submit && $start_date && $end_date) {
                     <tr class="total-row">
                         <td>Total</td>
                         <td><?php echo Hours2HoursMins($total_hours); ?></td>
-                        <td><?php echo number_format($total_hours * $multiplier, 2); ?></td>
+                        <td><?php echo number_format(ToNumber($total_hours) * ToNumber($multiplier), 2); ?></td>
                         <td></td>
                         <td><?php echo $total_tasks; ?></td>
-                        <td><?php echo $total_tasks > 0 ? Hours2HoursMins($total_hours / $total_tasks) : ''; ?></td>
+                        <td><?php echo $total_tasks > 0 ? Hours2HoursMins(ToNumber($total_hours) / ToNumber($total_tasks)) : ''; ?></td>
                         <td><?php echo $total_working_days; ?></td>
-                        <td><?php echo $total_working_days > 0 ? Hours2HoursMins($total_hours / $total_working_days) : ''; ?></td>
-                        <td><?php echo $total_working_days > 0 ? sprintf("%3.1f", $total_tasks / $total_working_days) : ''; ?></td>
+                        <td><?php echo $total_working_days > 0 ? Hours2HoursMins(ToNumber($total_hours) / ToNumber($total_working_days)) : ''; ?></td>
+                        <td><?php echo $total_working_days > 0 ? sprintf("%3.1f", ToNumber($total_tasks) / ToNumber($total_working_days)) : ''; ?></td>
                         <td></td><td></td>
                     </tr>
                     </tbody>
@@ -655,7 +655,7 @@ if ($submit && $start_date && $end_date) {
                     <tr<?php echo $d['is_selected'] ? ' class="row-selected"' : ''; ?>>
                         <td><?php echo htmlspecialchars($d['user_name']); ?></td>
                         <td><?php echo Hours2HoursMins($d['count_hours']); ?></td>
-                        <td><?php echo number_format($d['count_hours'] * $multiplier, 2); ?></td>
+                        <td><?php echo number_format($d['count_hours'] * ToNumber($multiplier), 2); ?></td>
                         <td><a href="<?php echo $dtlink; ?>"><?php echo $d['count_tasks']; ?></a></td>
                         <td><?php echo $d['time_per_task']; ?></td>
                         <td><?php echo $d['working_days']; ?></td>
@@ -683,7 +683,7 @@ if ($submit && $start_date && $end_date) {
                     <tr<?php echo $pp['is_selected'] ? ' class="row-selected"' : ''; ?>>
                         <td><?php echo htmlspecialchars($pp['project_title']); ?></td>
                         <td><?php echo Hours2HoursMins($pp['count_hours']); ?></td>
-                        <td><?php echo number_format($pp['count_hours'] * $multiplier, 2); ?></td>
+                        <td><?php echo number_format($pp['count_hours'] * ToNumber($multiplier), 2); ?></td>
                         <td><?php echo $pp['hours_pct']; ?>%</td>
                         <td><a href="<?php echo $pplink; ?>"><?php echo $pp['count_tasks']; ?></a></td>
                         <td><?php echo $pp['time_per_task']; ?></td>
@@ -696,7 +696,7 @@ if ($submit && $start_date && $end_date) {
                     <tr class="row-sub<?php echo $sp['is_selected'] ? ' row-selected' : ''; ?>">
                         <td><?php echo htmlspecialchars($sp['project_title']); ?></td>
                         <td><?php echo Hours2HoursMins($sp['count_hours']); ?></td>
-                        <td><?php echo number_format($sp['count_hours'] * $multiplier, 2); ?></td>
+                        <td><?php echo number_format($sp['count_hours'] * ToNumber($multiplier), 2); ?></td>
                         <td><?php echo $sp['hours_pct']; ?>%</td>
                         <td><?php echo $sp['count_tasks']; ?></td>
                         <td><?php echo $sp['time_per_task']; ?></td>
@@ -710,13 +710,13 @@ if ($submit && $start_date && $end_date) {
                     <tr class="total-row">
                         <td>Total</td>
                         <td><?php echo Hours2HoursMins($person_total_hours); ?></td>
-                        <td><?php echo number_format($person_total_hours * $multiplier, 2); ?></td>
+                        <td><?php echo number_format(ToNumber($person_total_hours) * ToNumber($multiplier), 2); ?></td>
                         <td></td>
                         <td><?php echo $person_total_tasks; ?></td>
                         <td><?php echo Hours2HoursMins($person_av_time_per_task); ?></td>
                         <td><?php echo $person_working_days_total; ?></td>
-                        <td><?php echo $person_working_days_total ? Hours2HoursMins($person_total_hours / $person_working_days_total) : ''; ?></td>
-                        <td><?php echo $person_working_days_total ? sprintf("%3.1f", $person_total_tasks / $person_working_days_total) : ''; ?></td>
+                        <td><?php echo $person_working_days_total ? Hours2HoursMins(ToNumber($person_total_hours) / $person_working_days_total) : ''; ?></td>
+                        <td><?php echo $person_working_days_total ? sprintf("%3.1f", ToNumber($person_total_tasks) / $person_working_days_total) : ''; ?></td>
                         <td></td>
                     </tr>
                     </tbody>
@@ -736,7 +736,7 @@ if ($submit && $start_date && $end_date) {
                     <tr>
                         <td><a href="edit_task.php?task_id=<?php echo $tr['task_id']; ?>"><?php echo htmlspecialchars($tr['task_title']); ?></a></td>
                         <td><?php echo Hours2HoursMins($tr['count_hours']); ?></td>
-                        <td><?php echo number_format($tr['count_hours'] * $multiplier, 2); ?></td>
+                        <td><?php echo number_format($tr['count_hours'] * ToNumber($multiplier), 2); ?></td>
                         <td><?php echo htmlspecialchars($tr['status']); ?></td>
                         <td class="devs-cell"><?php echo htmlspecialchars(implode(', ', $tr['developers'])); ?></td>
                     </tr>

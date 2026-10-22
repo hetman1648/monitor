@@ -105,6 +105,7 @@ class PHPUnit_TestSuite {
      * @param  mixed
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PHPUnit_TestSuite(...$a); } // PHP 8: "PHPUnit_TestSuite()" is no longer a constructor
     function PHPUnit_TestSuite($test = FALSE) {
         if ($test !== FALSE) {
             $this->setName($test);

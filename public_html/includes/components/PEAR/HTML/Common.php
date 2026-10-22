@@ -83,6 +83,7 @@ class HTML_Common {
      * @param    int     $tabOffset      Indent offset in tabs
      * @access   public
      */
+    function __construct() { $a = func_get_args(); self::HTML_Common(...$a); } // PHP 8: "HTML_Common()" is no longer a constructor
     function HTML_Common($attributes = null, $tabOffset = 0)
     {
         $this->setAttributes($attributes);

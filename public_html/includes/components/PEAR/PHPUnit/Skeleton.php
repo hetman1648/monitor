@@ -131,6 +131,7 @@ class PHPUnit_Skeleton {
      * @param  boolean $includeParents Wheter to include the parent's methods in the test.
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::PHPUnit_Skeleton(...$a); } // PHP 8: "PHPUnit_Skeleton()" is no longer a constructor
     function PHPUnit_Skeleton($className, $classPath, $includeParents = FALSE, $includePrivate = TRUE) {
         // Set up the members.
         if (@is_readable($classPath)) {

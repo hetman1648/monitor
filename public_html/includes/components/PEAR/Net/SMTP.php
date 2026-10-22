@@ -117,13 +117,14 @@ class Net_SMTP
      * @access  public
      * @since   1.0
      */
+    function __construct() { $a = func_get_args(); self::Net_SMTP(...$a); } // PHP 8: "Net_SMTP()" is no longer a constructor
     function Net_SMTP($host = null, $port = null, $localhost = null)
     {
         if (isset($host)) $this->host = $host;
         if (isset($port)) $this->port = $port;
         if (isset($localhost)) $this->localhost = $localhost;
 
-        $this->_socket = &new Net_Socket();
+        $this->_socket = new Net_Socket();
 
         /*
          * Include the Auth_SASL package.  If the package is not available,

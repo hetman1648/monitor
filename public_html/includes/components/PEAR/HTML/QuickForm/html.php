@@ -40,6 +40,7 @@ class HTML_QuickForm_html extends HTML_QuickForm_static
     * @access public
     * @return void
     */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_html(...$a); } // PHP 8: "HTML_QuickForm_html()" is no longer a constructor
     function HTML_QuickForm_html($text = null)
     {
         $this->HTML_QuickForm_static(null, null, $text);

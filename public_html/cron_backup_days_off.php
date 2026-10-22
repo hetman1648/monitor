@@ -71,7 +71,7 @@ $copy = bk_count("days_off_copy");
 $live = $table_exists ? bk_count("days_off") : 0;
 $state = bk_state();
 
-if (!$table_exists || $live == 0 || $live < $copy - $max_drop) {
+if (!$table_exists || ToNumber($live) == 0 || $live < $copy - $max_drop) {
 	$before = $state;
 	if ($copy > 0) {
 		if (!$table_exists) {

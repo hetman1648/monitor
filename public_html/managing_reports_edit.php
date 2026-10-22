@@ -56,7 +56,7 @@
 				$emailfrom	= $db->Record["manager_email"];
 				$headers = "From: ".$emailfrom."\n";
 				$headers .= "Reply-To: ".$emailfrom."\n";
-				$dt = split('[/.-]',$date);
+				$dt = preg_split('#[/.-]#',$date);
 				$subject	= "Daily plan from ".GetSessionParam("UserName")." - ".date("jS M Y",mktime(0,0,0,$dt[1],$dt[2],$dt[0]));
 				@mail($emailto,$subject,$morning_note,$headers);
 			}
@@ -89,7 +89,7 @@
 				$emailfrom	= $db->Record["manager_email"];
 				$headers = "From: ".$emailfrom."\n";
 				$headers .= "Reply-To: ".$emailfrom."\n";
-				$dt = split('[/.-]',$date);
+				$dt = preg_split('#[/.-]#',$date);
 				$subject	= "Daily plan from ".GetSessionParam("UserName")." - ".date("jS M Y",mktime(0,0,0,$dt[1],$dt[2],$dt[0]));
 				@mail($emailto,$subject,$morning_note,$headers);			}
 			/**/

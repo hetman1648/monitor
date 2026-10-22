@@ -84,6 +84,7 @@ class HTML_QuickForm_Renderer_ITDynamic extends HTML_QuickForm_Renderer
     *
     * @param object     An HTML_Template_ITX/HTML_Template_Sigma object to use
     */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_Renderer_ITDynamic(...$a); } // PHP 8: "HTML_QuickForm_Renderer_ITDynamic()" is no longer a constructor
     function HTML_QuickForm_Renderer_ITDynamic(&$tpl)
     {
         $this->HTML_QuickForm_Renderer();

@@ -85,12 +85,12 @@ if (!isset($parameters)) {
 	$parameters = array();
 }
 
-$formObj =& new HTML_QuickForm('reassign_form');
+$formObj = new HTML_QuickForm('reassign_form');
 $formObj->setDefaults($parameters);
-$renderer =& new HTML_QuickForm_Renderer_QuickHtml();
+$renderer = new HTML_QuickForm_Renderer_QuickHtml();
 
 // --------    Responsible users element     ------------------
-$usersSelect =& new HTML_QuickForm_select('responsible_user_id');
+$usersSelect = new HTML_QuickForm_select('responsible_user_id');
 
 foreach ($users as $user_id => $username) {
 	$usersSelect->addOption($username, $user_id);
@@ -113,12 +113,12 @@ $formObj->addGroupRule('tasks_list', 'Please check at least onetask', 'required'
 // ------------------------------------------------------------
 
 // ------------------    Check all button    ------------------
-$checkObj =& new HTML_QuickForm_checkbox('checkAll', null, 'Set/Unset All', array('onclick' => 'toggleAllTasks("tasks_list");'));
+$checkObj = new HTML_QuickForm_checkbox('checkAll', null, 'Set/Unset All', array('onclick' => 'toggleAllTasks("tasks_list");'));
 $formObj->addElement($checkObj);
 // ------------------------------------------------------------
 
 // ------------------    Submit button    ---------------------
-$submitObj =& new HTML_QuickForm_submit('submit', 'Submit', array('onclick' => 'try { var myValidator = validate_; } catch(e) { return true; } return myValidator(this);'));
+$submitObj = new HTML_QuickForm_submit('submit', 'Submit', array('onclick' => 'try { var myValidator = validate_; } catch(e) { return true; } return myValidator(this);'));
 $formObj->addElement($submitObj);
 // ------------------------------------------------------------
 /*
@@ -129,13 +129,13 @@ $formObj->addElement($cancelObj);
 //*/
 // ------------------    Hidden elements   --------------------
 // Use it for going throu task checkboxes array
-$checkboxesNumObj = & new HTML_QuickForm_hidden('tasks_num', count($task_list_checkboxes), array('id' => 'tasks_num'));
+$checkboxesNumObj =  new HTML_QuickForm_hidden('tasks_num', count($task_list_checkboxes), array('id' => 'tasks_num'));
 $formObj->addElement($checkboxesNumObj);
 
-$checkallCurretValueObj =& new HTML_QuickForm_hidden('checkall_current_value', 0, array('id' => 'checkall_current_value'));
+$checkallCurretValueObj = new HTML_QuickForm_hidden('checkall_current_value', 0, array('id' => 'checkall_current_value'));
 $formObj->addElement($checkallCurretValueObj);
 
-$actionObj =& new HTML_QuickForm_hidden('form_action', 'insert');
+$actionObj = new HTML_QuickForm_hidden('form_action', 'insert');
 $formObj->addElement($actionObj);
 // ------------------------------------------------------------
 
@@ -143,7 +143,7 @@ $formObj->accept($renderer);
 
 $table = new HTML_Table();
 
-$titleTable =& new HTML_Table(array('cellspacing' => '0', 'cellpadding' => '0', 'width' => '100%'));
+$titleTable = new HTML_Table(array('cellspacing' => '0', 'cellpadding' => '0', 'width' => '100%'));
 $titleTable->setCellContents(0, 0, 'Reassign Multiple Tasks');
 $titleTable->setCellAttributes(0, 0, array('class' => 'FormHeaderFONT', 'align' => 'center'));
 

@@ -58,67 +58,67 @@ $amount_gbp = 0;
 		switch($project_id) {
 												
 			case 53: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Full Account";
 								break;
 			
 			case 59: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Paying Client Work";
 								break;
 						
 			case 135: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "SEO Review";
 								break;
 			
 			case 103: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Article/PR Distribution";
 								break;
 			
 			case 213: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Article";
 								break;
 			
 			case 233: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Digital Point Link Allocation";
 								break;
 			
 			case 234: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Link Manager Import";
 								break;
 			
 			case 267: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Profile Page";
 								break;
 			
 			case 224: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Video Distribution";
 								break;
 			
 			case 222: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Video Production";
 								break;
 			
 			case 41: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Sayu math::trials";
 								break;
 			
 			case 236: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Sayu math::one-off";
 								break;
 			
 			case 237: 			if($task_cost) $amount_gbp = $task_cost;
-								else $amount_gbp = $actual_hours * $cost_per_hour;
+								else $amount_gbp = ToNumber($actual_hours) * $cost_per_hour;
 								$cost_name = "Sayu math::paying clients";
 								break;
 										

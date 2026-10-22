@@ -68,19 +68,15 @@ function ToSQLO($value, $type, $use_null = true, $is_delimiters = true)
 	elseif ($type == "number") {return doubleval($value);}
 	elseif ($type == "integer") {return intval($value);}
 	elseif ($type == "date") {
-		if (ereg("([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})",$value,$t)){
+		if (preg_match("~([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})~",$value,$t)){
 			if (checkdate($t[3],$t[5],$t[1])) { $value = date("Y-m-d", mktime(0,0,0,$t[3],$t[5],$t[1]));}
 				else { $value = "0000-00-00";}
 		} else { $value = "0000-00-00";}
 		$value = "'" . $value . "'";
 	} else {
-		if(get_magic_quotes_gpc() == 0) {
+		// magic_quotes_gpc is always off (removed in PHP 5.4)
 			$value = str_replace("'", "''", $value);
 				$value = str_replace("\\", "\\\\", $value);
-		} else {
-			$value = str_replace("\\'", "''", $value);
-			$value = str_replace("\\\"", "\"", $value);
-		}
 		//if ($is_delimiters) { $value = "'" . $value . "'";}
 		$value = "'" . $value . "'";
 	}

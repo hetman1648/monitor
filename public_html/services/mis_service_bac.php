@@ -304,7 +304,7 @@ function mis_Web()
 					
 					
 			$projects[] = array("project_id" => $db->f("project_id"),
-								"amount_gbp" => number_format($db->f("total_spent")*15,2),
+								"amount_gbp" => number_format(ToNumber($db->f("total_spent"))*15,2),
 							 	"cost_name" => "Web Services",
 							  	"cost_group" => "Web Services",
 							  	"client_id" => $db->f("sayu_user_id"),  	
@@ -334,7 +334,7 @@ function mis_Web()
 				{
 					$project_keys = array_keys($project_exist);
 					$project_key = $project_keys[0];
-					$projects[$project_key]["amount_gbp"] += $db->f("task_cost"); 
+					$projects[$project_key]["amount_gbp"] += ToNumber($db->f("task_cost")); 
 				}
 				else {
 						
@@ -410,7 +410,7 @@ function mis_Other()
 							     "client_id" => $db->f("sayu_user_id"), 	
 							     "domain_id" => $domain_id,  	
 							     "domain_name" => $domain_name,  	
-							     "amount_gbp" => number_format($db->f("user_spent_hours") * $hourly_charge,2));
+							     "amount_gbp" => number_format(ToNumber($db->f("user_spent_hours")) * ToNumber($hourly_charge),2));
 							     
 		} while ($db->next_record());
 	} 
@@ -454,7 +454,7 @@ function mis_SayuMath()
 				$task_domain_name = $db->f("task_domain_url");
 				$project_id = $db->f("project_id");
 				
-				$amount_gbp = number_format($db->f("user_spent_hours") * $hourly_charge,2);
+				$amount_gbp = number_format(ToNumber($db->f("user_spent_hours")) * ToNumber($hourly_charge),2);
 				
 				if ($project_id == 236) $cost_name = "Sayu math::one-off";
 					elseif ($project_id == 41) $cost_name = "Sayu math::trials";

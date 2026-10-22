@@ -179,7 +179,7 @@ else die("ERROR:".$res);
 
 ?>
 	<div class='alert alert-info'>
-		<?php echo sizeof($valid_rows); ?> update<?php if (sizeof($valid_rows)>1) echo "s" ?> found. <? echo $last_update; ?>
+		<?php echo sizeof($valid_rows); ?> update<?php if (sizeof($valid_rows)>1) echo "s" ?> found. <?php  echo $last_update; ?>
 	</div>
         <table class="table table-striped svn-files-table">
         	<thead>
@@ -201,10 +201,10 @@ else die("ERROR:".$res);
         		$sort_rev = (is_string($ver) || is_int($ver)) && ctype_digit((string)$ver) ? (int)$ver : 0;
         		?>
         	<tr data-sort-path="<?php echo htmlspecialchars($sort_path, ENT_QUOTES, 'UTF-8'); ?>" data-sort-name="<?php echo htmlspecialchars($sort_name, ENT_QUOTES, 'UTF-8'); ?>" data-sort-status="<?php echo htmlspecialchars($sort_status, ENT_QUOTES, 'UTF-8'); ?>" data-sort-rev="<?php echo (int)$sort_rev; ?>">
-        		<td><? echo $fields["file_path"]; ?></td>
-        		<td><? echo $fields["file_name"]; ?></td>
+        		<td><?php  echo $fields["file_path"]; ?></td>
+        		<td><?php  echo $fields["file_name"]; ?></td>
         		<td><span class="svn-status-badge svn-status--<?php echo htmlspecialchars($fields["status_badge"]); ?>"><?php echo htmlspecialchars($fields["status"]); ?></span></td>
-        		<td><? echo $fields["version"]; ?></td>
+        		<td><?php  echo $fields["version"]; ?></td>
         		<td class="svn-diff-cell"><button type="button" class="svn-diff-link" data-repo="<?php echo htmlspecialchars($repository, ENT_QUOTES, 'UTF-8'); ?>" data-file="<?php echo htmlspecialchars($rel, ENT_QUOTES, 'UTF-8'); ?>" data-path="<?php echo htmlspecialchars($fields["file_path"], ENT_QUOTES, 'UTF-8'); ?>" data-name="<?php echo htmlspecialchars($fields["file_name"], ENT_QUOTES, 'UTF-8'); ?>">View diff</button></td>
         	</tr>
         	<?php } ?>

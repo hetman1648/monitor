@@ -3,9 +3,9 @@
 	include("./includes/common.php");
 	CheckSecurity(1);
 	if (isset($_GET["old"])) {
-		define(_TABLE_NAME_, "external_tickets_cache");
+		define("_TABLE_NAME_", "external_tickets_cache");
 	} else {
-		define(_TABLE_NAME_, "external_tickets_cache_tmp");
+		define("_TABLE_NAME_", "external_tickets_cache_tmp");
 	}
 	//$db->query("TRUNCATE TABLE external_tickets_cache_tmp;");
 	//exit; 
@@ -463,7 +463,7 @@
 					$sql .= ToSQL($day_good_points, "integer", false) . ",";
 					$sql .= ToSQL($day_bad, "integer", false) . ",";
 					$sql .= ToSQL($day_bad_points, "integer", false) . ",";
-					$sql .= ToSQL(mysql_escape_string($html), "string") . ",";
+					$sql .= ToSQL($db->escape($html), "string") . ",";
 					$sql .= ToSQL($is_today, "integer", false) . ",";
 					$sql .= ToSQL($last_message_id, "integer", false) . ",";
 					$sql .= ToSQL($last_support_id, "integer", false) . ")";
@@ -487,10 +487,10 @@
 				$t->set_var("day_bad_points", "");
 			}
 			
-			$users[$user_id]["day_good"]         += $day_good;
-			$users[$user_id]["day_good_points"]  += $day_good_points;
-			$users[$user_id]["day_bad"]          += $day_bad;
-			$users[$user_id]["day_bad_points"]   += $day_bad_points;	
+			$users[$user_id]["day_good"]         += ToNumber($day_good);
+			$users[$user_id]["day_good_points"]  += ToNumber($day_good_points);
+			$users[$user_id]["day_bad"]          += ToNumber($day_bad);
+			$users[$user_id]["day_bad_points"]   += ToNumber($day_bad_points);	
 			
 			$t->parse("user_tickets_stat");
 			$t->parse("user_tickets_stat2");

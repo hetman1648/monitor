@@ -457,7 +457,7 @@ $month_name = date("F", mktime(0, 0, 0, $month_selected, 1, $year_selected));
                                 $h = isset($hours_ar[$user_id][$task_id][$d]) ? $hours_ar[$user_id][$task_id][$d] : 0;
                                 if (!$h) {
                                     $dow = date("w", mktime(0, 0, 0, $month_selected, $d, $year_selected));
-                                    $cls = ($dow == 0 || $dow == 6) ? 'day-weekend' : 'day-empty';
+                                    $cls = (ToNumber($dow) == 0 || $dow == 6) ? 'day-weekend' : 'day-empty';
                                 } elseif ($h <= 2) {
                                     $cls = 'day-s1';
                                 } elseif ($h <= 4) {

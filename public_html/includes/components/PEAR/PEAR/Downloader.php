@@ -130,6 +130,7 @@ class PEAR_Downloader extends PEAR_Common
 
     // {{{ PEAR_Downloader()
 
+    function __construct() { $a = func_get_args(); self::PEAR_Downloader(...$a); } // PHP 8: "PEAR_Downloader()" is no longer a constructor
     function PEAR_Downloader(&$ui, $options, &$config)
     {
         $this->_options = $options;
@@ -148,8 +149,8 @@ class PEAR_Downloader extends PEAR_Common
             }
             $php_dir = $this->_prependPath($php_dir, $this->_options['installroot']);
         }
-        $this->_registry = &new PEAR_Registry($php_dir);
-        $this->_remote = &new PEAR_Remote($config);
+        $this->_registry = new PEAR_Registry($php_dir);
+        $this->_remote = new PEAR_Remote($config);
 
         if (isset($this->_options['alldeps']) || isset($this->_options['onlyreqdeps'])) {
             $this->_installed = $this->_registry->listPackages();

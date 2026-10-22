@@ -59,7 +59,7 @@
 		if (!$error) {
 			$db->query("SELECT MAX(site_id) FROM clients_sites");
 			if ($db->next_record()) {
-				$site_id = $db->f(0) + 1;
+				$site_id = ToNumber($db->f(0)) + 1;
 			} else {
 				$site_id = 1;
 			}
@@ -181,7 +181,7 @@
 				} else {
 					$db->query("SELECT MAX(id) FROM clients_tags");
 					if ($db->next_record()) {
-						$tag_id = $db->f(0) + 1;
+						$tag_id = ToNumber($db->f(0)) + 1;
 					} else {
 						$tag_id = 1;
 					}

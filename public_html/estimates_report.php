@@ -185,22 +185,22 @@
 					$max_over = $db->f("maxd");
 					$ttl_over = $db->f("sumd");
 					$avg_over = $db->f("avgd");
-					$suma += $db->f("suma");
-					$sume += $db->f("sume");
-					$sum_count_over += $count_over;
-					$ratio_over = $db->f("sume")>0 ? $db->f("suma")/$db->f("sume")*100-100 : "";
+					$suma += ToNumber($db->f("suma"));
+					$sume += ToNumber($db->f("sume"));
+					$sum_count_over += ToNumber($count_over);
+					$ratio_over = $db->f("sume")>0 ? ToNumber($db->f("suma"))/ToNumber($db->f("sume"))*100-100 : "";
     			} elseif ($cat==-1) {
 					$count_under = $db->f("cnt");
 					$max_under = $db->f("mind");
 					$ttl_under = $db->f("sumd");
 					$avg_under = $db->f("avgd");
-					$suma += $db->f("suma");
-					$sume += $db->f("sume");
-					$sum_count_under += $count_over;
-					$ratio_under=$db->f("sume")>0 ? $db->f("suma")/$db->f("sume")*100-100 : "";
- 				} elseif ($cat==0) {
+					$suma += ToNumber($db->f("suma"));
+					$sume += ToNumber($db->f("sume"));
+					$sum_count_under += ToNumber($count_over);
+					$ratio_under=$db->f("sume")>0 ? ToNumber($db->f("suma"))/ToNumber($db->f("sume"))*100-100 : "";
+ 				} elseif (ToNumber($cat)==0) {
 					$count_wo = $db->f("cnt");
-					if ($count_wo) { $sum_count_wo += $count_wo;}
+					if ($count_wo) { $sum_count_wo += ToNumber($count_wo);}
 				}
 
 				$p[$user_id]["user_name"] = $db->f("user_name");
@@ -208,13 +208,13 @@
 				$p[$user_id]["count_over"] =$count_over ? $count_over : "";
 				$p[$user_id]["count_under"]=$count_under ? $count_under : "";
 				$p[$user_id]["count_wo"] =  $count_wo ? $count_wo : "";
-				$p[$user_id]["count_ttl"] = $count_over+$count_under+$count_wo;
+				$p[$user_id]["count_ttl"] = ToNumber($count_over)+ToNumber($count_under)+ToNumber($count_wo);
 				$p[$user_id]["max_over"] =  $count_over ? "+".Hours2HoursMins($max_over) : "";
-				$p[$user_id]["max_under"] = $count_under ? "-".Hours2HoursMins(-$max_under) : "";
+				$p[$user_id]["max_under"] = $count_under ? "-".Hours2HoursMins(-ToNumber($max_under)) : "";
 				$p[$user_id]["ttl_over"] =  $count_over ? "+".Hours2HoursMins($ttl_over) : "";
-				$p[$user_id]["ttl_under"] = $count_under ? "-".Hours2HoursMins(-$ttl_under) : "";
+				$p[$user_id]["ttl_under"] = $count_under ? "-".Hours2HoursMins(-ToNumber($ttl_under)) : "";
 				$p[$user_id]["avg_over"] =  $count_over ? "+".Hours2HoursMins($avg_over) : "";
-				$p[$user_id]["avg_under"] = $count_under ? "-".Hours2HoursMins(-$avg_under) : "";
+				$p[$user_id]["avg_under"] = $count_under ? "-".Hours2HoursMins(-ToNumber($avg_under)) : "";
 				$p[$user_id]["ratio_over"] =$count_over>0 ? sprintf("%d",$ratio_over)."%" : "";
 				$p[$user_id]["ratio_under"]=$count_under>0 ? sprintf("%d",$ratio_under)."%" : "";
 
@@ -278,19 +278,19 @@
 						$t->set_var("o_max_over",$db->f("cnt") ? "+".Hours2HoursMins($db->f("maxd")) : "");  
 						$t->set_var("sum_ttl_over",$db->f("cnt") ? "+".Hours2HoursMins($db->f("sumd")) : "");  
 						$t->set_var("o_avg_over",$db->f("cnt") ? "+".Hours2HoursMins($db->f("avgd")) : "");
-						$t->set_var("o_ratio_over",$db->f("cnt") ? sprintf("%d",$db->f("suma")/$db->f("sume")*100-100)."%" : "");
-					    $o_suma += $db->f("suma");
-					    $o_sume += $db->f("sume");						
+						$t->set_var("o_ratio_over",$db->f("cnt") ? sprintf("%d",ToNumber($db->f("suma"))/ToNumber($db->f("sume"))*100-100)."%" : "");
+					    $o_suma += ToNumber($db->f("suma"));
+					    $o_sume += ToNumber($db->f("sume"));						
 					break;
 						
 					case -1 : 
 						$t->set_var("sum_count_under",$db->f("cnt") ? $db->f("cnt") : "");  
-						$t->set_var("o_max_under",$db->f("cnt") ? "-".Hours2HoursMins(-$db->f("mind")) : "");  
-						$t->set_var("sum_ttl_under",$db->f("cnt") ? "-".Hours2HoursMins(-$db->f("sumd")) : "");  
-						$t->set_var("o_avg_under",$db->f("cnt") ? "-".Hours2HoursMins(-$db->f("avgd")) : "");  
-						$t->set_var("o_ratio_under",$db->f("cnt") ? sprintf("%d",$db->f("suma")/$db->f("sume")*100-100)."%" : "");
-					    $o_suma += $db->f("suma");
-					    $o_sume += $db->f("sume");						
+						$t->set_var("o_max_under",$db->f("cnt") ? "-".Hours2HoursMins(-ToNumber($db->f("mind"))) : "");  
+						$t->set_var("sum_ttl_under",$db->f("cnt") ? "-".Hours2HoursMins(-ToNumber($db->f("sumd"))) : "");  
+						$t->set_var("o_avg_under",$db->f("cnt") ? "-".Hours2HoursMins(-ToNumber($db->f("avgd"))) : "");  
+						$t->set_var("o_ratio_under",$db->f("cnt") ? sprintf("%d",ToNumber($db->f("suma"))/ToNumber($db->f("sume"))*100-100)."%" : "");
+					    $o_suma += ToNumber($db->f("suma"));
+					    $o_sume += ToNumber($db->f("sume"));						
 					break;	
 
 					case 0 : 
@@ -320,7 +320,7 @@
 			}
 			
 			if ($sort=="diff") $s_sort = "aediff "; else $s_sort = "aeratio ";
-			$s_sort.=($type==0 ? " DESC" : " ASC");
+			$s_sort.=(ToNumber($type)==0 ? " DESC" : " ASC");
 		  
 			$sql =  "SELECT t.task_id, project_title, task_title, actual_hours, estimated_hours, completion, status_desc, ".
 				" IF(estimated_hours>0, actual_hours - estimated_hours, NULL ) AS aediff,  ".		
@@ -372,7 +372,7 @@
 				    if ($ae_diff<0) $color="blue";
 				    $ae_diff_str="";
 				    if ($ae_diff>=0 && $eh>0) $ae_diff_str="+".Hours2HoursMins($ae_diff); 
-				    if ($ae_diff<0) $ae_diff_str="-".Hours2HoursMins(-$ae_diff);
+				    if ($ae_diff<0) $ae_diff_str="-".Hours2HoursMins(-ToNumber($ae_diff));
 				    
 				    $t->set_var("ae_diff",$ae_diff_str);
 				    $t->set_var("ae_ratio",$eh ? sprintf("%1d",$ae_ratio)."%" : "");
@@ -392,14 +392,14 @@
 
 				    $t->parse("tasks_report_records", true);				    
 
-				    $av_act+=$ah;
-				    $av_est+=$eh;
+				    $av_act+=ToNumber($ah);
+				    $av_est+=ToNumber($eh);
 				    $i_total+=1;
 				    if ($eh>0)
 				    {
-					$av_acte+=$ah;
+					$av_acte+=ToNumber($ah);
 					$i_est+=1;
-					$av_aed+=$ae_diff;
+					$av_aed+=ToNumber($ae_diff);
 				    }	
 				    
 				}

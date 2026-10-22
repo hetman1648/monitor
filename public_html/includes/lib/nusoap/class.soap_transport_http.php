@@ -46,6 +46,7 @@ class soap_transport_http extends nusoap_base {
 	/**
 	* constructor
 	*/
+	function __construct() { $a = func_get_args(); self::soap_transport_http(...$a); } // PHP 8: "soap_transport_http()" is no longer a constructor
 	function soap_transport_http($url){
 		parent::nusoap_base();
 		$this->setURL($url);

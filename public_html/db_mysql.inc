@@ -7,7 +7,16 @@
  *
  * $Id: db_mysql.inc,v 1.7 2007-10-19 11:32:50 sash Exp $
  *
+ * Ported from ext/mysql to mysqli (ext/mysql is gone since PHP 7). Behaviour kept from the
+ * mysql_* version:
+ *  - one link per host/user/password/database, shared by every DB_Sql using them (mysql_connect
+ *    without new_link reused the link, so $db2->last_id() after an insert through $db worked);
+ *  - latin1 client charset (what the mysql_* connection negotiated; the data is stored that way);
+ *  - errors are reported through halt(), never as exceptions (mysqli throws by default on 8.1+);
+ *  - "host:port" hosts (VIART_COM_DATABASE_HOST).
  */
+
+mysqli_report(MYSQLI_REPORT_OFF);
 
 class DB_Sql {
 
@@ -18,7 +27,7 @@ class DB_Sql {
   var $Password = "";
 
   /* public: configuration parameters */
-  var $Auto_Free     = 0;     ## Set to 1 for automatic mysql_free_result()
+  var $Auto_Free     = 0;     ## Set to 1 for automatic mysqli_free_result()
   var $Debug         = 0;     ## Set to 1 for debugging messages.
   var $Halt_On_Error = "yes"; ## "yes" (halt with message), "no" (ignore errors quietly), "report" (ignore errror, but spit a warning)
   var $Seq_Table     = "db_sequence";
@@ -38,14 +47,22 @@ class DB_Sql {
   /* private: link and query handles */
   var $Link_ID  = 0;
   var $Query_ID = 0;
-  
+
   var $SqlQuery = "";
 
+  /* private: open links, "host|user|password|database" => mysqli */
+  static $links = array();
+  /* private: the link opened last (mysql_insert_id() without a link used that one) */
+  static $last_link = null;
 
 
   /* public: constructor */
-  function DB_Sql($query = "") {
+  function __construct($query = "") {
       $this->query($query);
+  }
+
+  function DB_Sql($query = "") {
+      $this->__construct($query);
   }
 
   /* public: some trivial reporting */
@@ -58,7 +75,8 @@ class DB_Sql {
   }
 
   function last_id() {
-    return @mysql_insert_id();
+    $link = $this->Link_ID ? $this->Link_ID : self::$last_link;
+    return $link ? mysqli_insert_id($link) : 0;
   }
 
   /* public: connection management */
@@ -74,18 +92,40 @@ class DB_Sql {
       $Password = $this->Password;
 
     /* establish connection, select database */
-    if ( 0 == $this->Link_ID ) {
+    if ( !$this->Link_ID ) {
 
-      $this->Link_ID=mysql_connect($Host, $User, $Password);
-      if (!$this->Link_ID) {
+      $key = $Host . "|" . $User . "|" . $Password . "|" . $Database;
+      if (isset(self::$links[$key])) {
+        $this->Link_ID = self::$links[$key];
+        return $this->Link_ID;
+      }
+
+      $port = null;
+      $hostname = $Host;
+      if (preg_match('/^(.+):(\d+)$/', $Host, $m)) {
+        $hostname = $m[1];
+        $port = (int) $m[2];
+      }
+      $link = @mysqli_connect($hostname, $User, $Password, "", $port);
+      if (!$link) {
+        $this->Error = mysqli_connect_error();
+        $this->Errno = mysqli_connect_errno();
         $this->halt("pconnect($Host, $User, \$Password) failed.");
         return 0;
       }
+      $this->Link_ID = $link;
+      mysqli_set_charset($link, "latin1");
+      # smoke tests run pages with this set (FPM clears the environment, so web requests never do)
+      if (getenv("MONITOR_DB_READ_ONLY"))
+        mysqli_query($link, "SET SESSION TRANSACTION READ ONLY");
 
-      if (!@mysql_select_db($Database,$this->Link_ID)) {
+      if (!@mysqli_select_db($link, $Database)) {
         $this->halt("cannot use database ".$this->Database);
+        $this->Link_ID = 0;
         return 0;
       }
+      self::$links[$key] = $link;
+      self::$last_link = $link;
     }
 
     return $this->Link_ID;
@@ -94,11 +134,11 @@ class DB_Sql {
   /* public: discard the query result */
   function free()
   {
-	if ($this->Query_ID && !is_bool($this->Query_ID))
+	if ($this->Query_ID instanceof mysqli_result)
 	{
-      @mysql_free_result($this->Query_ID);
-      $this->Query_ID = 0;
+      mysqli_free_result($this->Query_ID);
 	}
+	$this->Query_ID = 0;
   }
 
   /* public: perform a query */
@@ -123,11 +163,17 @@ class DB_Sql {
     if ($this->Debug)
       printf("Debug: query = %s<br>\n", $Query_String);
 
-    $this->Query_ID = @mysql_query($Query_String,$this->Link_ID);
+    # smoke-test mode: writes are skipped (reported as done) instead of hitting the read-only transaction
+    if (getenv("MONITOR_DB_READ_ONLY") && !preg_match('/^[\s(]*(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN)\b/i', $Query_String)) {
+      $this->SqlQuery = $Query_String;
+      $this->Row = 0; $this->Errno = 0; $this->Error = "";
+      return $this->Query_ID = true;
+    }
+    $this->Query_ID = @mysqli_query($this->Link_ID, $Query_String);
 	$this->SqlQuery = $Query_String;
     $this->Row   = 0;
-    $this->Errno = mysql_errno();
-    $this->Error = mysql_error();
+    $this->Errno = mysqli_errno($this->Link_ID);
+    $this->Error = mysqli_error($this->Link_ID);
     if (!$this->Query_ID) {
       $this->halt("Invalid SQL: ".$Query_String);
     }
@@ -143,10 +189,12 @@ class DB_Sql {
       return 0;
     }
 
-    $this->Record = @mysql_fetch_array($this->Query_ID);
+    # a statement without a result set (INSERT/UPDATE...): mysql_fetch_array() returned false
+    $row = ($this->Query_ID instanceof mysqli_result) ? mysqli_fetch_array($this->Query_ID) : null;
+    $this->Record = ($row === null) ? false : $row;
     $this->Row   += 1;
-    $this->Errno  = mysql_errno();
-    $this->Error  = mysql_error();
+    $this->Errno  = mysqli_errno($this->Link_ID);
+    $this->Error  = mysqli_error($this->Link_ID);
 
     $stat = is_array($this->Record);
     if (!$stat && $this->Auto_Free) {
@@ -157,7 +205,7 @@ class DB_Sql {
 
   /* public: position in result set */
   function seek($pos = 0) {
-    $status = @mysql_data_seek($this->Query_ID, $pos);
+    $status = ($this->Query_ID instanceof mysqli_result) ? @mysqli_data_seek($this->Query_ID, $pos) : false;
     if ($status)
       $this->Row = $pos;
     else {
@@ -167,8 +215,9 @@ class DB_Sql {
        * but do not consider this documented or even
        * desireable behaviour.
        */
-      @mysql_data_seek($this->Query_ID, $this->num_rows());
-      $this->Row = $this->num_rows;
+      if ($this->Query_ID instanceof mysqli_result)
+        @mysqli_data_seek($this->Query_ID, $this->num_rows());
+      $this->Row = $this->num_rows();
       return 0;
     }
 
@@ -181,7 +230,7 @@ class DB_Sql {
 
     $query="lock tables ";
     if (is_array($table)) {
-      while (list($key,$value)=each($table)) {
+      foreach ($table as $key => $value) {
         if ($key=="read" && $key!=0) {
           $query.="$value read, ";
         } else {
@@ -192,7 +241,7 @@ class DB_Sql {
     } else {
       $query.="$table $mode";
     }
-    $res = @mysql_query($query, $this->Link_ID);
+    $res = @mysqli_query($this->Link_ID, $query);
     if (!$res) {
       $this->halt("lock($table, $mode) failed.");
       return 0;
@@ -203,7 +252,7 @@ class DB_Sql {
   function unlock() {
     $this->connect();
 
-    $res = @mysql_query("unlock tables");
+    $res = @mysqli_query($this->Link_ID, "unlock tables");
     if (!$res) {
       $this->halt("unlock() failed.");
       return 0;
@@ -214,15 +263,15 @@ class DB_Sql {
 
   /* public: evaluate the result (size, width) */
   function affected_rows() {
-    return @mysql_affected_rows($this->Link_ID);
+    return $this->Link_ID ? mysqli_affected_rows($this->Link_ID) : -1;
   }
 
   function num_rows() {
-    return @mysql_num_rows($this->Query_ID);
+    return ($this->Query_ID instanceof mysqli_result) ? mysqli_num_rows($this->Query_ID) : 0;
   }
 
   function num_fields() {
-    return @mysql_num_fields($this->Query_ID);
+    return ($this->Query_ID instanceof mysqli_result) ? mysqli_num_fields($this->Query_ID) : 0;
   }
 
   /* public: shorthand notation */
@@ -254,8 +303,8 @@ class DB_Sql {
       $q  = sprintf("select nextid from %s where seq_name = '%s'",
                 $this->Seq_Table,
                 $seq_name);
-      $id  = @mysql_query($q, $this->Link_ID);
-      $res = @mysql_fetch_array($id);
+      $id  = @mysqli_query($this->Link_ID, $q);
+      $res = ($id instanceof mysqli_result) ? mysqli_fetch_array($id) : null;
 
       /* No current value, make one */
       if (!is_array($res)) {
@@ -264,7 +313,7 @@ class DB_Sql {
                  $this->Seq_Table,
                  $seq_name,
                  $currentid);
-        $id = @mysql_query($q, $this->Link_ID);
+        $id = @mysqli_query($this->Link_ID, $q);
       } else {
         $currentid = $res["nextid"];
       }
@@ -273,7 +322,7 @@ class DB_Sql {
                $this->Seq_Table,
                $nextid,
                $seq_name);
-      $id = @mysql_query($q, $this->Link_ID);
+      $id = @mysqli_query($this->Link_ID, $q);
       $this->unlock();
     } else {
       $this->halt("cannot lock ".$this->Seq_Table." - has it been created?");
@@ -312,13 +361,15 @@ class DB_Sql {
      *   ["meta"][field name]  index of field named "field name"
      *   The last one is used, if you have a field name, but no index.
      *   Test:  if (isset($result['meta']['myfield'])) { ...
+     *
+     * mysqli reports type/flags as numbers (MYSQLI_TYPE_* / MYSQLI_*_FLAG), not mysql_field_type()'s names.
      */
 
     // if no $table specified, assume that we are working with a query
     // result
     if ($table) {
       $this->connect();
-      $id = @mysql_list_fields($this->Database, $table);
+      $id = @mysqli_query($this->Link_ID, "SELECT * FROM `" . str_replace("`", "``", $table) . "` LIMIT 0");
       if (!$id)
         $this->halt("Metadata query failed.");
     } else {
@@ -327,39 +378,39 @@ class DB_Sql {
         $this->halt("No query specified.");
     }
 
-    $count = @mysql_num_fields($id);
+    $fields = ($id instanceof mysqli_result) ? mysqli_fetch_fields($id) : array();
+    $count = count($fields);
 
-    // made this IF due to performance (one if is faster than $count if's)
-    if (!$full) {
-      for ($i=0; $i<$count; $i++) {
-        $res[$i]["table"] = @mysql_field_table ($id, $i);
-        $res[$i]["name"]  = @mysql_field_name  ($id, $i);
-        $res[$i]["type"]  = @mysql_field_type  ($id, $i);
-        $res[$i]["len"]   = @mysql_field_len   ($id, $i);
-        $res[$i]["flags"] = @mysql_field_flags ($id, $i);
-      }
-    } else { // full
+    if ($full)
       $res["num_fields"]= $count;
 
-      for ($i=0; $i<$count; $i++) {
-        $res[$i]["table"] = @mysql_field_table ($id, $i);
-        $res[$i]["name"]  = @mysql_field_name  ($id, $i);
-        $res[$i]["type"]  = @mysql_field_type  ($id, $i);
-        $res[$i]["len"]   = @mysql_field_len   ($id, $i);
-        $res[$i]["flags"] = @mysql_field_flags ($id, $i);
+    for ($i=0; $i<$count; $i++) {
+      $res[$i]["table"] = $fields[$i]->table;
+      $res[$i]["name"]  = $fields[$i]->name;
+      $res[$i]["type"]  = $fields[$i]->type;
+      $res[$i]["len"]   = $fields[$i]->length;
+      $res[$i]["flags"] = $fields[$i]->flags;
+      if ($full)
         $res["meta"][$res[$i]["name"]] = $i;
-      }
     }
 
     // free the result only if we were called on a table
-    if ($table) @mysql_free_result($id);
+    if ($table && ($id instanceof mysqli_result)) mysqli_free_result($id);
     return $res;
+  }
+
+  /* public: escape a value for a quoted SQL literal on this connection (was mysql_escape_string) */
+  function escape($value) {
+    if (!$this->connect()) return addslashes((string) $value);
+    return mysqli_real_escape_string($this->Link_ID, (string) $value);
   }
 
   /* private: error handling */
   function halt($msg) {
-    $this->Error = @mysql_error($this->Link_ID);
-    $this->Errno = @mysql_errno($this->Link_ID);
+    if ($this->Link_ID) {
+      $this->Error = mysqli_error($this->Link_ID);
+      $this->Errno = mysqli_errno($this->Link_ID);
+    }
     if ($this->Halt_On_Error == "no")
       return;
 
@@ -385,7 +436,8 @@ class DB_Sql {
   function table_names() {
     $this->query("SHOW TABLES");
     $i=0;
-    while ($info=mysql_fetch_row($this->Query_ID))
+    $return = array();
+    while ($this->Query_ID instanceof mysqli_result && ($info=mysqli_fetch_row($this->Query_ID)))
      {
       $return[$i]["table_name"]= $info[0];
       $return[$i]["tablespace_name"]=$this->Database;

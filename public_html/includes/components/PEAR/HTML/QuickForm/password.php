@@ -46,6 +46,7 @@ class HTML_QuickForm_password extends HTML_QuickForm_input
      * @return    void
      * @throws    
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_password(...$a); } // PHP 8: "HTML_QuickForm_password()" is no longer a constructor
     function HTML_QuickForm_password($elementName=null, $elementLabel=null, $attributes=null)
     {
         HTML_QuickForm_input::HTML_QuickForm_input($elementName, $elementLabel, $attributes);

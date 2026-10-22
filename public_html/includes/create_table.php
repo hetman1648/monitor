@@ -9,7 +9,6 @@ function compare_by_order($a, $b)
 	if (!(isset($a[$sort_order]))) 
 	{
 		return 0; 
-		break;
 	}   
 	
 	if (!(intval($a[$sort_order]))) 
@@ -115,8 +114,8 @@ function CreateTable($sql, $block_name, $db_obj_name, $template_obj_name, $sort_
     $db->next_record();
     
     
-	$page_col = (int)ceil($db->Record['count']/$records_per_page);
-	$sql = 'SELECT * FROM ('.$sql.') qq '.($sort_order ? 'ORDER BY '.$sort_order.' '.($reverse ? '' : 'DESC') : '').($records_per_page == 0 ? '': ' LIMIT '.($page_num - 1)*$records_per_page.', '.$records_per_page);
+	$page_col = (int)ceil(ToNumber($db->Record['count'])/$records_per_page);
+	$sql = 'SELECT * FROM ('.$sql.') qq '.($sort_order ? 'ORDER BY '.$sort_order.' '.($reverse ? '' : 'DESC') : '').(ToNumber($records_per_page) == 0 ? '': ' LIMIT '.($page_num - 1)*$records_per_page.', '.$records_per_page);
     $db->query($sql);
     
     

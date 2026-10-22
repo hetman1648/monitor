@@ -40,6 +40,7 @@ class PEAR_Remote extends PEAR
 
     // {{{ PEAR_Remote(config_object)
 
+    function __construct() { $a = func_get_args(); self::PEAR_Remote(...$a); } // PHP 8: "PEAR_Remote()" is no longer a constructor
     function PEAR_Remote(&$config)
     {
         $this->PEAR();

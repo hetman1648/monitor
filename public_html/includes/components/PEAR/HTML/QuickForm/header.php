@@ -38,6 +38,7 @@ class HTML_QuickForm_header extends HTML_QuickForm_static
     * @access public
     * @return void
     */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_header(...$a); } // PHP 8: "HTML_QuickForm_header()" is no longer a constructor
     function HTML_QuickForm_header($elementName = null, $text = null)
     {
         $this->HTML_QuickForm_static($elementName, null, $text);

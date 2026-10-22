@@ -1,4 +1,4 @@
-<?
+<?php 
 	include("./includes/common.php");
 	CheckSecurity(1);
 
@@ -58,7 +58,7 @@
 		foreach($HTTP_POST_VARS as $var_name=>$var_value)
 		{
 			//echo "$var_name => $var_value<br>";
-			$parts = split("_",$var_name);
+			$parts = explode("_",$var_name);
 			if ($parts[0] == "priority" && $parts[1])
 			{
 				$task_id  = $parts[1];
@@ -92,7 +92,7 @@
 		$tasks_priorities = array();
 		foreach($HTTP_POST_VARS as $var_name=>$var_value)
 		{
-			$parts = split("_",$var_name);
+			$parts = explode("_",$var_name);
 			if ($parts[0] == "estimateuhours" && $parts[1])
 			{
 				$task_id  = $parts[1];
@@ -130,7 +130,7 @@
 
 	$T = new iTemplate("./templates",array("page"=>"report_people.html"));
 
-	$T->set_var("rp", $_SERVER[REQUEST_URI]);
+	$T->set_var("rp", $_SERVER["REQUEST_URI"]);
 	if (!$is_viart) $is_viart=0;
 	if ($report_user_id)
 	{
@@ -192,12 +192,12 @@
 
 			$estimated_hours_title = "";
 			if ($estimated_hours) {
-			  if ($estimated_hours<1)  $estimated_hours_title .= round($estimated_hours*60)." min";
+			  if ($estimated_hours<1)  $estimated_hours_title .= round(ToNumber($estimated_hours)*60)." min";
 			  if ($estimated_hours==1) $estimated_hours_title .= "1 hour";
 			  if ($estimated_hours>1 && $estimated_hours<16)
-			   $estimated_hours_title .=( fmod($estimated_hours,1) ? sprintf("%1.2f hours",$estimated_hours) : ($estimated_hours)." hours");
+			   $estimated_hours_title .=( fmod(ToNumber($estimated_hours),1) ? sprintf("%1.2f hours",$estimated_hours) : ($estimated_hours)." hours");
 			  if ($estimated_hours>=16)
-			   $estimated_hours_title.= ( fmod($estimated_hours,8) ? sprintf("%1.2f days",$estimated_hours/8) : ($estimated_hours/8)." days");
+			   $estimated_hours_title.= ( fmod(ToNumber($estimated_hours),8) ? sprintf("%1.2f days",ToNumber($estimated_hours)/8) : (ToNumber($estimated_hours)/8)." days");
 			}
 
 	  		$T->set_var("estimated_hours_title",$estimated_hours_title);
@@ -243,8 +243,8 @@
 
 			$completion=$db->Record["completion"];
 
-			$T->set_var("time_left_estimate",($completion>0 && $completion<=100 ? to_hours($estimated_hours*(1-0.01*$completion),true) : "" ));
-			$T->set_var("time_left_actual",($completion>5 && $completion<=100 ? to_hours((100-$completion)/$completion*($db->Record["actual_hours"] ),true) : "" ));
+			$T->set_var("time_left_estimate",($completion>0 && $completion<=100 ? to_hours(ToNumber($estimated_hours)*(1-0.01*ToNumber($completion)),true) : "" ));
+			$T->set_var("time_left_actual",($completion>5 && $completion<=100 ? to_hours((100-ToNumber($completion))/ToNumber($completion)*($db->Record["actual_hours"] ),true) : "" ));
 
 			$T->set_var("actual_hours",to_hours($db->Record["actual_hours"]));
 			$T->parse("tasks",true);

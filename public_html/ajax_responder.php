@@ -123,7 +123,7 @@
 			exit;
 		}
 		$days = (float) $days;
-		if ($days == 0) {
+		if (ToNumber($days) == 0) {
 			echo json_encode(array('success' => false, 'error' => 'Days must be non-zero'));
 			exit;
 		}
@@ -174,7 +174,7 @@
 
 		$mailed = false;
 		if ($employee_email && filter_var($employee_email, FILTER_VALIDATE_EMAIL)) {
-			$abs_days = abs($days);
+			$abs_days = abs(ToNumber($days));
 			// Format days as integer when whole, else trim trailing zeros.
 			if ($abs_days == floor($abs_days)) {
 				$days_text = ((int) $abs_days) === 1 ? '1 day' : ((int) $abs_days) . ' days';
@@ -557,7 +557,7 @@
 		for ($t = $start_ts; $t <= $end_ts; $t += 86400) {
 			$d = date('Y-m-d', $t);
 			$w = date('w', $t);
-			if ($w != 0 && $w != 6 && !isset($holidays[$d])) $count++;
+			if (ToNumber($w) != 0 && $w != 6 && !isset($holidays[$d])) $count++;
 		}
 		echo json_encode(array('success' => true, 'working_days' => $count));
 		exit;

@@ -1,4 +1,4 @@
-<?
+<?php 
   /*
     action: no 			   - show blank form going to insert
             no,but id is specified - show filled form going to update

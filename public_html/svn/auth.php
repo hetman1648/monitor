@@ -1,4 +1,4 @@
-<?
+<?php 
 /*
 include auth file for common 
 */
@@ -75,6 +75,7 @@ function get_page($url,$user_agent='Mozilla/4.0 (compatible; MSIE 5.01; Windows 
 //	curl_setopt ($ch, CURLOPT_REFERER, 'http://www.pcpropertymanager.com/wsnlinks/');
 	$result = curl_exec ($ch); 
 	$info = curl_getinfo($ch);
+	$curl_error = curl_error($ch);
 	/*	echo "<b>curl Error:</b>".curl_error($ch)."<hr>";
     	if (is_array($info)) {
     		print_r($info);
@@ -85,7 +86,7 @@ function get_page($url,$user_agent='Mozilla/4.0 (compatible; MSIE 5.01; Windows 
 	curl_close ($ch); 
 
 	$msg = "URL:$url\n";
-	$msg.= "Curl Error: curl_error($ch)\n";
+	$msg.= "Curl Error: " . $curl_error . "\n";
 	if (is_array($info)) {
 		// $msg.= "info:".join("-",$info);
 	} else {
@@ -101,6 +102,7 @@ function get_page($url,$user_agent='Mozilla/4.0 (compatible; MSIE 5.01; Windows 
 // @param: $hours (int)
 // @param: is_prediction(bool) - if value is empty trying to predict
 function getHoursFormat($hours, $is_prediction=true) {
+    $hours = ToNumber($hours); // "" when the task has no estimate
     if ($hours < 1) {
     	$mins = number_format($hours *  60,0); 
       if ($mins == 0) {

@@ -58,7 +58,7 @@ $sql = "SELECT user_id,first_name,last_name,web_clients_resource FROM users WHER
 $db->query($sql);
 while($db->next_record()) {
     if ($db->f("web_clients_resource")){ 
-        $users[$db->f("user_id")] = 8 * $db->f("web_clients_resource") / 100; //8 hours per day is 100%
+        $users[$db->f("user_id")] = 8 * ToNumber($db->f("web_clients_resource")) / 100; //8 hours per day is 100%
     }
     $users_names[$db->f("user_id")] = $db->f("first_name") . " " . $db->f("last_name");
 }
@@ -277,7 +277,7 @@ $days_to_display = 14; //TODO: parameter sent via GET
                 $completion .= "%";
 
                 $estimate = $tasks[$task_id]["estimate"];
-                if(!($estimate * 1)) {
+                if(!((float) $estimate)) {
                     if ($is_allocated) $estimate = "1 day?";
                     else $estimate = "";
                 }
@@ -304,11 +304,11 @@ $days_to_display = 14; //TODO: parameter sent via GET
             <td class="dependancyCell" id="dep<?php echo $task_id; ?>">
                 <?php if ($dependent_id) { ?>
                     <i class="icon-circle-arrow-right"></i> <?php echo $tasks_counter[$dependent_id]; ?>
-                <? } else { ?>
+                <?php  } else { ?>
                 <a href="#" id="dep<?php echo $task_id; ?>Icon" class="lnkDependancy" title ="Make task completion '<?php echo $task_title; ?>' dependent on some other task ">
                     <i class="icon-arrow-right" ></i>
                 </a>
-                <? } ?>
+                <?php  } ?>
             </td>
             <?php
                 $cur_timestamp = strtotime(date("Y-m-d",time()) . " 09:00");  // we assume that the first slot is for 9:00

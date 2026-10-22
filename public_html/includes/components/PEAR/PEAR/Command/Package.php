@@ -232,6 +232,7 @@ Wrote: /usr/src/redhat/RPMS/i386/PEAR::Net_Socket-1.0-1.i386.rpm
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Package(...$a); } // PHP 8: "PEAR_Command_Package()" is no longer a constructor
     function PEAR_Command_Package(&$ui, &$config)
     {
         parent::PEAR_Command_Common($ui, $config);
@@ -269,7 +270,7 @@ Wrote: /usr/src/redhat/RPMS/i386/PEAR::Net_Socket-1.0-1.i386.rpm
             $params[0] = "package.xml";
         }
         $pkginfofile = isset($params[0]) ? $params[0] : 'package.xml';
-        $packager =& new PEAR_Packager();
+        $packager = new PEAR_Packager();
         $err = $warn = array();
         $dir = dirname($pkginfofile);
         $compress = empty($options['nocompress']) ? true : false;
@@ -339,7 +340,7 @@ Wrote: /usr/src/redhat/RPMS/i386/PEAR::Net_Socket-1.0-1.i386.rpm
         $obj->validatePackageInfo($info, $err, $warn);
         if (!$this->_displayValidationResults($err, $warn, true)) {
             $this->ui->outputData($this->output, $command);
-            break;
+            return; // was "break" outside a loop: a fatal error on PHP 7+, and on 5 when reached
         }
         $version = $info['version'];
         $cvsversion = preg_replace('/[^a-z0-9]/i', '_', $version);

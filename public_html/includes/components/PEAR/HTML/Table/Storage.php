@@ -102,6 +102,7 @@ class HTML_Table_Storage extends HTML_Common {
      *                                       <tbody> or not
      * @access   public
      */
+    function __construct() { $a = func_get_args(); self::HTML_Table_Storage(...$a); } // PHP 8: "HTML_Table_Storage()" is no longer a constructor
     function HTML_Table_Storage($attributes = null, $tabOffset = 0, $useTGroups = false)
     {
         HTML_Common::HTML_Common($attributes, (int)$tabOffset);

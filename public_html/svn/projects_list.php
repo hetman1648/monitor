@@ -25,7 +25,7 @@ $sql = "SELECT user_id,first_name,last_name,web_clients_resource FROM users WHER
 $db->query($sql);
 while($db->next_record()) {
     if ($db->f("web_clients_resource")){ 
-        $users[$db->f("user_id")] = 8 * $db->f("web_clients_resource") / 100; //8 hours per day is 100%
+        $users[$db->f("user_id")] = 8 * ToNumber($db->f("web_clients_resource")) / 100; //8 hours per day is 100%
     }
     $users_names[$db->f("user_id")] = $db->f("first_name") . " " . $db->f("last_name");
 }

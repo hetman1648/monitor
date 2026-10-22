@@ -9,7 +9,7 @@
 		$uq="";
 		foreach ($arr as $key=>$value)
 		{
-		  list($field,$id)=split("_",$key);
+		  list($field,$id)=explode("_",$key);
 		  if ($id>0 && ($field=="edit" || $field=="view"))
 		  {
 		    $db->query("UPDATE lunches_allocated_people SET ".$field."=1 WHERE user_id=".$id);		    

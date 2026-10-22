@@ -215,7 +215,7 @@
 				{
 					$sqlEmail .= " OR ";
 				}
-				$sqlEmail .= "ccf.field_value LIKE '" . mysql_escape_string(trim($email)) . "'";
+				$sqlEmail .= "ccf.field_value LIKE '" . $db->escape(trim($email)) . "'";
 			}
 			if (strlen($sqlEmail) > 0)
 			{
@@ -246,7 +246,7 @@
 					}
 					if (strpos($google, "12345678") === FALSE)
 					{
-						$sqlGoogle .= "ccf.field_value LIKE '" . mysql_escape_string(trim($google)) . "'";
+						$sqlGoogle .= "ccf.field_value LIKE '" . $db->escape(trim($google)) . "'";
 					}
 				}
 				if (strlen($sqlGoogle) > 0)
@@ -277,7 +277,7 @@
 					{
 						$sqlGAE .= " OR ";
 					}
-					$sqlGAE .= "ccf.field_value LIKE '" . mysql_escape_string(trim($gae)) . "'";
+					$sqlGAE .= "ccf.field_value LIKE '" . $db->escape(trim($gae)) . "'";
 				}
 				if (strlen($sqlGAE) > 0)
 				{
@@ -844,7 +844,7 @@
 		elseif ($type == "number") {return doubleval($value);}
 		elseif ($type == "integer") {return intval($value);}
 		elseif ($type == "date") {
-			if (ereg("([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})",$value,$t)){
+			if (preg_match("~([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})~",$value,$t)){
 				if (checkdate($t[3],$t[5],$t[1])) { $value = date("Y-m-d", mktime(0,0,0,$t[3],$t[5],$t[1]));}
 					else { $value = "0000-00-00";}
 			} else { $value = "0000-00-00";}
@@ -852,13 +852,9 @@
 		} else {
 			$value = addslashes($value);
 			/*/
-			if(get_magic_quotes_gpc() == 0) {
+			// magic_quotes_gpc is always off (removed in PHP 5.4)
 				$value = str_replace("'", "''", $value);
 					$value = str_replace("\\", "\\\\", $value);
-			} else {
-				$value = str_replace("\\'", "''", $value);
-				$value = str_replace("\\\"", "\"", $value);
-			}
 			/**/
 			$value = "'" . $value . "'";
 		}

@@ -39,6 +39,7 @@ class wsdlcache {
 	* @param integer $cache_lifetime lifetime for caching-files in seconds or 0 for unlimited
 	* @access public
 	*/
+	function __construct() { $a = func_get_args(); self::wsdlcache(...$a); } // PHP 8: "wsdlcache()" is no longer a constructor
 	function wsdlcache($cache_dir='.', $cache_lifetime=0) {
 		$this->fplock = array();
 		$this->cache_dir = $cache_dir != '' ? $cache_dir : '.';

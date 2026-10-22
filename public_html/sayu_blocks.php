@@ -44,7 +44,7 @@ function client_spent_hours($client_id) {
 			$T->set_var("last_name", $db->Record["last_name"]);
 			$T->set_var("hours", to_hours($db->Record["sum"]));
 			$T->parse("user");
-			$total += $db->Record["sum"];
+			$total += ToNumber($db->Record["sum"]);
 		} while ($db->next_record());
 		
 		$T->set_var("total", to_hours($total));
@@ -59,7 +59,7 @@ function subprojects($input_name, $project_id, $subproject_id) {
 	global $T, $db;
 	
 	$T->set_var("input_name", $input_name);
-	if ($project_id != 0) {
+	if (ToNumber($project_id) != 0) {
 		$sql = "SELECT * FROM projects WHERE parent_project_id=".ToSQL($project_id,"integer");
 		//$db->query($sql);
 		$T->set_var("subproject_list", Get_Options("projects WHERE parent_project_id=".ToSQL($project_id,"integer")." ORDER BY project_title",

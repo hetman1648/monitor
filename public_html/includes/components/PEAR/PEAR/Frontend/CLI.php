@@ -43,6 +43,7 @@ class PEAR_Frontend_CLI extends PEAR
 
     // {{{ constructor
 
+    function __construct() { $a = func_get_args(); self::PEAR_Frontend_CLI(...$a); } // PHP 8: "PEAR_Frontend_CLI()" is no longer a constructor
     function PEAR_Frontend_CLI()
     {
         parent::PEAR();

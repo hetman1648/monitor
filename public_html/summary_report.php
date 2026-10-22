@@ -81,7 +81,7 @@ if ($db2->next_record()) {
         $hol_date = $db2->Record["holiday_date"];
         $hol_date_arr = explode("-", $hol_date);
         $week_day = date("w", mktime(0, 0, 0, $hol_date_arr[1], $hol_date_arr[2], $hol_date_arr[0]));
-        if (($week_day != 0) && ($week_day != 6)) {
+        if ((ToNumber($week_day) != 0) && ($week_day != 6)) {
             $working_days_planned--;
         }
     } while ($db2->next_record());
@@ -166,18 +166,18 @@ if ($submit && $year_selected && $month_selected) {
             $count_tasks = $db->f("count_tasks");
             $team_users = $db->f("team_name");
 
-            $user_sayu_time = (isset($sayu_users_time[$user_id_val]) ? floatval($sayu_users_time[$user_id_val]) : 0) * $multiplier;
+            $user_sayu_time = (isset($sayu_users_time[$user_id_val]) ? floatval($sayu_users_time[$user_id_val]) : 0) * ToNumber($multiplier);
             if (isset($viart_total_time[0]) && $viart_total_time[0] > 0 && isset($viart_users_time[$user_id_val])) {
-                $user_viart_time = floatval($viart_users_time[$user_id_val]) * ($total_viart / $viart_total_time[0]);
+                $user_viart_time = floatval($viart_users_time[$user_id_val]) * (ToNumber($total_viart) / $viart_total_time[0]);
             } else {
                 $user_viart_time = 0;
             }
             $user_total_time = $user_sayu_time + $user_viart_time;
 
-            $time_per_task = ($count_tasks != 0) ? $count_hours / $count_tasks : 0;
+            $time_per_task = (ToNumber($count_tasks) != 0) ? ToNumber($count_hours) / ToNumber($count_tasks) : 0;
             $working_days_val = $db->f("working_days");
-            $hours_per_day = ($working_days_val != 0) ? $count_hours / $working_days_val : 0;
-            $days_off = $working_days_val - (isset($work_days[$user_name_val]) ? $work_days[$user_name_val] : 0);
+            $hours_per_day = (ToNumber($working_days_val) != 0) ? ToNumber($count_hours) / ToNumber($working_days_val) : 0;
+            $days_off = ToNumber($working_days_val) - (isset($work_days[$user_name_val]) ? $work_days[$user_name_val] : 0);
 
             // Warnings
             $warnings = 0;
@@ -218,9 +218,9 @@ if ($submit && $year_selected && $month_selected) {
                     $ed_val = $db2->f("end_date");
                     $ed_arr = explode("-", $ed_val);
                     if ($ed_arr[1] == $month_selected) {
-                        $holidays_total += $db2->f("total_days");
+                        $holidays_total += ToNumber($db2->f("total_days"));
                         if (($reason == 1) || ($reason == 2) || ($is_paid == 1)) {
-                            $total_paid += $db2->f("total_days");
+                            $total_paid += ToNumber($db2->f("total_days"));
                         }
                     } else {
                         $nd = date("t", mktime(0, 0, 0, $month_selected, 1, $year_selected));
@@ -252,7 +252,7 @@ if ($submit && $year_selected && $month_selected) {
             $record = array(
                 'warnings' => $warnings,
                 'holidays_total' => $holidays_total,
-                'total_paid' => $working_days_val + $total_paid,
+                'total_paid' => ToNumber($working_days_val) + $total_paid,
                 'user_id' => $user_id_val,
                 'user_name' => $user_name_val,
                 'manager_name' => $manager_name_val,
@@ -327,7 +327,7 @@ if ($submit && $year_selected && $month_selected && $person_selected && is_numbe
 
     $n_days = date("t", mktime(0, 0, 0, $month_selected, 1, $year_selected));
     $first_day = date("w", mktime(0, 0, 0, $month_selected, 1, $year_selected));
-    if ($first_day == 0) $first_day = 7;
+    if (ToNumber($first_day) == 0) $first_day = 7;
 
     $_first_day = $first_day;
     $_n_days_rem = $n_days - (8 - $_first_day);
@@ -368,7 +368,7 @@ if ($submit && $year_selected && $month_selected && $person_selected && is_numbe
             $week['days'][] = $day;
             if ($col == 7) {
                 $week['week_hours'] = $week_hours;
-                $week['w_hours_per_day'] = ($w_working_days != 0) ? $week_hours / $w_working_days : 0;
+                $week['w_hours_per_day'] = (ToNumber($w_working_days) != 0) ? $week_hours / $w_working_days : 0;
                 $month_hours += $week_hours;
                 $week_hours = 0;
                 $w_working_days = 0;

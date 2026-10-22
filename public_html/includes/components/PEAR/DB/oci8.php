@@ -169,6 +169,7 @@ class DB_oci8 extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_oci8(...$a); } // PHP 8: "DB_oci8()" is no longer a constructor
     function DB_oci8()
     {
         $this->DB_common();
@@ -669,7 +670,7 @@ class DB_oci8 extends DB_common
             $tmp = DB_OK;
         } else {
             @ocisetprefetch($stmt, $this->options['result_buffering']);
-            $tmp =& new DB_result($this, $stmt);
+            $tmp = new DB_result($this, $stmt);
         }
         return $tmp;
     }

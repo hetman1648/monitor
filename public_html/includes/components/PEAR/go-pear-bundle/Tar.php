@@ -77,6 +77,7 @@ class Archive_Tar extends PEAR
     *                   boolean value 'true' means 'gz'.
     * @access public
     */
+    function __construct() { $a = func_get_args(); self::Archive_Tar(...$a); } // PHP 8: "Archive_Tar()" is no longer a constructor
     function Archive_Tar($p_tarname, $p_compress = null)
     {
         $this->PEAR();
@@ -530,7 +531,7 @@ class Archive_Tar extends PEAR
         }
         
         // ----- Get the arguments
-        $v_att_list = &func_get_args();
+        $v_att_list = func_get_args();
 
         // ----- Read the attributes
         $i=0;

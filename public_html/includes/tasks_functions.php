@@ -254,8 +254,8 @@ function GetTasksList($user_id, $is_manager, $sort, &$csv, &$is_working)
 				if ($db->Record["status_id"] == 1) $T->set_var("completion_javascript",$db_completion);
 			   	else $T->set_var("completion_javascript",($completion_active ? $completion_active : 0));
 			  	$T->set_var("completion_percent",   $db_completion."%");
-			  	$T->set_var("time_left_estimate", to_hours($db_estimated_hours - $db_estimated_hours*$db_completion/100,true));
-			  	$T->set_var("time_left_actual", ($db_completion>5 ? to_hours($db_actual_hours*(100-$db_completion)/$db_completion,true) : ""));
+			  	$T->set_var("time_left_estimate", to_hours(ToNumber($db_estimated_hours) - ToNumber($db_estimated_hours)*ToNumber($db_completion)/100,true));
+			  	$T->set_var("time_left_actual", ($db_completion>5 ? to_hours(ToNumber($db_actual_hours)*(100-ToNumber($db_completion))/ToNumber($db_completion),true) : ""));
 			}
 			else
 			{
@@ -280,7 +280,7 @@ function GetTasksList($user_id, $is_manager, $sort, &$csv, &$is_working)
 				$actual_live_hours = $db->f("actual_hours_live");
 				$T->set_var("actual_hours", Hours2HoursMins($actual_live_hours));
 				if ($actual_live_hours) {
-					$T->set_var("actual_timestamp", $actual_live_hours*3600000);
+					$T->set_var("actual_timestamp", ToNumber($actual_live_hours)*3600000);
 				} else {
 					$T->set_var("actual_timestamp", "0");
 				}				
@@ -340,7 +340,7 @@ function GetTasksList($user_id, $is_manager, $sort, &$csv, &$is_working)
   		}
   	}
 
-  	if ($periodic_tasks_count==0)
+  	if (ToNumber($periodic_tasks_count)==0)
 	{
 		$T->set_var("periodic_tasks", "");
 	}
@@ -442,8 +442,8 @@ function GetTasksList($user_id, $is_manager, $sort, &$csv, &$is_working)
 				if ($db->Record["status_id"] == 1) $T->set_var("completion_javascript",$db_completion);
 			   	else $T->set_var("completion_javascript",($completion_active ? $completion_active : 0));
 			  	$T->set_var("completion_percent",   $db_completion."%");
-			  	$T->set_var("time_left_estimate", to_hours($db_estimated_hours - $db_estimated_hours*$db_completion/100,true));
-			  	$T->set_var("time_left_actual", ($db_completion>5 ? to_hours($db_actual_hours*(100-$db_completion)/$db_completion,true) : ""));
+			  	$T->set_var("time_left_estimate", to_hours(ToNumber($db_estimated_hours) - ToNumber($db_estimated_hours)*ToNumber($db_completion)/100,true));
+			  	$T->set_var("time_left_actual", ($db_completion>5 ? to_hours(ToNumber($db_actual_hours)*(100-ToNumber($db_completion))/ToNumber($db_completion),true) : ""));
 			}
 			else
 			{
@@ -469,7 +469,7 @@ function GetTasksList($user_id, $is_manager, $sort, &$csv, &$is_working)
 				$actual_live_hours = $db->f("actual_hours_live");
 				$T->set_var("actual_hours", Hours2HoursMins($actual_live_hours));
 				if ($actual_live_hours) {
-					$T->set_var("actual_timestamp", $actual_live_hours*3600000);
+					$T->set_var("actual_timestamp", ToNumber($actual_live_hours)*3600000);
 				} else {
 					$T->set_var("actual_timestamp", "0");
 				}
@@ -514,7 +514,7 @@ function GetTasksList($user_id, $is_manager, $sort, &$csv, &$is_working)
 			
   		}
 
-  		if ($periodic_tasks_count==0)
+  		if (ToNumber($periodic_tasks_count)==0)
 		{
 			$T->set_var("periodic_tasks", "");
 		}
@@ -672,7 +672,7 @@ function show_users_list($viart_block_name, $yoonoo_block_name, $viart_team_coun
 
 	foreach ($users_records as $user)
 	{
-		if ($user["privilege_id"]==3 || $user["privilege_id"]==4 || $user["privilege_id"]==5 || $user["is_viart"]==0)
+		if ($user["privilege_id"]==3 || $user["privilege_id"]==4 || $user["privilege_id"]==5 || ToNumber($user["is_viart"])==0)
 		{
     		print_user_name("manager", $user, $active_tasks);
     		if ($user["is_viart"]==1) {    		
@@ -1023,15 +1023,15 @@ function show_report_tasks_list($report_user_id, $is_viart, $rp)
 			$estimated_hours_title = "";
 			$estimated_days        = 0;
 			if ($estimated_hours) {
-				if ($estimated_hours>0 && $estimated_hours<1)  { $estimated_hours_title .= round($estimated_hours*60)." min";}
+				if ($estimated_hours>0 && $estimated_hours<1)  { $estimated_hours_title .= round(ToNumber($estimated_hours)*60)." min";}
 				if ($estimated_hours==1) { $estimated_hours_title .= "1 hour";}
 				if ($estimated_hours>1 && $estimated_hours<16) {
-					$estimated_hours_title .=( fmod($estimated_hours,1) ? sprintf("%1.2f hours",$estimated_hours) : floor($estimated_hours)." hours");
+					$estimated_hours_title .=( fmod(ToNumber($estimated_hours),1) ? sprintf("%1.2f hours",$estimated_hours) : floor(ToNumber($estimated_hours))." hours");
 				}
 				if ($estimated_hours>=16) {
-					$estimated_hours_title.= ( fmod($estimated_hours,8) ? sprintf("%1.2f days",$estimated_hours/8) : floor($estimated_hours/8)." days");
+					$estimated_hours_title.= ( fmod(ToNumber($estimated_hours),8) ? sprintf("%1.2f days",ToNumber($estimated_hours)/8) : floor(ToNumber($estimated_hours)/8)." days");
 				}
-				if ($estimated_hours > 8) $estimated_days = $estimated_hours / 8;
+				if ($estimated_hours > 8) $estimated_days = ToNumber($estimated_hours) / 8;
 			} else $estimated_hours = 1;
 
 			//find the first available slot to allocate tasks
@@ -1100,7 +1100,7 @@ function show_report_tasks_list($report_user_id, $is_viart, $rp)
 				$actual_live_hours = $db->f("actual_hours_live");
 				$T->set_var("actual_hours", Hours2HoursMins($actual_live_hours));
 				if ($actual_live_hours) {
-					$T->set_var("actual_timestamp", $actual_live_hours*3600000);
+					$T->set_var("actual_timestamp", ToNumber($actual_live_hours)*3600000);
 				} else {
 					$T->set_var("actual_timestamp", "0");
 				}
@@ -1128,8 +1128,8 @@ function show_report_tasks_list($report_user_id, $is_viart, $rp)
 
 			$completion=$db->Record["completion"];
 
-			$T->set_var("time_left_estimate",($completion>0 && $completion<=100 ? to_hours($estimated_hours*(1-0.01*$completion),true) : "" ));
-			$T->set_var("time_left_actual",($completion>5 && $completion<=100 ? to_hours((100-$completion)/$completion*($db->Record["actual_hours"] ),true) : "" ));
+			$T->set_var("time_left_estimate",($completion>0 && $completion<=100 ? to_hours(ToNumber($estimated_hours)*(1-0.01*ToNumber($completion)),true) : "" ));
+			$T->set_var("time_left_actual",($completion>5 && $completion<=100 ? to_hours((100-ToNumber($completion))/ToNumber($completion)*($db->Record["actual_hours"] ),true) : "" ));
 
 			
 			$T->parse("tasks",true);
@@ -1152,7 +1152,7 @@ function show_report_tasks_list($report_user_id, $is_viart, $rp)
 		$T->set_var("tasks","");
 	}
 	
-	if ($user_number==0) {
+	if (ToNumber($user_number)==0) {
 		$T->set_var("activeTaskRow","");
 	}
 
@@ -1492,7 +1492,7 @@ function save_estimates($return_page)
 	$post_vars = get_post_vars();
 	foreach($post_vars as $var_name=>$var_value)
 	{
-		$parts = split("_",$var_name);
+		$parts = explode("_",$var_name);
 		if ($parts[0] == "estimateuhours" && $parts[1])
 		{
 			$task_id  = $parts[1];
@@ -1534,7 +1534,7 @@ function save_priorities($return_page)
 	$post_vars = get_post_vars();
 	
 	foreach($post_vars as $var_name=>$var_value) {			
-		$parts = split("_",$var_name);
+		$parts = explode("_",$var_name);
 		$manager_id = GetSessionParam("UserID");
 		if ($parts[0] == "priority" && $parts[1]) {				
 			$task_id  = $parts[1];
@@ -1742,7 +1742,7 @@ function add_task_message($task_id, $message, $user_assign_by, $user_assign_to, 
 			$sql= "SELECT estimated_hours FROM tasks WHERE task_id=".ToSQL($task_id, "integer");
 			$db->query($sql);
 			if ($db->next_record()) {
-				$new_estimated_hours = (float)$db->f("estimated_hours") + $additional_hours;
+				$new_estimated_hours = (float)ToNumber($db->f("estimated_hours")) + $additional_hours;
 				
 				$sql = "UPDATE tasks SET estimated_hours=".ToSQL($new_estimated_hours, "number");
 				$sql.= " WHERE task_id=".ToSQL($task_id, "integer");
@@ -2105,7 +2105,7 @@ function update_task($task_id, $update_vars)
 				$task_domain_id = $db->f("domain_id");
 			} else {
 				$sql = " SELECT MAX(domain_id) FROM tasks_domains";
-				$task_domain_id = get_db_value($sql) + 1;
+				$task_domain_id = ToNumber(get_db_value($sql)) + 1;
 				
 				$sql = " INSERT INTO tasks_domains (domain_id, domain_url)";
 				$sql .= " VALUES (" . $task_domain_id . "," . ToSQL($task_domain_url, "text") . ")";
@@ -2123,7 +2123,7 @@ function update_task($task_id, $update_vars)
 			if ($name == "completion" && is_numeric($value) && $value >= 0 && $value <= 100) {
 				$type = "integer";				
 			} elseif ($name == "is_closed") {
-				if ($value == 0) {
+				if (ToNumber($value) == 0) {
 					$type = "integer";
 				} else {
 					close_task($task_id, "");

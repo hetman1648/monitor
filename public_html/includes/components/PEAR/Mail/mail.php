@@ -39,6 +39,7 @@ class Mail_mail extends Mail {
      *
      * @param array $params Extra arguments for the mail() function.
      */
+    function __construct() { $a = func_get_args(); self::Mail_mail(...$a); } // PHP 8: "Mail_mail()" is no longer a constructor
     function Mail_mail($params = null)
     {
         /* The other mail implementations accept parameters as arrays.

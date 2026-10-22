@@ -108,6 +108,7 @@ parameter.
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Remote(...$a); } // PHP 8: "PEAR_Command_Remote()" is no longer a constructor
     function PEAR_Command_Remote(&$ui, &$config)
     {
         parent::PEAR_Command_Common($ui, $config);

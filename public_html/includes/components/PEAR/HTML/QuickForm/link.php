@@ -57,6 +57,7 @@ class HTML_QuickForm_link extends HTML_QuickForm_static
      * @return    void
      * @throws    
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_link(...$a); } // PHP 8: "HTML_QuickForm_link()" is no longer a constructor
     function HTML_QuickForm_link($elementName=null, $elementLabel=null, $href=null, $text=null, $attributes=null)
     {
         HTML_QuickForm_element::HTML_QuickForm_element($elementName, $elementLabel, $attributes);

@@ -87,7 +87,7 @@ if (isset($vacation_id)) {
   $T->set_var("vacation_title", $db->Record["period_title"]);
   $sql2 = "SELECT reason_name, reason_id FROM reasons";
   $db2->query($sql2);  
-  if ($is_paid == 0) {
+  if (ToNumber($is_paid) == 0) {
     
    while ($db2->next_record()) {
     if ($db2->Record["reason_id"] == $db->Record["reason_id"]) $reason_type_option .= "<option selected>".$db2->Record["reason_name"]."</option><br>";
@@ -122,7 +122,7 @@ else {
   $sql = "SELECT reason_name FROM reasons";
   $db->query($sql);  
   
-  if ($is_paid == 0) { while ($db->next_record()) {
+  if (ToNumber($is_paid) == 0) { while ($db->next_record()) {
     $reason_type_option .= "<option>".$db->Record["reason_name"]."</option><br>";
    } } else $reason_type_option = "<option selected>Paid Period</option>";
   //$T->set_var("start_date", "");
@@ -133,7 +133,7 @@ else {
   $T->set_var("reason_type_option", $reason_type_option);  
   $T->set_var("total_days", "");
   $T->set_var("delete_button", "");
-  if ($is_paid == 0) $T->set_var("action_value", "Add Warning");
+  if (ToNumber($is_paid) == 0) $T->set_var("action_value", "Add Warning");
   else $T->set_var("action_value", "Add Paid Period");
   $T->set_var("is_paid", $is_paid);  
   $e_text = "Create Warning";

@@ -741,7 +741,7 @@ if (empty($prev_year_holidays)) {
                     $date = strtotime($h['holiday_date']);
                     $dayOfWeek = date('w', $date);
                     $weekdayName = date('l', $date);
-                    $isWeekend = ($dayOfWeek == 0 || $dayOfWeek == 6);
+                    $isWeekend = (ToNumber($dayOfWeek) == 0 || $dayOfWeek == 6);
                 ?>
                 <tr data-id="<?php echo $h['holiday_id']; ?>" data-date="<?php echo $h['holiday_date']; ?>">
                     <td class="date-col">

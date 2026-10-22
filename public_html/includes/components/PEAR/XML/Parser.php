@@ -564,7 +564,7 @@ class XML_Parser extends PEAR
     function raiseError($msg = null, $ecode = 0)
     {
         $msg = !is_null($msg) ? $msg : $this->parser;
-        $err = &new XML_Parser_Error($msg, $ecode);
+        $err = new XML_Parser_Error($msg, $ecode);
         return parent::raiseError($err);
     }
     
@@ -669,6 +669,7 @@ class XML_Parser_Error extends PEAR_Error
     * @param    integer             error handling
     * @param    integer             error level
     */    
+    function __construct() { $a = func_get_args(); self::XML_Parser_Error(...$a); } // PHP 8: "XML_Parser_Error()" is no longer a constructor
     function XML_Parser_Error($msgorparser = 'unknown error', $code = 0, $mode = PEAR_ERROR_RETURN, $level = E_USER_NOTICE)
     {
         if (is_resource($msgorparser)) {

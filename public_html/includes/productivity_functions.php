@@ -80,7 +80,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 			foreach ($users AS $user_id => $user) {
 				$func = "special_for_user_" . $user_id;
 				if (function_exists($func)) {
-					$users[$user_id]["special"] = $func(&$users, $year_selected, $month_selected);
+					$users[$user_id]["special"] = $func($users, $year_selected, $month_selected);
 				}
 			}
 			
@@ -131,25 +131,25 @@ $sql  = " INSERT INTO productivity_project_species ";
 			other_work($users, $user_id, $year_selected, $month_selected);
 									
 			$users[$user_id]["total_points"] = 0;			
-			$users[$user_id]["total_points"] += $users[$user_id]["tickets_points"];
-			$users[$user_id]["total_points"] += $users[$user_id]["tickets_delayed_points"];
-			$users[$user_id]["total_points"] += $users[$user_id]["paid_days"];
-			$users[$user_id]["total_points"] += $users[$user_id]["bugs"];
+			$users[$user_id]["total_points"] += ToNumber($users[$user_id]["tickets_points"]);
+			$users[$user_id]["total_points"] += ToNumber($users[$user_id]["tickets_delayed_points"]);
+			$users[$user_id]["total_points"] += ToNumber($users[$user_id]["paid_days"]);
+			$users[$user_id]["total_points"] += ToNumber($users[$user_id]["bugs"]);
 			
 			if (isset($users[$user_id]["custome_work"]))
-				$users[$user_id]["total_points"] += $users[$user_id]["custome_work"];
+				$users[$user_id]["total_points"] += ToNumber($users[$user_id]["custome_work"]);
 				
 			if (isset($users[$user_id]["viart"]))
-				$users[$user_id]["total_points"] += $users[$user_id]["viart"];
+				$users[$user_id]["total_points"] += ToNumber($users[$user_id]["viart"]);
 							
 			if (isset($users[$user_id]["sayu"]))			
-				$users[$user_id]["total_points"] += $users[$user_id]["sayu"];
+				$users[$user_id]["total_points"] += ToNumber($users[$user_id]["sayu"]);
 				
 			if (isset($users[$user_id]["manual"]))
-				$users[$user_id]["total_points"] += $users[$user_id]["manual"];
+				$users[$user_id]["total_points"] += ToNumber($users[$user_id]["manual"]);
 				
 			if (isset($users[$user_id]["special"]))
-				$users[$user_id]["total_points"] += $users[$user_id]["special"];
+				$users[$user_id]["total_points"] += ToNumber($users[$user_id]["special"]);
 			
 			$sum_total_points += $users[$user_id]["total_points"];
 				
@@ -165,7 +165,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 				if ($db->next_record()) {
 					$total_user_hours = $db->f(0);
 					if ($total_user_hours < 160) {
-						$current_thres    = $__USER_THRES * ($total_user_hours / 160);
+						$current_thres    = $__USER_THRES * (ToNumber($total_user_hours) / 160);
 					}
 				}
 			}
@@ -212,7 +212,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 				$t->set_var($title, $value);
 				$t->parse($title . "_cell", false);
 				if (isset($sums["sum_" . $title])) {
-					$sums["sum_" . $title] += $value;
+					$sums["sum_" . $title] = ToNumber($sums["sum_" . $title]) + ToNumber($value);
 				} else {
 					$sums["sum_" . $title] = $value;
 				}
@@ -358,7 +358,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 					$task_type_id = $db->f("task_type_id");
 					$project_id   = $db->f("project_id");
 					$month_selected --;
-					if ($month_selected == 0) {
+					if (ToNumber($month_selected) == 0) {
 						$year_selected --;
 						$month_selected = 12;
 					}
@@ -367,7 +367,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 					}
 					if ($task_cost) {
 						if (in_array($project_id, $_PROJECTS_WITH_FULL_COST)) {
-							$user_task_points = $task_cost * $completion / 100;
+							$user_task_points = ToNumber($task_cost) * ToNumber($completion) / 100;
 						} else {
 							$sql  = " SELECT MAX(completion) FROM time_report ";
 							$sql .= " WHERE task_id = '$task_id'";
@@ -380,12 +380,12 @@ $sql  = " INSERT INTO productivity_project_species ";
 							}
 							
 							if ($previous_completion) {
-								$user_task_points = $task_cost * ($completion - $previous_completion) / 100;		
+								$user_task_points = ToNumber($task_cost) * (ToNumber($completion) - ToNumber($previous_completion)) / 100;		
 							} elseif ($spent_hours && $actual_hours) {
 								if ($completion > 0) {
-									$user_task_points = $task_cost * $completion / 100 * $spent_hours / $actual_hours;
+									$user_task_points = ToNumber($task_cost) * ToNumber($completion) / 100 * ToNumber($spent_hours) / ToNumber($actual_hours);
 								} else {
-									$user_task_points = $task_cost * $spent_hours / $actual_hours;
+									$user_task_points = ToNumber($task_cost) * ToNumber($spent_hours) / ToNumber($actual_hours);
 								}
 							} else {
 								$user_task_points = 0;
@@ -400,7 +400,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 						if ($_DEBUG) {
 							echo  'task is timescaled<br/>';
 						}						
-						$user_task_points = $spent_hours * 15;
+						$user_task_points = ToNumber($spent_hours) * 15;
 						if ($project_id == SEO_CORRECTIONS_PROJECT_ID && $spent_hours < 1) 
 							$user_task_points = 15;
 					}
@@ -416,7 +416,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 					
 					if (!$user_task_points) {
 						$color = "blue";
-					} elseif ($task_cost == 0) {
+					} elseif (ToNumber($task_cost) == 0) {
 						$color = "yellow";
 					} elseif ($actual_hours < $cost/50 + 1) {
 						$color = "red";
@@ -482,7 +482,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 					$task_type_id = $db->f("task_type_id");
 
 					$month_selected --;
-					if ($month_selected == 0) {
+					if (ToNumber($month_selected) == 0) {
 						$year_selected --;
 						$month_selected = 12;
 					}
@@ -500,9 +500,9 @@ $sql  = " INSERT INTO productivity_project_species ";
 					if ($task_type_id == CORRECTION_TYPE_ID) {
 						$user_task_points = 0;
 					} elseif ($previous_completion) {
-						$user_task_points = $task_cost * ($completion - $previous_completion) / 100;				
+						$user_task_points = ToNumber($task_cost) * (ToNumber($completion) - ToNumber($previous_completion)) / 100;				
 					} elseif ($spent_hours && $actual_hours) {
-						$user_task_points = $task_cost * $completion / 100 * $spent_hours / $actual_hours;
+						$user_task_points = ToNumber($task_cost) * ToNumber($completion) / 100 * ToNumber($spent_hours) / ToNumber($actual_hours);
 					} else {
 						$user_task_points = 0;
 					}
@@ -518,7 +518,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 					
 					if (!$user_task_points) {
 						$color = "blue";
-					} elseif ($task_cost == 0) {
+					} elseif (ToNumber($task_cost) == 0) {
 						$color = "yellow";
 					} elseif ($actual_hours < $cost/50 + 1) {
 						$color = "red";
@@ -591,7 +591,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 				}
 				$minus_days = get_days($prev_time, $day_times, $user_id, $year_selected, $month_selected, $day_selected);
 				
-				if ($minus_days == 0) {
+				if (ToNumber($minus_days) == 0) {
 					$users[$user_id]["tickets"]++;
 					$ticket_point = $__DAYS_POINTS[$minus_days];
 					$users[$user_id]["tickets_points"] += $ticket_point;
@@ -691,7 +691,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 					$spent_hours  = $db->f("spent_hours");
 					$actual_hours = $db->f("actual_hours");
 					$completion   = $db->f("completion");					
-					$total_spent_hours += $spent_hours;
+					$total_spent_hours += ToNumber($spent_hours);
 					
 					$t->set_var("task_id", $task_id);
 					$t->set_var("task_title", $task_title);
@@ -755,7 +755,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 		$db->query($sql,__FILE__,__LINE__);
 		
 		if ($db->next_record()) {
-			$result = $db->f(0);
+			$result = ToNumber($db->f(0)); // SUM() of no rows is NULL
 		}
 		
 		return $result;
@@ -769,7 +769,7 @@ $sql  = " INSERT INTO productivity_project_species ";
 		$sql .= " AND YEAR(date_issued) = $year_selected AND MONTH(date_issued) = $month_selected ";
 		$db->query($sql, __FILE__, __LINE__);
 		if ($db->next_record()) {
-			return $db->f(0);
+			return ToNumber($db->f(0)); // SUM() of no rows is NULL
 		}
 				
 		return 0;

@@ -112,7 +112,7 @@ if ($submit)
 	$c_year=date("Y");
 	$c_month=date("m");
 	$c_ym=$c_year*12+$c_month;
-	$c_ym_s=$year_selected*12+$month_selected;
+	$c_ym_s=ToNumber($year_selected)*12+ToNumber($month_selected);
 
 	//count hours each user has worked today
 	$sql = "SELECT	user_id, SUM(spent_hours) AS sum_hours
@@ -127,7 +127,7 @@ if ($submit)
 	$workedtoday = array();
 	while ($db->next_record()) {
 		$user_id = (int)$db->f("user_id");
-		$workedtoday[$user_id]=$db->f('sum_hours')/8;
+		$workedtoday[$user_id]=ToNumber($db->f('sum_hours'))/8;
 	}
 
 	$sql = " SELECT task_id, priority_id, responsible_user_id, estimated_hours, completion, ";
@@ -157,8 +157,8 @@ if ($submit)
 		$estimated_hours = $db->f("estimated_hours");
 		$actual_hours	 = $db->f("actual_hours");
 		$completion		 = $db->f("completion");
-		$estimated_days_left = $estimated_hours*(1-$completion/100)/8;
-		$actual_days_left	 = $completion>1 ? $actual_hours*(100-$completion)/$completion/8 : 0;
+		$estimated_days_left = ToNumber($estimated_hours)*(1-ToNumber($completion)/100)/8;
+		$actual_days_left	 = $completion>1 ? ToNumber($actual_hours)*(100-ToNumber($completion))/ToNumber($completion)/8 : 0;
 
 		if (isset($estimated_hours) && $estimated_hours>0) { $taskdays[$user_id][$task_id]['estimated_days'] = $estimated_days_left;}
 		if ($completion>1)	{
@@ -199,7 +199,7 @@ if ($submit)
 							}
 						}
 					//}
-				} while ($tded!=0);
+				} while (ToNumber($tded)!=0);
 			}
 
 		}
@@ -271,8 +271,8 @@ if ($submit)
 			$status_desc = $db->f("task_status");
 			$ifdeadline = $db->f("ifdeadline");
 			$task_type = $db->f("task_type_id");
-			$left_hours = $est_hours-$est_hours*$completion/100;
-			$left_hours_act = ($completion>1 ? $actual_hours*(100-$completion)/$completion : 0);
+			$left_hours = ToNumber($est_hours)-ToNumber($est_hours)*ToNumber($completion)/100;
+			$left_hours_act = ($completion>1 ? ToNumber($actual_hours)*(100-ToNumber($completion))/ToNumber($completion) : 0);
 			if ($left_hours_act>0) {$left_hours=$left_hours_act;}
 			if ($status_desc=="done") {$left_hours=0;}
 			$t->set_var("user_id", $user_id);
@@ -305,7 +305,7 @@ if ($submit)
 				{
 					$day_of_week = date("w", mktime(0, 0, 0, $month_selected, $i_day, $year_selected));
 					//highlight Saturday and Sunday
-					if ($day_of_week==0 || $day_of_week==6) {$day_class = "DayoffTD";}
+					if (ToNumber($day_of_week)==0 || $day_of_week==6) {$day_class = "DayoffTD";}
 						else {$day_class = "DataTD";}
 
 					if (isset($task_estimate_hours[$user_id][$task_id][$year_selected][(int)$month_selected][$i_day]) &&

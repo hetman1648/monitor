@@ -132,6 +132,7 @@ class PHPUnit_TestCase extends PHPUnit_Assert {
      * @param  string
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PHPUnit_TestCase(...$a); } // PHP 8: "PHPUnit_TestCase()" is no longer a constructor
     function PHPUnit_TestCase($name = FALSE) {
         if ($name !== FALSE) {
             $this->setName($name);

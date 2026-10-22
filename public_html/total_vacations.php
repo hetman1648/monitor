@@ -18,12 +18,12 @@ $user_id = GetParam("user_id");
 $today = getdate();
 $today_year = $today["year"];
 $nowday = date('Y-m-d');
-$sql  = "SELECT CONCAT(first_name,'  ', last_name) AS user_name FROM users WHERE user_id = ".ToSQL($user_id, INTEGER);
+$sql  = "SELECT CONCAT(first_name,'  ', last_name) AS user_name FROM users WHERE user_id = ".ToSQL($user_id, "integer");
 $db->query($sql);
 $db->next_record();
 $T->set_var("user_name", $db->f("user_name"));
 
-$sql = "SELECT date_added, days_number FROM holidays WHERE user_id = ".ToSQL($user_id, INTEGER);
+$sql = "SELECT date_added, days_number FROM holidays WHERE user_id = ".ToSQL($user_id, "integer");
 $db->query($sql);
   if ($db->next_record())
   {

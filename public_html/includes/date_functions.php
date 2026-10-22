@@ -99,7 +99,7 @@
 		$hour = intval($date_array[HOUR]);
 		if($hour > 12)
 			$hour -= 12;
-		else if($hour == 0)
+		else if(ToNumber($hour) == 0)
 			$hour = 12;
 		if(strlen($hour) == 1) $hour = "0" . $hour;
 		return $hour;
@@ -303,7 +303,7 @@
 
 			if(checkdate($date_value[MONTH], $date_value[DAY], $date_value[YEAR])) {
 				$result = $date_value;
-			} else if ($date_value[MONTH] != 0 && $date_value[DAY] != 0 && $date_value[YEAR] != 0) {
+			} else if (ToNumber($date_value[MONTH]) != 0 && ToNumber($date_value[DAY]) != 0 && ToNumber($date_value[YEAR]) != 0) {
 				if (!strlen($control_name)) { $control_name = $date_string; }
 				$result = str_replace("{field_name}", $control_name, INCORRECT_DATE_MESSAGE);
 			}
@@ -331,7 +331,7 @@
 		$reg_exp = "";
 		for($i = 0; $i < sizeof($dates_array); $i++)
 		{
-			if($i != 0) $reg_exp .= "|";
+			if(ToNumber($i) != 0) $reg_exp .= "|";
 			$reg_exp .= $dates_array[$i][1];
 		}
 		$reg_exp = "(" . $reg_exp . ")";

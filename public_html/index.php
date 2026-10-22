@@ -2731,7 +2731,7 @@ while ($db->next_record()) {
                 <!-- Top Row: Quick Tasks/Actions + Team Blocks -->
                 <?php 
                 $ukraine_team = array_filter($team_members, function($m) { return $m['is_viart'] == 1; });
-                $uk_team = array_filter($team_members, function($m) { return $m['is_viart'] == 0; });
+                $uk_team = array_filter($team_members, function($m) { return ToNumber($m['is_viart']) == 0; });
                 ?>
                 <div class="top-row">
                     <!-- Left: Quick Tasks & Actions -->
@@ -2793,7 +2793,7 @@ while ($db->next_record()) {
                                 $total_m = round(($today_total_hours - $total_h) * 60);
                                 $total_display = '';
                                 if ($total_h > 0) $total_display .= $total_h . 'h';
-                                if ($total_m > 0 || $total_h == 0) $total_display .= ($total_h > 0 ? ' ' : '') . $total_m . 'm';
+                                if ($total_m > 0 || ToNumber($total_h) == 0) $total_display .= ($total_h > 0 ? ' ' : '') . $total_m . 'm';
                                 ?>
                                 <a href="<?php echo $time_log_url; ?>" style="font-size:0.78rem;color:#667eea;font-weight:700;text-decoration:none;" id="timeTotalDisplay" title="View details"><?php echo $total_display; ?></a>
                             </div>
@@ -2805,7 +2805,7 @@ while ($db->next_record()) {
                                     $m = round(($tl['hours'] - $h) * 60);
                                     $time_str = '';
                                     if ($h > 0) $time_str .= $h . 'h';
-                                    if ($m > 0 || $h == 0) $time_str .= ($h > 0 ? ' ' : '') . $m . 'm';
+                                    if ($m > 0 || ToNumber($h) == 0) $time_str .= ($h > 0 ? ' ' : '') . $m . 'm';
                                     $is_running = !empty($tl['is_running']);
                                 ?>
                                 <a href="<?php echo $time_log_url; ?>" class="team-row" style="justify-content:space-between;">

@@ -240,6 +240,7 @@ package if needed.
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Install(...$a); } // PHP 8: "PEAR_Command_Install()" is no longer a constructor
     function PEAR_Command_Install(&$ui, &$config)
     {
         parent::PEAR_Command_Common($ui, $config);
@@ -253,7 +254,7 @@ package if needed.
     {
         require_once 'PEAR/Downloader.php';
         if (empty($this->installer)) {
-            $this->installer = &new PEAR_Installer($this->ui);
+            $this->installer = new PEAR_Installer($this->ui);
         }
         if ($command == 'upgrade') {
             $options['upgrade'] = true;
@@ -261,7 +262,7 @@ package if needed.
         if ($command == 'upgrade-all') {
             include_once "PEAR/Remote.php";
             $options['upgrade'] = true;
-            $remote = &new PEAR_Remote($this->config);
+            $remote = new PEAR_Remote($this->config);
             $state = $this->config->get('preferred_state');
             if (empty($state) || $state == 'any') {
                 $latest = $remote->call("package.listLatestReleases");
@@ -289,7 +290,7 @@ package if needed.
                 $this->ui->outputData(array('data' => "Will upgrade $package"), $command);
             }
         }
-        $this->downloader = &new PEAR_Downloader($this->ui, $options, $this->config);
+        $this->downloader = new PEAR_Downloader($this->ui, $options, $this->config);
         $errors = array();
         $downloaded = array();
         $this->downloader->download($params);
@@ -332,7 +333,7 @@ package if needed.
     function doUninstall($command, $options, $params)
     {
         if (empty($this->installer)) {
-            $this->installer = &new PEAR_Installer($this->ui);
+            $this->installer = new PEAR_Installer($this->ui);
         }
         if (sizeof($params) < 1) {
             return $this->raiseError("Please supply the package(s) you want to uninstall");
@@ -380,7 +381,7 @@ package if needed.
     function doBundle($command, $options, $params)
     {
         if (empty($this->installer)) {
-            $this->installer = &new PEAR_Downloader($this->ui);
+            $this->installer = new PEAR_Downloader($this->ui);
         }
         $installer = &$this->installer;
         if (sizeof($params) < 1) {

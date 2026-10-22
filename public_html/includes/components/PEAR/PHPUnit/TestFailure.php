@@ -78,6 +78,7 @@ class PHPUnit_TestFailure {
      * @param  string
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PHPUnit_TestFailure(...$a); } // PHP 8: "PHPUnit_TestFailure()" is no longer a constructor
     function PHPUnit_TestFailure(&$failedTest, &$thrownException) {
         $this->_failedTest      = &$failedTest;
         $this->_thrownException = &$thrownException;

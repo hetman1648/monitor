@@ -138,6 +138,7 @@ class Mail_RFC822 {
      *
      * @return object Mail_RFC822 A new Mail_RFC822 object.
      */
+    function __construct() { $a = func_get_args(); self::Mail_RFC822(...$a); } // PHP 8: "Mail_RFC822()" is no longer a constructor
     function Mail_RFC822($address = null, $default_domain = null, $nest_groups = null, $validate = null, $limit = null)
     {
         if (isset($address))        $this->address        = $address;

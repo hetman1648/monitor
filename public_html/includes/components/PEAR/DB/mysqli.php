@@ -221,6 +221,7 @@ class DB_mysqli extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_mysqli(...$a); } // PHP 8: "DB_mysqli()" is no longer a constructor
     function DB_mysqli()
     {
         $this->DB_common();

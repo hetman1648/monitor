@@ -84,6 +84,7 @@ class PHPUnit_TestDecorator {
      * @param  object
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PHPUnit_TestDecorator(...$a); } // PHP 8: "PHPUnit_TestDecorator()" is no longer a constructor
     function PHPUnit_TestDecorator(&$test) {
         if (is_object($test) &&
             (is_a($test, 'PHPUnit_TestCase') ||

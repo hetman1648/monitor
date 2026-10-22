@@ -205,7 +205,7 @@ function get_deadline_status($planed_date) {
             'text' => $days . ' day' . ($days != 1 ? 's' : '') . ' overdue',
             'icon' => '🚨'
         );
-    } elseif ($diff_days == 0) {
+    } elseif (ToNumber($diff_days) == 0) {
         return array('class' => 'deadline-today', 'text' => 'Due today', 'icon' => '⚠️');
     } elseif ($diff_days <= 3) {
         return array(

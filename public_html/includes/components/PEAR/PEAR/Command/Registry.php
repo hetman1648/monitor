@@ -70,6 +70,7 @@ installed package.'
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Registry(...$a); } // PHP 8: "PEAR_Command_Registry()" is no longer a constructor
     function PEAR_Command_Registry(&$ui, &$config)
     {
         parent::PEAR_Command_Common($ui, $config);
@@ -108,7 +109,7 @@ installed package.'
         } else {
             if (file_exists($params[0]) && !is_dir($params[0])) {
                 include_once "PEAR/Common.php";
-                $obj = &new PEAR_Common;
+                $obj = new PEAR_Common;
                 $info = $obj->infoFromAny($params[0]);
                 $headings = array('Package File', 'Install Path');
                 $installed = false;
@@ -181,7 +182,7 @@ installed package.'
     function doShellTest($command, $options, $params)
     {
         $this->pushErrorHandling(PEAR_ERROR_RETURN);
-        $reg = &new PEAR_Registry($this->config->get('php_dir'));
+        $reg = new PEAR_Registry($this->config->get('php_dir'));
         // "pear shell-test Foo"
         if (sizeof($params) == 1) {
             if (!$reg->packageExists($params[0])) {
@@ -217,10 +218,10 @@ installed package.'
                                      "the package you want information");
         }
         if (@is_file($params[0])) {
-            $obj  = &new PEAR_Common();
+            $obj  = new PEAR_Common();
             $info = $obj->infoFromAny($params[0]);
         } else {
-            $reg = &new PEAR_Registry($this->config->get('php_dir'));
+            $reg = new PEAR_Registry($this->config->get('php_dir'));
             $info = $reg->packageInfo($params[0]);
         }
         if (PEAR::isError($info)) {

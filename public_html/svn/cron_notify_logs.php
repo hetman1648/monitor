@@ -70,8 +70,8 @@ exit;
         	</tr>
         	<?php while ($db->next_record()) { ?>
         	<tr>
-        		<td><? echo $users[$db->f("user_id")]; ?></td>
-        		<td><? echo $db->f("date_added"); ?></td>
+        		<td><?php  echo $users[$db->f("user_id")]; ?></td>
+        		<td><?php  echo $db->f("date_added"); ?></td>
         	</tr>
         	<?php $c++; } ?>
         </table>

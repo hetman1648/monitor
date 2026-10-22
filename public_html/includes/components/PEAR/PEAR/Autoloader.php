@@ -134,11 +134,11 @@ class PEAR_Autoloader extends PEAR
             $include_file = preg_replace('/[^a-z0-9]/i', '_', $classname);
             include_once $include_file;
         }
-        $obj =& new $classname;
+        $obj = new $classname;
         $methods = get_class_methods($classname);
         foreach ($methods as $method) {
             // don't import priviate methods and constructors
-            if ($method{0} != '_' && $method != $classname) {
+            if ($method[0] != '_' && $method != $classname) {
                 $this->_method_map[$method] = $obj;
             }
         }

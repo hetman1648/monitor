@@ -46,7 +46,7 @@
 	
 	$T = new iTemplate("./templates", array("page" => "lunches_statistics.html"));
 
-	if ($subsidy == 0) $subsidy=2000;
+	if (ToNumber($subsidy) == 0) $subsidy=2000;
 	$T->set_var("headcolspan", $daycount+3);
 	$T->set_var("subsidy", $subsidy);
 	
@@ -77,7 +77,7 @@
 	}
 	$T->set_var("ttl",sprintf("%4.2f",$ttl));
 	
-	if ($ttl!=0)
+	if (ToNumber($ttl)!=0)
 	$discount_per = $subsidy/$ttl;
 	//echo $discount_per;
 	$T->set_var("discount", number_format($discount_per*100, 0, ".", ","));

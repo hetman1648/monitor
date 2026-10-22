@@ -12,8 +12,8 @@
 
     if ($task_id && $hours) {    	$time	= preg_replace("/[\.,:-]{1}/",".",$hours);
     	$hours	= number_format($time, 2, ".", "");
-    	$hours	= floor($hours)+(($hours - floor($hours))*100)/60;
-    	$hours	= number_format($hours, 2, ".", "");
+    	$hours	= floor(ToNumber($hours))+((ToNumber($hours) - floor(ToNumber($hours)))*100)/60;
+    	$hours	= number_format(ToNumber($hours), 2, ".", "");
     	$user_id = GetSessionParam("UserID");
     	$days_month = array_fill(1, date("t", mktime(0, 0, 0, $mon, 1, $year)),0);
     	$sql = "SELECT	holiday_date
@@ -44,9 +44,9 @@
 	    		$time_report = "10.25.34";
 	    		break;	    	}
 		}
-    	list($report_hours, $report_minuts, $report_seconds) = split("[.]",$time_report);
+    	list($report_hours, $report_minuts, $report_seconds) = explode(".",$time_report);
     	$time_report_start	= mktime($report_hours, $report_minuts, $report_seconds+rand(5,60), $mon, $day, $year);
-    	$time_report_stop	= $time_report_start + (int)($hours*3600);
+    	$time_report_stop	= $time_report_start + (int)(ToNumber($hours)*3600);
     	//ToSQL(date("Y-m-d H:i:s",$time_report_start),"date").",
     	//ToSQL(date("Y-m-d H:i:s",$time_report_stop),"date").",
     	$sql = "INSERT INTO time_report

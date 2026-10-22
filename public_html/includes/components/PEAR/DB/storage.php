@@ -94,6 +94,7 @@ class DB_storage extends PEAR
      * a reference to this object
      *
      */
+    function __construct() { $a = func_get_args(); self::DB_storage(...$a); } // PHP 8: "DB_storage()" is no longer a constructor
     function DB_storage($table, $keycolumn, &$dbh, $validator = null)
     {
         $this->PEAR('DB_Error');
@@ -293,7 +294,7 @@ class DB_storage extends PEAR
     function &create($table, &$data)
     {
         $classname = strtolower(get_class($this));
-        $obj =& new $classname($table);
+        $obj = new $classname($table);
         foreach ($data as $name => $value) {
             $obj->_properties[$name] = true;
             $obj->$name = &$value;

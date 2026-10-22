@@ -1,4 +1,5 @@
 <?php
+require_once(dirname(__FILE__) . "/../../ereg_compat.php"); // PHP 7+: ereg/split polyfill for this vendored copy
 
 /*
 $Id: nusoap.php,v 1.1 2007-11-08 08:46:43 vic Exp $
@@ -52,6 +53,7 @@ require_once('class.soap_server.php');*/
 
 // class variable emulation
 // cf. http://www.webkreator.com/php/techniques/php-static-class-variables.html
+$GLOBALS['_transient']['static']['nusoap_base'] = new stdClass(); // PHP 8 no longer creates it on assignment
 $GLOBALS['_transient']['static']['nusoap_base']->globalDebugLevel = 9;
 
 /**
@@ -202,6 +204,7 @@ class nusoap_base {
 	*
 	* @access	public
 	*/
+	function __construct() { $a = func_get_args(); self::nusoap_base(...$a); } // PHP 8: "nusoap_base()" is no longer a constructor
 	function nusoap_base() {
 		$this->debugLevel = $GLOBALS['_transient']['static']['nusoap_base']->globalDebugLevel;
 	}
@@ -947,6 +950,7 @@ class soap_fault extends nusoap_base {
     * @param string $faultstring human readable error message
     * @param mixed $faultdetail detail, typically a string or array of string
 	*/
+	function __construct() { $a = func_get_args(); self::soap_fault(...$a); } // PHP 8: "soap_fault()" is no longer a constructor
 	function soap_fault($faultcode,$faultactor='',$faultstring='',$faultdetail=''){
 		parent::nusoap_base();
 		$this->faultcode = $faultcode;
@@ -1038,6 +1042,7 @@ class XMLSchema extends nusoap_base  {
 	* @param	string $namespaces namespaces defined in enclosing XML
 	* @access   public
 	*/
+	function __construct() { $a = func_get_args(); self::XMLSchema(...$a); } // PHP 8: "XMLSchema()" is no longer a constructor
 	function XMLSchema($schema='',$xml='',$namespaces=array()){
 		parent::nusoap_base();
 		$this->debug('xmlschema class instantiated, inside constructor');
@@ -1957,6 +1962,7 @@ class soapval extends nusoap_base {
 	* @param	mixed $attributes associative array of attributes to add to element serialization
 	* @access   public
 	*/
+  	function __construct() { $a = func_get_args(); self::soapval(...$a); } // PHP 8: "soapval()" is no longer a constructor
   	function soapval($name='soapval',$type=false,$value=-1,$element_ns=false,$type_ns=false,$attributes=false) {
 		parent::nusoap_base();
 		$this->name = $name;
@@ -2038,6 +2044,7 @@ class soap_transport_http extends nusoap_base {
 	/**
 	* constructor
 	*/
+	function __construct() { $a = func_get_args(); self::soap_transport_http(...$a); } // PHP 8: "soap_transport_http()" is no longer a constructor
 	function soap_transport_http($url){
 		parent::nusoap_base();
 		$this->setURL($url);
@@ -3192,6 +3199,7 @@ class soap_server extends nusoap_base {
     * @param mixed $wsdl file path or URL (string), or wsdl instance (object)
 	* @access   public
 	*/
+	function __construct() { $a = func_get_args(); self::soap_server(...$a); } // PHP 8: "soap_server()" is no longer a constructor
 	function soap_server($wsdl=false){
 		parent::nusoap_base();
 		// turn on debugging?
@@ -4120,6 +4128,7 @@ class wsdl extends nusoap_base {
 	 * @param integer $response_timeout set the response timeout
      * @access public 
      */
+    function __construct() { $a = func_get_args(); self::wsdl(...$a); } // PHP 8: "wsdl()" is no longer a constructor
     function wsdl($wsdl = '',$proxyhost=false,$proxyport=false,$proxyusername=false,$proxypassword=false,$timeout=0,$response_timeout=30){
 		parent::nusoap_base();
         $this->wsdl = $wsdl;
@@ -5841,6 +5850,7 @@ class soap_parser extends nusoap_base {
 	* @param    string $decode_utf8 whether to decode UTF-8 to ISO-8859-1
 	* @access   public
 	*/
+	function __construct() { $a = func_get_args(); self::soap_parser(...$a); } // PHP 8: "soap_parser()" is no longer a constructor
 	function soap_parser($xml,$encoding='UTF-8',$method='',$decode_utf8=true){
 		parent::nusoap_base();
 		$this->xml = $xml;
@@ -6493,7 +6503,7 @@ class soap_client extends nusoap_base  {
 				
 				// instantiate wsdl object and parse wsdl file
 				$this->debug('instantiating wsdl class with doc: '.$endpoint);
-				$this->wsdl =& new wsdl($this->wsdlFile,$this->proxyhost,$this->proxyport,$this->proxyusername,$this->proxypassword,$this->timeout,$this->response_timeout);
+				$this->wsdl = new wsdl($this->wsdlFile,$this->proxyhost,$this->proxyport,$this->proxyusername,$this->proxypassword,$this->timeout,$this->response_timeout);
 			}
 			$this->appendDebug($this->wsdl->getDebug());
 			$this->wsdl->clearDebug();

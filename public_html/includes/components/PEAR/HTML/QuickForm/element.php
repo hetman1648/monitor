@@ -80,6 +80,7 @@ class HTML_QuickForm_element extends HTML_Common
      * @access    public
      * @return    void
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_element(...$a); } // PHP 8: "HTML_QuickForm_element()" is no longer a constructor
     function HTML_QuickForm_element($elementName=null, $elementLabel=null, $attributes=null)
     {
         HTML_Common::HTML_Common($attributes);

@@ -165,6 +165,7 @@ class soap_server extends nusoap_base {
     * @param mixed $wsdl file path or URL (string), or wsdl instance (object)
 	* @access   public
 	*/
+	function __construct() { $a = func_get_args(); self::soap_server(...$a); } // PHP 8: "soap_server()" is no longer a constructor
 	function soap_server($wsdl=false){
 		parent::nusoap_base();
 		// turn on debugging?

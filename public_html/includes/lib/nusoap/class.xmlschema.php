@@ -53,6 +53,7 @@ class XMLSchema extends nusoap_base  {
 	* @param	string $namespaces namespaces defined in enclosing XML
 	* @access   public
 	*/
+	function __construct() { $a = func_get_args(); self::XMLSchema(...$a); } // PHP 8: "XMLSchema()" is no longer a constructor
 	function XMLSchema($schema='',$xml='',$namespaces=array()){
 		parent::nusoap_base();
 		$this->debug('xmlschema class instantiated, inside constructor');

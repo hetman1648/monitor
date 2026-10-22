@@ -103,7 +103,7 @@ if (isset($_POST["action"]) && $_POST["action"] == "Add") {
   $sql = "SELECT MAX(holiday_id) AS max_holiday_id FROM ".$holidays_table;
   $db->query($sql);
   $db->next_record();
-  $hol_id = $db->Record["max_holiday_id"] + 1;
+  $hol_id = ToNumber($db->Record["max_holiday_id"]) + 1;
   $hol_t = $_POST["holiday_title"];
   $hol_d = $_POST["holiday_date"];
   $sql = "INSERT INTO ".$holidays_table." (holiday_id, holiday_title, holiday_date) VALUES ('$hol_id','$hol_t','$hol_d')";

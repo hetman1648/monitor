@@ -43,7 +43,7 @@ class iTemplate
   var $default_file="";
 
   //-- constructor
-  function iTemplate($root,$files=array(),$unknowns = "remove")
+  function __construct($root,$files=array(),$unknowns = "remove")
   {
     $this->set_root($root);
     $this->set_file($files);
@@ -60,7 +60,7 @@ class iTemplate
       //-- entering the content of all {ITEMPLATE=file_name} tags
       preg_match_all("/\{ITEMPLATE=.*\}/U",$this->blocks[$file_var],$tmp_ar);
       reset($tmp_ar[0]);
-      while (list($key,$val)=each($tmp_ar[0]))
+      foreach ($tmp_ar[0] as $key => $val)
       {
         //echo $val."<hr>";
         $sub_template = preg_split("/=|\}/",$val);
@@ -91,7 +91,7 @@ class iTemplate
     if(is_array($files))
     {
       reset($files);
-      while (list($file_var,$file_name)=each($files))
+      foreach ($files as $file_var => $file_name)
       {
         $this->load_file($file_name,$file_var);
         $this->default_file=$file_var;
@@ -153,7 +153,7 @@ class iTemplate
       preg_match_all("/<!--\s*BEGIN\s*(\w+)\s*-->/U",$this->blocks[$file_var],$tmp_ar);
 
       reset($tmp_ar[0]);
-      while (list($key,$val)=each($tmp_ar[0]))
+      foreach ($tmp_ar[0] as $key => $val)
       {
 //        echo htmlspecialchars($val);
         //-- looking for the name of the block
@@ -162,7 +162,7 @@ class iTemplate
 
         //-- extracting body of the block
         preg_match_all("/$val.*<!--\s*END\s*$block_name\s*-->/sU",$this->blocks[$file_var],$block_body);
-        if (list($t1,$t2)=each($block_body[0]))
+        if (isset($block_body[0][0]) && ($t2 = $block_body[0][0]) !== null)
         {
           //-- found body block
           $t3=preg_replace("/$val|(<!--\s*END\s*$block_name\s*-->)/sU","",$t2);
@@ -204,7 +204,7 @@ class iTemplate
     if (is_array($new_vars))
     {
       reset($new_vars);
-      while(list($key, $value) = each($new_vars))
+      foreach ($new_vars as $key => $value)
       {
         $this->vars[$key] =$value;
       }
@@ -225,7 +225,7 @@ class iTemplate
     echo "<table cellpadding=0 border=1 bordercolor=#D0D0D0 cellspacing=0 bgcolor=white>";
     echo "<tr bgcolor=navy><td colspan=2 align=center><font color=white size=3 face=Arial><b>List of Blocks:</b></font></td></tr>";
     echo "<tr bgcolor=navy><td><font color=white size=2 face=Arial>Block name</font></td><td><font color=white size=2 face=Arial>Value</font></td></tr>";
-    while (list($key,$value)=each($this->blocks))
+    foreach ($this->blocks as $key => $value)
     {
       echo "<tr>";
       echo "<td><font size=2 face=Arial><b>$key</b></font></td>";
@@ -250,7 +250,7 @@ class iTemplate
     echo "<table cellpadding=0 border=1 bordercolor=#D0D0D0 cellspacing=0 bgcolor=white>";
     echo "<tr bgcolor=navy><td colspan=2 align=center><font color=white size=3 face=Arial><b>List of Variables:</b></font></td></tr>";
     echo "<tr bgcolor=navy><td><font color=white size=2 face=Arial>Variable name</font></td><td><font color=white size=2 face=Arial>Value</font></td></tr>";
-    while (list($key,$value)=each($this->vars))
+    foreach ($this->vars as $key => $value)
     {
       echo "<tr>";
       echo "<td><font size=2 face=Arial><b>$key</b></font></td>";
@@ -314,7 +314,7 @@ class iTemplate
   {
     if(is_array($block_names))
     {
-      while(list($key,$val)=each($block_names))
+      foreach ($block_names as $key => $val)
       {
         $this->parse($val,$accumulate,$reverse);
       }
@@ -335,7 +335,7 @@ class iTemplate
     if (strlen($block_name)==0) $block_name=$this->default_file;
     $tmp_result=$this->blocks[$block_name];
     reset($this->vars);
-    while(list($key,$value)=each($this->vars))
+    foreach ($this->vars as $key => $value)
     {
       if ($key!=$block_name)
       {
@@ -388,8 +388,8 @@ class iTemplate
     if (!is_array($m))
       return false;
 
-    reset($m);
-    while(list($k, $v) = each($m))
+    $result = array();
+    foreach ($m as $k => $v)
     {
       if (!isset($this->vars[$v]))
         $result[$v] = "";
@@ -407,7 +407,7 @@ class iTemplate
     if(file_exists($file_name))
     {
       $iniFile = file($file_name);
-      while ( list( $line_num, $line ) = each($iniFile  ) )
+      foreach ($iniFile as $line_num => $line)
       {
         $firstCh=substr($line,0,1);
         if ($firstCh!="#" && $firstCh!="/" && $firstCh!=";")
@@ -433,7 +433,7 @@ class iTemplate
       echo "<table cellpadding=0 border=1 bordercolor=#D0D0D0 cellspacing=0 bgcolor=white>";
       echo "<tr bgcolor=navy><td colspan=2 align=center><font color=white size=3 face=Arial><b>List of controls:</b></font></td></tr>";
       echo "<tr bgcolor=navy><td><font color=white size=2 face=Arial>Control name</font></td><td><font color=white size=2 face=Arial>Control value</font></td></tr>";
-      while (list($key,$value)=each($this->controls))
+      foreach ($this->controls as $key => $value)
       {
         echo "<tr>";
         echo "<td><font size=2 face=Arial><b>$value</b></font></td>";

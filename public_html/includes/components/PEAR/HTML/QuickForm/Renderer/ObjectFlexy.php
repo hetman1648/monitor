@@ -89,6 +89,7 @@ class HTML_QuickForm_Renderer_ObjectFlexy extends HTML_QuickForm_Renderer_Object
      * @param $flexy object   HTML_Template_Flexy instance
      * @public
      */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_Renderer_ObjectFlexy(...$a); } // PHP 8: "HTML_QuickForm_Renderer_ObjectFlexy()" is no longer a constructor
     function HTML_QuickForm_Renderer_ObjectFlexy(&$flexy)
     {
         $this->HTML_QuickForm_Renderer_Object(true);

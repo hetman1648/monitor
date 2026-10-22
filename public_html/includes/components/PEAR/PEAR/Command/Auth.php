@@ -66,6 +66,7 @@ password from your user configuration.',
      *
      * @access public
      */
+    function __construct() { $a = func_get_args(); self::PEAR_Command_Auth(...$a); } // PHP 8: "PEAR_Command_Auth()" is no longer a constructor
     function PEAR_Command_Auth(&$ui, &$config)
     {
         parent::PEAR_Command_Common($ui, $config);

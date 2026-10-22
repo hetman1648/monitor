@@ -502,7 +502,7 @@ function va_mail($mail_to, $mail_subject, $mail_body, $mail_headers = "", $mail_
 		} else {
 			$mail_body .= "Content-Type: text/plain;" . $eol;
 		}
-		$mail_body .= "\tcharset=\"" . CHARSET . "\"". $eol;
+		$mail_body .= "\tcharset=\"" . (defined("CHARSET") ? CHARSET : "CHARSET") . "\"". $eol;
 		$mail_body .= "Content-Transfer-Encoding: 7bit" . $eol;
 		$mail_body .= $eol;
 		$mail_body .= $original_body;
@@ -560,7 +560,7 @@ function va_timestamp($date_array = "")
 {
 	global $va_time_shift;
 	if (is_array($date_array)) {
-		$timestamp = mktime ($date_array[HOUR], $date_array[MINUTE], $date_array[SECOND], $date_array[MONTH], $date_array[DAY], $date_array[YEAR]);
+		$timestamp = mktime ($date_array["HOUR"], $date_array["MINUTE"], $date_array["SECOND"], $date_array["MONTH"], $date_array["DAY"], $date_array["YEAR"]);
 	}	else {
 		$time_shift = (isset($va_time_shift)) ? $va_time_shift : 0;
 		$timestamp = time() + $time_shift;

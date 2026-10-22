@@ -70,7 +70,7 @@
 							svn_login   =".ToSQL($svn_login,"string").",
 							svn_password=".ToSQL($svn_password,"string").",
 							svn_subdomain=".ToSQL($svn_subdomain,"string").",							
-							web_clients_resource=".ToSQL(web_clients_resource,"integer").",
+							web_clients_resource=".ToSQL($web_clients_resource,"integer").",
 							birth_date	=".ToSQL($birth_date,"date").",
 							start_date	=".(ToSQL($start_date,"date")=="0000-00-00"?"'".date("Y-m-d")."'":ToSQL($start_date,"date")).",
 							address		=".ToSQL($address,"string").",

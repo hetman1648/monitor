@@ -175,16 +175,16 @@ if ($submit) {
         $date = $db->f("date");
         $rdate = $db->f("rdate");
         $uk_shift = (!$db->f("is_viart")) * 2 * 60 * 60;
-        $start_time = date("H:i", $db->f("start_time_u") - $uk_shift);
+        $start_time = date("H:i", ToNumber($db->f("start_time_u")) - $uk_shift);
         if ($date == $rdate) {
-            $end_time_str = date("H:i", $db->f("end_time_u") - $uk_shift);
+            $end_time_str = date("H:i", ToNumber($db->f("end_time_u")) - $uk_shift);
         } else {
-            $end_time_str = date("d M Y H:i", $db->f("end_time_u") - $uk_shift);
+            $end_time_str = date("d M Y H:i", ToNumber($db->f("end_time_u")) - $uk_shift);
         }
         if (!$date && $rdate) $date = $rdate;
 
-        $start_u_local = $db->f("start_time_u") - $uk_shift;
-        $end_u_local   = $db->f("end_time_u")   - $uk_shift;
+        $start_u_local = ToNumber($db->f("start_time_u")) - $uk_shift;
+        $end_u_local   = ToNumber($db->f("end_time_u"))   - $uk_shift;
         $records[] = array(
             'report_id' => $db->f("report_id"),
             'date' => $date,

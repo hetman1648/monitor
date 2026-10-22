@@ -66,13 +66,13 @@ if ($task_id && is_numeric($task_id)) {
 		//unlink task if dependent_task is not provided
 		if (!strlen($dependent_task)) {
 			$sql = "SELECT dependent_id FROM tasks ";
-			$sql.= " WHERE task_id=".number_format($task_id,0,"","");
+			$sql.= " WHERE task_id=".number_format(ToNumber($task_id),0,"","");
 			$db->query($sql);
 			if ($db->next_record()) {
 				$old_dependent_id = $db->f("dependent_id");
 
 				$sql = "UPDATE tasks SET dependent_id=0 ";
-				$sql.= " WHERE task_id=".number_format($task_id,0,"","");
+				$sql.= " WHERE task_id=".number_format(ToNumber($task_id),0,"","");
 				$db->query($sql);
 				if ($old_dependent_id) echo "Task '$task_title' is UNLINKED";
 			} else echo "ERROR: task $task_title is not found "; 
@@ -91,7 +91,7 @@ if ($task_id && is_numeric($task_id)) {
 			$dependent_id = $matches[2][0];
 		}
 		if ($dependent_id) {
-			$sql = "SELECT task_id FROM tasks WHERE task_id=". number_format($dependent_id,0,"","");
+			$sql = "SELECT task_id FROM tasks WHERE task_id=". number_format(ToNumber($dependent_id),0,"","");
 			$db->query($sql);
 			$depenent_found  = $db->next_record();
 		}
@@ -99,7 +99,7 @@ if ($task_id && is_numeric($task_id)) {
 		//2. if not found and the whole value is numeric then it could be 
 		// either # or Task ID
 		if (!$depenent_found && is_numeric($dependent_task)) {
-			$sql = "SELECT task_id FROM tasks WHERE task_id=". number_format($dependent_id,0,"", "");
+			$sql = "SELECT task_id FROM tasks WHERE task_id=". number_format(ToNumber($dependent_id),0,"", "");
 			$db->query($sql);
 			if ($db->next_record()) {
 				$depenent_found = true;
@@ -118,8 +118,8 @@ if ($task_id && is_numeric($task_id)) {
 		}
 		if ($depenent_found && $dependent_id) {
 			if ($dependent_id != $task_id) {
-				$sql = "UPDATE tasks SET dependent_id=".number_format($dependent_id,0,"","");
-				$sql.= " WHERE task_id=".number_format($task_id,0,"","");
+				$sql = "UPDATE tasks SET dependent_id=".number_format(ToNumber($dependent_id),0,"","");
+				$sql.= " WHERE task_id=".number_format(ToNumber($task_id),0,"","");
 				$db->query($sql);
 				echo "Task '$task_title' is linked with '$dependent_task'";
 			} else echo "Error: can't link task to itself";

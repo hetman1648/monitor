@@ -16,7 +16,7 @@ class VA_Template
 
 	var $show_tags      = false;
 
-	function VA_Template($templates_path)
+	function __construct($templates_path)
 	{
 		$this->templates_path = $templates_path;
 		$this->delimiter      = chr(27);   
@@ -224,7 +224,7 @@ class VA_Template
 	{
 		reset($this->blocks[$block_name]);
 		echo "<table border=\"1\">";
-		while (list($key, $value) = each($this->blocks[$block_name])) {
+		foreach ($this->blocks[$block_name] as $key => $value) {
 			if ($key != 0) {
 				echo "<tr><th valign=top>$value</th><td>" . nl2br(htmlspecialchars($this->globals[$value])) . "</td></tr>";
 			} else {

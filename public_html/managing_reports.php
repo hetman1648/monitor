@@ -222,9 +222,9 @@
 				$user_report[$index]["report_manager_name"] = "<i>no manager</i>";
 				$user_report[$index]["report_manager_id"]	= 0;
 			}
-			$user_report[$index]["report_morning"] += $db->Record["morning_notes"];
-			$user_report[$index]["report_evening"] += $db->Record["evening_notes"];
-			$user_report[$index]["report_points"] += $db->Record["points"];		}
+			$user_report[$index]["report_morning"] += ToNumber($db->Record["morning_notes"]);
+			$user_report[$index]["report_evening"] += ToNumber($db->Record["evening_notes"]);
+			$user_report[$index]["report_points"] += ToNumber($db->Record["points"]);		}
 		//echo PrintArray($user_report)."<br>";
 		for ($i=0; $i<sizeof($user_report); $i++) {			if ($manager_id == $user_report[$i]["report_manager_id"]) {
 				$user_report[$i]["report_add_new"] = "<a href='managing_reports_edit.php?report_id=-1&user_name=".$user_report[$i]["report_user_id"]."'>Add</a>";
@@ -371,7 +371,7 @@ function getPageLinks($page_col, $page_num, $query)
 	}
 	if ($page_num <= 8)
 	{
-		for ($i = 1; $i <= max($page_num + 2, 5); $i++) $html_result .= ' '.getPageLink($i, $query);
+		for ($i = 1; $i <= max(ToNumber($page_num) + 2, 5); $i++) $html_result .= ' '.getPageLink($i, $query);
 		$html_result .= ' ... ';
 		for ($i = $page_col - 4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
 	}
@@ -379,7 +379,7 @@ function getPageLinks($page_col, $page_num, $query)
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i, $query);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_num+2; $i++) $html_result .= ' '.getPageLink($i, $query);
+		for ($i = ToNumber($page_num) - 2; $i <= ToNumber($page_num)+2; $i++) $html_result .= ' '.getPageLink($i, $query);
 		$html_result .= ' ... ';
 		for ($i = $page_col-4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
 	}
@@ -387,7 +387,7 @@ function getPageLinks($page_col, $page_num, $query)
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
+		for ($i = ToNumber($page_num) - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
 	}
     if (strlen($html_result)) { $html_result = "Page ".$html_result;}
 	return $html_result;

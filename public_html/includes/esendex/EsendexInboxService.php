@@ -29,6 +29,7 @@ class EsendexInboxService
 	var $password;
 	var $account;
 
+	function __construct() { $a = func_get_args(); self::EsendexInboxService(...$a); } // PHP 8: "EsendexInboxService()" is no longer a constructor
 	function EsendexInboxService($username, $password, $account, $secure = false)
 	{
 		$this->username = $username;

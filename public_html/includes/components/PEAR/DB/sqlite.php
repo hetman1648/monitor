@@ -156,6 +156,7 @@ class DB_sqlite extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_sqlite(...$a); } // PHP 8: "DB_sqlite()" is no longer a constructor
     function DB_sqlite()
     {
         $this->DB_common();

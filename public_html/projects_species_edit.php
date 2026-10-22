@@ -8,7 +8,7 @@
 
 	$type_id = (int)GetParam("species_id");
 	
-	if ($type_id == 0) {
+	if (ToNumber($type_id) == 0) {
 		header("location:projects_species.php");
 		exit;
 	}

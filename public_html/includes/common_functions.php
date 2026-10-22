@@ -92,7 +92,8 @@ if (!function_exists('ensure_utf8')) {
 				}
 
 				$subject = "New project -{PROJECT_TITLE}- was created";
-				list($partner_id, $from) = each ($people[PRIV_PARTNER]);
+				$partners = isset($people[PRIV_PARTNER]) ? $people[PRIV_PARTNER] : array();
+				$partner_id = key($partners); $from = current($partners);
 
 				break;
 
@@ -108,7 +109,8 @@ if (!function_exists('ensure_utf8')) {
 				$message_file = "task_created";
 
 				$subject = "{project_title}: '{task_title}' Monitor Task Updated for {responsible_user_name}";
-				list($partner_id, $from) = each ($people[PRIV_PARTNER]);
+				$partners = isset($people[PRIV_PARTNER]) ? $people[PRIV_PARTNER] : array();
+				$partner_id = key($partners); $from = current($partners);
 
 				break;
 
@@ -333,6 +335,18 @@ if (!function_exists('ensure_utf8')) {
 		// return htmlspecialchars($strValue);
 	}
 
+	// Arithmetic operand from a DB field / request param: "" (SQL NULL via $db->f(), a missing param)
+	// or another non-numeric string counted as 0 on PHP 5 but is a TypeError on PHP 8.
+	function ToNumber($value)
+	{
+		if (is_int($value) || is_float($value)) return $value;
+		if (is_numeric($value)) return $value + 0;
+		if (is_null($value) || is_bool($value)) return (int) $value;
+		if (!is_string($value)) return $value;
+		$number = (float) $value; // leading number ("12abc" -> 12), else 0
+		return ($number == (int) $number) ? (int) $number : $number;
+	}
+
 	function ToURL($strValue)
 	{
 		return urlencode($strValue);
@@ -440,7 +454,7 @@ if (!function_exists('ensure_utf8')) {
 			if (is_array($value)) {
 				$value = date("Y-m-d", mktime(0, 0, 0, $value["MONTH"], $value["DAY"], $value["YEAR"]));
 			} else {
-				if (ereg("([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})", $value, $t)){
+				if (preg_match("~([0-9]{4})(-|\\|\/){1}([0-9]{1,2})(-|\\|\/){1}([0-9]{1,2})~", $value, $t)){
 					if (checkdate($t[3],$t[5],$t[1])) { 
 						$value = date("Y-m-d", mktime(0, 0, 0, $t[3], $t[5], $t[1]));
 					} else { 
@@ -455,13 +469,8 @@ if (!function_exists('ensure_utf8')) {
 			$value = addslashes($value);
 			$value = "'" . $value . "'";
 		}*/ else {
-			if(get_magic_quotes_gpc() == 0) {
-				$value = str_replace("'", "''", $value);
-				$value = str_replace("\\", "\\\\", $value);
-			} else {
-				$value = str_replace("\\'", "''", $value);
-				$value = str_replace("\\\"", "\"", $value);
-			}
+			$value = str_replace("'", "''", $value);
+			$value = str_replace("\\", "\\\\", $value);
 			if ($is_delimiters)
 				$value = "'" . $value . "'";
 		}
@@ -886,7 +895,7 @@ function update_priorities($task_id)
 			$task = explode(";",$task_string);			
 			if (isset($task[1]) && isset($task[2])) {
 				$priority_task_id = intval($task[1]);
-				if ($priority_task_id==0) {
+				if (ToNumber($priority_task_id)==0) {
 					$priority_task_id = $task_id;
 				}
 				$priority_id = intval($task[2]);
@@ -1111,7 +1120,7 @@ function process_message($message, $message_id, $identity_type)
 			$message = str_replace("[".$mes_file."]","<a href='$cur_file'>[$mes_file]</a>",$message);
 		}
 	}
-	$msg_strings = split("\r\n",$message);
+	$msg_strings = explode("\r\n",$message);
 	$message     = "";
 	$last_level = 0;
 

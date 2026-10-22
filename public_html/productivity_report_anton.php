@@ -86,7 +86,7 @@
 		
 		$db->query($sql);
 		if ($db->next_record()) {
-			$users[$user_id]["custom_work"] = round($db->f(0));
+			$users[$user_id]["custom_work"] = round(ToNumber($db->f(0)));
 		} else {
 			$users[$user_id]["custom_work"] = 0;
 		}
@@ -102,7 +102,7 @@
 		$sql.= " AND DATE_FORMAT(tr.report_date, '%Y')='$year_selected' AND DATE_FORMAT(tr.report_date, '%m')='$month_selected' ";
 		$db->query($sql);
 		if ($db->next_record()) {
-			$users[$user_id]["viart"] = round($db->f(0) * $k_viart_hours);
+			$users[$user_id]["viart"] = round(ToNumber($db->f(0)) * $k_viart_hours);
 		} else {
 			$users[$user_id]["viart"] = 0;
 		}
@@ -117,7 +117,7 @@
 		$sql.= " AND DATE_FORMAT(tr.report_date, '%Y')='$year_selected' AND DATE_FORMAT(tr.report_date, '%m')='$month_selected' ";
 		$db->query($sql);
 		if ($db->next_record()) {
-			$users[$user_id]["sayu"] = round($db->f(0) * $k_sayu_hours);
+			$users[$user_id]["sayu"] = round(ToNumber($db->f(0)) * $k_sayu_hours);
 		} else {
 			$users[$user_id]["sayu"] = 0;
 		}
@@ -129,7 +129,7 @@
 		$sql.= " AND DATE_FORMAT(date_issued, '%Y')='$year_selected' AND DATE_FORMAT(date_issued, '%m')='$month_selected' ";
 		$db->query($sql);
 		if ($db->next_record()) {
-			$users[$user_id]["bugs"] = - round ( $db->f(0) * $k_bug_importance );
+			$users[$user_id]["bugs"] = - round ( ToNumber($db->f(0)) * $k_bug_importance );
 		} else {
 			$users[$user_id]["bugs"] = 0;
 		}		
@@ -158,14 +158,14 @@
 		$sql.= " LEFT JOIN national_holidays nh ON (nh.holiday_date>=dof.start_date AND nh.holiday_date<=dof.end_date AND DATE_FORMAT(nh.holiday_date, '%m')=".ToSQL($month_selected, "integer");
 		$sql.= " AND DAYOFWEEK(nh.holiday_date) NOT IN (1,7)) ";
 		$sql.= " WHERE dof.user_id=".ToSQL($user_id, "integer");
-		$sql.= " AND DATE_FORMAT(dof.start_date, '%Y')*12+DATE_FORMAT(dof.start_date, '%m') <= ".ToSQL($year_selected*12+$month_selected, "integer");
-		$sql.= " AND DATE_FORMAT(dof.end_date, '%Y')*12+DATE_FORMAT(dof.end_date, '%m') >= ".ToSQL($year_selected*12+$month_selected, "integer");
+		$sql.= " AND DATE_FORMAT(dof.start_date, '%Y')*12+DATE_FORMAT(dof.start_date, '%m') <= ".ToSQL(ToNumber($year_selected)*12+ToNumber($month_selected), "integer");
+		$sql.= " AND DATE_FORMAT(dof.end_date, '%Y')*12+DATE_FORMAT(dof.end_date, '%m') >= ".ToSQL(ToNumber($year_selected)*12+ToNumber($month_selected), "integer");
 		$sql.= " AND (dof.reason_id IN (1,2) OR dof.is_paid=1) ";
 		$sql.= " GROUP BY dof.period_id ";
 		$sql.= ") AS x ";
 		$db->query($sql);
 		if ($db->next_record()) {
-			$users[$user_id]["paid_days"] = $k_paid_day * $db->f(0);
+			$users[$user_id]["paid_days"] = $k_paid_day * ToNumber($db->f(0));
 		} else {
 			$users[$user_id]["paid_days"] = 0;
 		}
@@ -255,7 +255,7 @@
 			} while ($previous_day > $previous_message_day && $previous_day);
 		}
 		
-		if ($delayed_days == 0) {
+		if (ToNumber($delayed_days) == 0) {
 			$users[$user_id]["tickets"]++;
 			$users[$user_id]["tickets_points"] += $k_ticket_0;
 		} else {
@@ -302,7 +302,7 @@
 	
 	//calculate bonus/team points
 	foreach ($users as $user_id=>$user) {
-		if ($user["points"] > $bonus_user_thresold && $user["is_manager"] == 0) {
+		if ($user["points"] > $bonus_user_thresold && ToNumber($user["is_manager"]) == 0) {
 			
 			$users[$user_id]["bonus"] = ($user["points"] - $bonus_user_thresold) * $bonus_user_coeff;
 		} elseif ($user["is_manager"] == 1 && $sum_points > $bonus_team_thresold) {
@@ -396,7 +396,8 @@ function get_previous_day($report_days, $current_day)
 		if (isset($arr) && isset($arr["key"])) {
 			$previous_day = $arr["key"];
 		}
-		$arr = each($report_days);
+		$arr = (key($report_days) === null) ? false : array("key" => key($report_days), "value" => current($report_days));
+		next($report_days);
 		$report_day = $arr["key"];
 		$report_time = $arr["value"];
 		$next_elem = $arr;
@@ -429,7 +430,7 @@ function sub_time($time, $sub) {
 	foreach ($res_arr as $key=>$res_val) {
 		if ($res_arr[$key]<10) {
 			$res_arr[$key] = "0".$res_arr[$key];
-		} elseif ($res_arr[$key]==0) {
+		} elseif (ToNumber($res_arr[$key])==0) {
 			$res_arr[$key] == "00";
 		}
 	}

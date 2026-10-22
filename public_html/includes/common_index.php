@@ -1,4 +1,4 @@
-<?
+<?php 
 function Tasks_Show()
 {
   global $T;
@@ -13,7 +13,7 @@ function Tasks_Show()
 
   $ppriority_id = GetParam("priority_id");
   if(is_number($ppriority_id) && strlen($ppriority_id))
-    $ppriority_id = round($ppriority_id);
+    $ppriority_id = round(ToNumber($ppriority_id));
   else 
     $ppriority_id = "";
   if(strlen($ppriority_id)) 
@@ -23,7 +23,7 @@ function Tasks_Show()
   }
   $pproject_id = GetParam("project_id");
   if(is_number($pproject_id) && strlen($pproject_id))
-    $pproject_id = round($pproject_id);
+    $pproject_id = round(ToNumber($pproject_id));
   else 
     $pproject_id = "";
   if(strlen($pproject_id)) 
@@ -34,7 +34,7 @@ function Tasks_Show()
   }
   $ptask_status_id = GetParam("task_status_id");
   if(is_number($ptask_status_id) && strlen($ptask_status_id))
-    $ptask_status_id = round($ptask_status_id);
+    $ptask_status_id = round(ToNumber($ptask_status_id));
   else 
     $ptask_status_id = "1";
 
@@ -46,7 +46,7 @@ function Tasks_Show()
   }
   $ptask_type_id = GetParam("task_type_id");
   if(is_number($ptask_type_id) && strlen($ptask_type_id))
-    $ptask_type_id = round($ptask_type_id);
+    $ptask_type_id = round(ToNumber($ptask_type_id));
   else 
     $ptask_type_id = "";
   if(strlen($ptask_type_id)) 
@@ -142,7 +142,7 @@ function Tasks_Show()
   if(!strlen($iPage)) $iPage = 1;
   $RecordsPerPage = 20;
   $db->query($sSQL);
-  if($db->num_rows() == 0 || ($iPage - 1)*$RecordsPerPage >= $db->num_rows())
+  if($db->num_rows() == 0 || (ToNumber($iPage) - 1)*$RecordsPerPage >= $db->num_rows())
   {
     $T->set_var("DListTasks", "");
     $T->parse("TasksNoRecords", false);
@@ -153,7 +153,7 @@ function Tasks_Show()
   }
 
 
-  $db->seek(($iPage - 1)*$RecordsPerPage);
+  $db->seek((ToNumber($iPage) - 1)*$RecordsPerPage);
   $iCounter = 0;
   $old_project="";
   $statuses_classes = array("","InProgress","OnHold","Rejected","Done");
@@ -198,15 +198,15 @@ function Tasks_Show()
   }
   
 
-  if($iPage*$RecordsPerPage >= $db->num_rows() && $iPage == 1)
+  if(ToNumber($iPage)*$RecordsPerPage >= $db->num_rows() && $iPage == 1)
     $T->set_var("TasksScroller", "");
   else
   {
-    if($iPage*$RecordsPerPage >= $db->num_rows())
+    if(ToNumber($iPage)*$RecordsPerPage >= $db->num_rows())
       $T->set_var("TasksScrollerNextSwitch", "_");
     else
     {
-      $T->set_var("NextPage", ($iPage + 1));
+      $T->set_var("NextPage", (ToNumber($iPage) + 1));
       $T->set_var("TasksScrollerNextSwitch", "");
     }
 
@@ -214,7 +214,7 @@ function Tasks_Show()
       $T->set_var("TasksScrollerPrevSwitch", "_");
     else
     {
-      $T->set_var("PrevPage", ($iPage - 1));
+      $T->set_var("PrevPage", (ToNumber($iPage) - 1));
       $T->set_var("TasksScrollerPrevSwitch", "");
     }
     $T->set_var("TasksCurrentPage", $iPage);

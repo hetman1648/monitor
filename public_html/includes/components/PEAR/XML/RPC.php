@@ -718,6 +718,7 @@ class XML_RPC_Client extends XML_RPC_Base {
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::XML_RPC_Client(...$a); } // PHP 8: "XML_RPC_Client()" is no longer a constructor
     function XML_RPC_Client($path, $server, $port = 0,
                             $proxy = '', $proxy_port = 0,
                             $proxy_user = '', $proxy_pass = '')
@@ -1023,6 +1024,7 @@ class XML_RPC_Response extends XML_RPC_Base
     /**
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::XML_RPC_Response(...$a); } // PHP 8: "XML_RPC_Response()" is no longer a constructor
     function XML_RPC_Response($val, $fcode = 0, $fstr = '')
     {
         if ($fcode != 0) {
@@ -1143,6 +1145,7 @@ class XML_RPC_Message extends XML_RPC_Base
     /**
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::XML_RPC_Message(...$a); } // PHP 8: "XML_RPC_Message()" is no longer a constructor
     function XML_RPC_Message($meth, $pars = 0)
     {
         $this->methodname = $meth;
@@ -1458,6 +1461,7 @@ class XML_RPC_Value extends XML_RPC_Base
     /**
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::XML_RPC_Value(...$a); } // PHP 8: "XML_RPC_Value()" is no longer a constructor
     function XML_RPC_Value($val = -1, $type = '')
     {
         global $XML_RPC_Types;

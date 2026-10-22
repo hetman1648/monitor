@@ -1,4 +1,4 @@
-<?
+<?php 
 	include ("./includes/common.php");
 
 	CheckSecurity(1);

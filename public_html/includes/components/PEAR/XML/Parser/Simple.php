@@ -128,6 +128,7 @@ class XML_Parser_Simple extends XML_Parser
      *                       named after elements (handleElement_$name())
      * @param string $tgenc  a valid target encoding
      */
+    function __construct() { $a = func_get_args(); self::XML_Parser_Simple(...$a); } // PHP 8: "XML_Parser_Simple()" is no longer a constructor
     function XML_Parser_Simple($srcenc = null, $mode = 'event', $tgtenc = null)
     {
         $this->XML_Parser($srcenc, $mode, $tgtenc);

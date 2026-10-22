@@ -160,7 +160,7 @@ if (!GetSessionParam("UserID")) {
 
     $db->query("SELECT COUNT(*) as count FROM (".$sql.") xxx");
     $db->next_record();
-    $page_col	= (int)ceil($db->Record['count']/$records_per_page);
+    $page_col	= (int)ceil(ToNumber($db->Record['count'])/$records_per_page);
     parse_str($_SERVER['QUERY_STRING']."&".$filterurl, $QUERY_STRING);
     $query = "";
     if (is_array($QUERY_STRING)) {
@@ -169,7 +169,7 @@ if (!GetSessionParam("UserID")) {
     }
     $T->set_var("query_string",$query);
     $T->set_var("pages_navigator", getPageLinks($page_col, $page_num, $query));
-    $limit		= "LIMIT ".($page_num - 1)*$records_per_page.", ".$records_per_page;
+    $limit		= "LIMIT ".(ToNumber($page_num) - 1)*$records_per_page.", ".$records_per_page;
     $sql		.= $limit;
 	$db->query($sql);
 
@@ -183,7 +183,7 @@ if (!GetSessionParam("UserID")) {
 	        } else {$print_user_name = "<i>unassigned</i>";}
 			$T->set_var(array(
 							  "colorrow"		=> (($a++)%2 == 1)?"DataRow2":"DataRow3",
-							  "numeric"			=> ($a+($page_num-1)*$records_per_page),
+							  "numeric"			=> ($a+(ToNumber($page_num)-1)*$records_per_page),
 							  "inventory_title"	=> htmlspecialchars($db->Record["inv_title"]),
 							  "inventory_desc"	=> htmlspecialchars($db->Record["inv_desc"]),
 							  "inventory_code"	=> htmlspecialchars($db->Record["inv_code"]),
@@ -269,7 +269,7 @@ function getPageLinks($page_col, $page_num, $query)
 	}
 	if ($page_num <= 8)
 	{
-		for ($i = 1; $i <= max($page_num + 2, 5); $i++) $html_result .= ' '.getPageLink($i, $query);
+		for ($i = 1; $i <= max(ToNumber($page_num) + 2, 5); $i++) $html_result .= ' '.getPageLink($i, $query);
 		$html_result .= ' ... ';
 		for ($i = $page_col - 4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
 	}
@@ -277,7 +277,7 @@ function getPageLinks($page_col, $page_num, $query)
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i, $query);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_num+2; $i++) $html_result .= ' '.getPageLink($i, $query);
+		for ($i = ToNumber($page_num) - 2; $i <= ToNumber($page_num)+2; $i++) $html_result .= ' '.getPageLink($i, $query);
 		$html_result .= ' ... ';
 		for ($i = $page_col-4; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
 	}
@@ -285,7 +285,7 @@ function getPageLinks($page_col, $page_num, $query)
 	{
 		for ($i = 1; $i <= 5; $i++) $html_result .= ' '.getPageLink($i);
 		$html_result .= ' ... ';
-		for ($i = $page_num - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
+		for ($i = ToNumber($page_num) - 2; $i <= $page_col; $i++) $html_result .= ' '.getPageLink($i, $query);
 	}
     if (strlen($html_result)) { $html_result = "Page ".$html_result;}
 	return $html_result;

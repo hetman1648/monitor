@@ -128,6 +128,7 @@ class DB_fbsql extends DB_common
      *
      * @return void
      */
+    function __construct() { $a = func_get_args(); self::DB_fbsql(...$a); } // PHP 8: "DB_fbsql()" is no longer a constructor
     function DB_fbsql()
     {
         $this->DB_common();

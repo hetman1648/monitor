@@ -15,7 +15,7 @@
 			$task_id = $db->f("task_id");
 			$task_title = $db->f("task_title");
 			$date = $db->f("planed_date");
-			$date = split("-",$date);
+			$date = explode("-",$date);
 			//echo $task_id . " - " . $task_title . " - " . $date[0]."-".$date[1]."-".$date[2] . "<br>";
 			if ($date[0] == "0000" && $date[1] == "00" && $date[2] == "00") {
 				$all[] = array($task_id,$task_title);
@@ -32,12 +32,12 @@
 	$m2  = (int) GetParam('m');
 	$y2  = (int) GetParam('y');
 	if ($m2 <= 0 || $m2 > 12) {$m2 = 12;}
-	if ($y2 == 0) {$y2 = 2009;}
+	if (ToNumber($y2) == 0) {$y2 = 2009;}
 	
 	$w2 = date("w", mktime(0, 0, 0, $m2, 1, $y2)); // day of week
 	
 	$m2_1 = $m2 - 1; // prev month
-	if ($m2_1 == 0) {
+	if (ToNumber($m2_1) == 0) {
 		$y2_1 = $y2 - 1; // prev year
 		$m2_1 = 12;
 	} else {
@@ -49,7 +49,7 @@
 	
 	$echo_table3 = generate_table_header($y2,$m2);
 	$d_temp = 0;
-	if ($w2 != 0) {
+	if (ToNumber($w2) != 0) {
 		$d2_1_temp = $d2_1 - $w2; // start day from prev month
 		for ($i = $d2_1_temp + 1; $i <= $d2_1; $i++) {
 			$d_temp++;$echo_table3 .= "<td class=\"prev_month\">".$i."</td>";

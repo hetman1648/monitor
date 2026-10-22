@@ -281,7 +281,7 @@ class Parameter {
 	 */
 	var $default_value;
 	
-	function Parameter($db_name, $request_name, $default = '', $isObligatory = true) {
+	function __construct($db_name, $request_name, $default = '', $isObligatory = true) {
 		$this->db_name = $db_name;
 		$this->request_name = $request_name;
 		$this->isObligatory = $isObligatory;
@@ -358,7 +358,7 @@ class UserParameter extends Parameter {
 		    $dbuser_id->Host     = DATABASE_HOST;
 		
 		    
-		    $dbuser_id->query('SELECT COUNT(user_id) FROM users WHERE user_id = '.ToSQL($this->request_value, TEXT));
+		    $dbuser_id->query('SELECT COUNT(user_id) FROM users WHERE user_id = '.ToSQL($this->request_value, "text"));
 		    if ($dbuser_id->next_record()) {
 			    if (intval($dbuser_id->f(0)) > 0) {
 			    	$result = true;

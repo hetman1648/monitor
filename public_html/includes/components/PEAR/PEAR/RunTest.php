@@ -50,6 +50,7 @@ class PEAR_RunTest
      * An object that supports the PEAR_Common->log() signature, or null
      * @param PEAR_Common|null
      */
+    function __construct() { $a = func_get_args(); self::PEAR_RunTest(...$a); } // PHP 8: "PEAR_RunTest()" is no longer a constructor
     function PEAR_RunTest($logger = null)
     {
         $this->_logger = $logger;

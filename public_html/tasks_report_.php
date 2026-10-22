@@ -113,7 +113,7 @@
 			for ($i_day=1; $i_day<=$n_days; $i_day++) {
 				if (!isset($hours_ar[$user_id][$task_id][$i_day]) || !$hours_ar[$user_id][$task_id][$i_day]) {
 					$day_of_week = date("w", mktime(0, 0, 0, $month_selected, $i_day, $year_selected));
-					if ($day_of_week==0 || $day_of_week==6) $day_class = "DayoffTD"; //highlight Saturday and Sunday
+					if (ToNumber($day_of_week)==0 || $day_of_week==6) $day_class = "DayoffTD"; //highlight Saturday and Sunday
 					else $day_class = "DataTD";
 				}
 				elseif ($hours_ar[$user_id][$task_id][$i_day] <= 2) {

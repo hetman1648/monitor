@@ -135,7 +135,7 @@ function CheckFields()
 
 	if (strlen($date))
 	{
-	  list($year,$month,$day)=split("-",$date);
+	  list($year,$month,$day)=explode("-",$date);
 	  
 	  
 	  if ($year<2006 || $year>2011 || $month<=0 || $month>12 || $day<=0 || $day>date('t',mktime(0,0,0,$month,$day,$year)) ) $err.="incorrect date<BR>";

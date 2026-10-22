@@ -44,6 +44,7 @@ class HTML_QuickForm_xbutton extends HTML_QuickForm_element
     * @param    mixed   Either a typical HTML attribute string or an associative array
     * @access   public
     */
+    function __construct() { $a = func_get_args(); self::HTML_QuickForm_xbutton(...$a); } // PHP 8: "HTML_QuickForm_xbutton()" is no longer a constructor
     function HTML_QuickForm_xbutton($elementName = null, $elementContent = null, $attributes = null)
     {
         $this->HTML_QuickForm_element($elementName, null, $attributes);

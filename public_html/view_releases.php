@@ -75,7 +75,7 @@
 		
 		$tasks_priorities = array();
 		foreach($post_array as $var_name=>$var_value) {
-			$parts = split("_",$var_name);
+			$parts = explode("_",$var_name);
 			if ($parts[0] == "priority" && $parts[1]) {
 				$task_id  = $parts[1];
         		$priority = $var_value;

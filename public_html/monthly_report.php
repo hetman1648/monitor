@@ -148,7 +148,7 @@
 					} else {
 						$t->set_var("task_cost", "");
 					}
-					$actual_hours = $db->f("actual_hours") + $db->f("quotation_actual_hours");					
+					$actual_hours = ToNumber($db->f("actual_hours")) + ToNumber($db->f("quotation_actual_hours"));					
 					$t->set_var("actual_hours", Hours2HoursMins($actual_hours));
 					$estimated_hours = $db->f("estimated_hours"); // + $db->f("quotation_estimated_hours");
 					
@@ -169,8 +169,8 @@
 
 					
 					$total_task_cost += $task_cost;
-					$total_actual_hours += $actual_hours;
-					$total_estimated_hours += $estimated_hours;
+					$total_actual_hours += ToNumber($actual_hours);
+					$total_estimated_hours += ToNumber($estimated_hours);
 
 					if ($estimated_hours > 0) {
 						$t->set_var("estimated_hours", Hours2HoursMins($estimated_hours));
@@ -258,13 +258,13 @@
 					} else {
 						$t->set_var("task_cost", "");
 					}
-					$actual_hours = $db->f("actual_hours") + $db->f("quotation_actual_hours");					
+					$actual_hours = ToNumber($db->f("actual_hours")) + ToNumber($db->f("quotation_actual_hours"));					
 					$t->set_var("actual_hours", Hours2HoursMins($actual_hours));
 					$estimated_hours = $db->f("estimated_hours"); /* + $db->f("quotation_estimated_hours");*/
 					
 					$total_task_cost += $task_cost;
-					$total_actual_hours += $actual_hours;
-					$total_estimated_hours += $estimated_hours;
+					$total_actual_hours += ToNumber($actual_hours);
+					$total_estimated_hours += ToNumber($estimated_hours);
 					
 					if ($estimated_hours > 0) {
 						$t->set_var("estimated_hours", Hours2HoursMins($estimated_hours));
@@ -349,12 +349,12 @@
 					if ($prev_task_id!=$task_id && $prev_task_id>0) {
 						
 						$t->set_var("actual_hours", Hours2HoursMins($task_spent_hours));
-						$t->set_var("task_cost", "$".number_format($task_spent_hours * $hourly_charge,2));
+						$t->set_var("task_cost", "$".number_format($task_spent_hours * ToNumber($hourly_charge),2));
 						$t->set_var("people_list", $people_list);
 						$t->parse("tasks_records", true);
 						$num_tasks_with_hourly++;
 						$people_list = "";
-						$total_task_cost += $task_spent_hours * $hourly_charge;
+						$total_task_cost += $task_spent_hours * ToNumber($hourly_charge);
 						$total_actual_hours += $task_spent_hours;
 						$task_spent_hours = 0;
 					}
@@ -367,15 +367,15 @@
 						$people_list.= ", ";
 					}
 					$people_list.= $db->f("user_name");			
-					$task_spent_hours  += $db->f("user_spent_hours");
+					$task_spent_hours  += ToNumber($db->f("user_spent_hours"));
 					$prev_task_id = $task_id;					
 				}				
-				$t->set_var("task_cost", "$".number_format($task_spent_hours * $hourly_charge,2));
+				$t->set_var("task_cost", "$".number_format($task_spent_hours * ToNumber($hourly_charge),2));
 				$t->set_var("actual_hours", Hours2HoursMins($task_spent_hours));
 				$t->set_var("people_list", $people_list);
 				$t->parse("tasks_records", true);
 				$num_tasks_with_hourly++;
-				$total_task_cost += $task_spent_hours * $hourly_charge;
+				$total_task_cost += $task_spent_hours * ToNumber($hourly_charge);
 
 				$total_actual_hours += $task_spent_hours;
 				if ($total_actual_hours > 0) {
@@ -436,7 +436,7 @@
 				while($db->next_record()) {
 					$task_id = $db->f("task_id");
 					$hourly_charge = $db->f("hourly_charge");	
-					$task_cost = round($db->f("task_cost"), 2);
+					$task_cost = round(ToNumber($db->f("task_cost")), 2);
 					$actual_hours = $db->f("actual_hours");
 					
 					if ($prev_task_id!=$task_id && $prev_task_id>0) {
@@ -470,7 +470,7 @@
 					
 					$t->set_var("project_id", $db->f("project_id"));
 					$t->set_var("task_title", $task_title);
-					$task_spent_hours += $db->f("user_spent_hours");
+					$task_spent_hours += ToNumber($db->f("user_spent_hours"));
 									
 					if ($task_cost>0) {
 						$t->set_var("task_cost", "$".number_format($task_cost,2));
@@ -555,7 +555,7 @@
 				while($db->next_record()) {
 					$task_id = $db->f("task_id");
 					$hourly_charge = $db->f("hourly_charge");	
-					$task_cost = round($db->f("task_cost"), 2);
+					$task_cost = round(ToNumber($db->f("task_cost")), 2);
 					$actual_hours = $db->f("actual_hours");
 					
 					if ($prev_task_id!=$task_id && $prev_task_id>0) {
@@ -589,7 +589,7 @@
 					
 					$t->set_var("project_id", $db->f("project_id"));
 					$t->set_var("task_title", $task_title);
-					$task_spent_hours += $db->f("user_spent_hours");
+					$task_spent_hours += ToNumber($db->f("user_spent_hours"));
 									
 					if ($task_cost>0) {
 						$t->set_var("task_cost", "$".$task_cost);
@@ -614,7 +614,7 @@
 				$num_corrections++;
 				$t->parse("corrections_records", true);
 				$total_task_cost += $task_cost;
-				$total_actual_hours += $actual_hours;				
+				$total_actual_hours += ToNumber($actual_hours);				
 				
 				if ($total_actual_hours > 0) {
 					$t->set_var("c_total_actual_hours", Hours2HoursMins($total_actual_hours));
@@ -659,7 +659,7 @@
 		while($db->next_record()) {
 			$project_id  = $db->f("project_id");
 			$jobs_number = $db->f("jobs_number");
-			$jobs_cost   = $jobs_number * $projects_cost[$project_id];
+			$jobs_cost   = ToNumber($jobs_number) * $projects_cost[$project_id];
 			$projects_stats[$project_id] = array($jobs_number, $jobs_cost, $db->f("jobs_time"));
 		}
 		

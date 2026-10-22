@@ -72,12 +72,12 @@ if ($year_selected && $month_selected) {
     if ($year_selected == $nowday_year && $month_selected == $nowday_mon) {
         for ($i = 1; $i <= $nowday_day; $i++) {
             $week_day = date("w", mktime(0, 0, 0, $nowday_mon, $i, $nowday_year));
-            if ($week_day != 0 && $week_day != 6) { $working_days_2++; }
+            if (ToNumber($week_day) != 0 && $week_day != 6) { $working_days_2++; }
         }
     } else {
         for ($i = 1; $i <= $n_days; $i++) {
             $week_day = date("w", mktime(0, 0, 0, $month_selected, $i, $year_selected));
-            if ($week_day != 0 && $week_day != 6) $working_days_2++;
+            if (ToNumber($week_day) != 0 && $week_day != 6) $working_days_2++;
         }
     }
 
@@ -135,12 +135,12 @@ if ($year_selected && $month_selected) {
         $count_hours = $db6->f("count_hours");
         $count_tasks = $db6->f("count_tasks");
         $working_days = $db6->f("working_days");
-        $time_per_task = $count_tasks != 0 ? $count_hours / $count_tasks : 0;
-        $hours_per_day = $working_days != 0 ? $count_hours / $working_days : 0;
-        $days_off = $working_days - (isset($work_days[$user_name]) ? $work_days[$user_name] : 0);
+        $time_per_task = ToNumber($count_tasks) != 0 ? ToNumber($count_hours) / ToNumber($count_tasks) : 0;
+        $hours_per_day = ToNumber($working_days) != 0 ? ToNumber($count_hours) / ToNumber($working_days) : 0;
+        $days_off = ToNumber($working_days) - (isset($work_days[$user_name]) ? $work_days[$user_name] : 0);
 
         // Calculate averages
-        $average_working_days = $working_days_2 - $holiday_quant;
+        $average_working_days = $working_days_2 - ToNumber($holiday_quant);
         $average_hours = 8 * $average_working_days;
 
         // Get average tasks
@@ -153,8 +153,8 @@ if ($year_selected && $month_selected) {
         $avg_time_per_task = 0;
         if ($db6->next_record()) {
             $total_users = count($work_days) > 0 ? count($work_days) : 1;
-            $avg_tasks = round($db6->f("total_tasks") / $total_users, 0);
-            $avg_time_per_task = $avg_tasks > 0 ? $db6->f("total_hours") / $total_users / $avg_tasks : 0;
+            $avg_tasks = round(ToNumber($db6->f("total_tasks")) / $total_users, 0);
+            $avg_time_per_task = $avg_tasks > 0 ? ToNumber($db6->f("total_hours")) / $total_users / $avg_tasks : 0;
         }
 
         $summary_data = array(
@@ -204,7 +204,7 @@ if ($year_selected && $month_selected) {
     // Build calendar
     $n_days = date("t", mktime(0, 0, 0, $month_selected, 1, $year_selected));
     $first_day = date("w", mktime(0, 0, 0, $month_selected, 1, $year_selected));
-    if ($first_day == 0) { $first_day = 7; }
+    if (ToNumber($first_day) == 0) { $first_day = 7; }
     
     $_first_day = $first_day;
     $_n_days = $n_days - (8 - $_first_day);
@@ -254,7 +254,7 @@ if ($year_selected && $month_selected) {
         }
         
         $week_data['week_hours'] = Hours2HoursMins($week_hours);
-        $week_data['w_hours_per_day'] = $w_working_days != 0 ? Hours2HoursMins($week_hours / $w_working_days) : "-";
+        $week_data['w_hours_per_day'] = ToNumber($w_working_days) != 0 ? Hours2HoursMins($week_hours / $w_working_days) : "-";
         $month_hours += $week_hours;
         $calendar_data[] = $week_data;
     }
@@ -366,7 +366,7 @@ if ($year_selected && $month_selected) {
                 'spent_hours' => Hours2HoursMins($spent)
             );
             
-            $day_hours += $spent;
+            $day_hours += ToNumber($spent);
             $tmp_date = $date;
         }
         

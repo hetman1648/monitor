@@ -63,13 +63,13 @@ if ($year_selected && $month_selected)
 	if ($year_selected == $nowday_year && $month_selected == $nowday_mon) {
 		for ($i=1; $i<= $nowday_day; $i++) {
 			$week_day = date("w", mktime(0, 0, 0, $nowday_mon, $i, $nowday_year));
-			if ($week_day != 0 && $week_day != 6) { $working_days_2++;}
+			if (ToNumber($week_day) != 0 && $week_day != 6) { $working_days_2++;}
 		}
 	} else {
 		for ($i=1; $i<=$n_days; $i++) {
 			//	echo $nowday_mon." - ".$i." - ".$nowday_year."<br>";
 			$week_day = date("w", mktime(0, 0, 0, $month_selected, $i, $year_selected));
-			if ($week_day != 0 && $week_day != 6) $working_days_2++;
+			if (ToNumber($week_day) != 0 && $week_day != 6) $working_days_2++;
 			//	echo $i." - ".$week_day."<br>";
 		}
 	}
@@ -146,13 +146,13 @@ if ($year_selected && $month_selected)
 			//	$user_id = $db6->f("user_id");
 			$count_hours = $db6->f("count_hours");
 			$count_tasks = $db6->f("count_tasks");
-			if ($count_tasks != 0) $time_per_task = $count_hours/$count_tasks; else $time_per_task = 0;
+			if (ToNumber($count_tasks) != 0) $time_per_task = ToNumber($count_hours)/ToNumber($count_tasks); else $time_per_task = 0;
 			//-- Number of days that person worked during month
 			$working_days = $db6->f("working_days");
 			//	echo "working_days".$working_days."<br>";
 			//	echo "work_days[user_name]".$work_days[$user_name]."<br>";
-			if ($working_days != 0) $hours_per_day = $count_hours/$working_days; else $hours_per_day = 0;
-			$days_off = $db6->f("working_days") - $work_days[$user_name];
+			if (ToNumber($working_days) != 0) $hours_per_day = ToNumber($count_hours)/ToNumber($working_days); else $hours_per_day = 0;
+			$days_off = ToNumber($db6->f("working_days")) - $work_days[$user_name];
 
 			$t->set_var("user_name", $user_name);
 			$t->set_var("user_id", $user_id);
@@ -188,12 +188,12 @@ if ($year_selected && $month_selected)
 					$user_name = $db6->f("user_name");
 					//	if ($working_days <=  $db6->f("working_days")) $working_days = $db6->f("working_days");
 					if ($working_days <=  $work_days[$user_name]) $working_days = $work_days[$user_name];
-					if ($days_off_max <= ($db6->f("working_days") - $work_days[$user_name]))
-					$days_off_max = $db6->f("working_days") - $work_days[$user_name];
+					if ($days_off_max <= (ToNumber($db6->f("working_days")) - $work_days[$user_name]))
+					$days_off_max = ToNumber($db6->f("working_days")) - $work_days[$user_name];
 					//$working_days = $working_days + $db6->f("working_days");
-					$count_hours = $count_hours + $db6->f("count_hours");
-					$count_tasks = $count_tasks + $db6->f("count_tasks");
-					$days_off = $days_off + ($db6->f("working_days") - $work_days[$user_name]);
+					$count_hours = ToNumber($count_hours) + ToNumber($db6->f("count_hours"));
+					$count_tasks = ToNumber($count_tasks) + ToNumber($db6->f("count_tasks"));
+					$days_off = ToNumber($days_off) + (ToNumber($db6->f("working_days")) - $work_days[$user_name]);
 					//	echo $user_name. "   ".$days_off."<br>";
 					$i++;
 				}
@@ -218,7 +218,7 @@ if ($year_selected && $month_selected)
 						
 						if ($month_start["mon"]==$month_end["mon"])
 						{
-							$user_days_off += $db6->f("total_days");
+							$user_days_off += ToNumber($db6->f("total_days"));
 						}
 						else 
 						{
@@ -284,16 +284,16 @@ if ($year_selected && $month_selected)
 			//$count_hours = $db6->f("count_hours");
 			//$count_tasks = $db6->f("count_tasks");
 			//$count_users = $db6->f("count_users");
-			$average_hours = $count_hours/$i;
-			$average_tasks = round($count_tasks/$i, 0);
+			$average_hours = ToNumber($count_hours)/$i;
+			$average_tasks = round(ToNumber($count_tasks)/$i, 0);
 			$average_time_per_task = $average_hours/$average_tasks;
 			//$average_working_days = round($working_days/$i,0);
 			//$average_hours_per_day = $average_hours/$average_working_days;
-			$average_days_off = round($days_off/$i,0);
+			$average_days_off = round(ToNumber($days_off)/$i,0);
 
 
 			//$average_working_days = $working_days - $holiday_quant;
-			$average_working_days = $working_days_2 - $holiday_quant - $user_days_off;
+			$average_working_days = $working_days_2 - ToNumber($holiday_quant) - $user_days_off;
 			$average_hours = 8*$average_working_days;
 
 			//$t->set_var("average_hours", Hours2HoursMins($average_hours));
@@ -307,7 +307,7 @@ if ($year_selected && $month_selected)
 			//$t->set_var("average_days_off", $average_days_off);
 			$t->set_var("average_days_off", "-");
 
-			$days_off = $db6->f("working_days") - $work_days[$user_name];
+			$days_off = ToNumber($db6->f("working_days")) - $work_days[$user_name];
 
 			$t->parse("sum_report", true);
 		} while ($db6->next_record());
@@ -366,7 +366,7 @@ if ($year_selected && $month_selected)
 		$n_days = date("t", mktime(0, 0, 0, $month_selected, 1, $year_selected));
 		//-- First day of month 1..7 - Monday..Sunday
 		$first_day = date("w", mktime(0, 0, 0, $month_selected, 1, $year_selected));
-		if ($first_day == 0) { $first_day = 7;}
+		if (ToNumber($first_day) == 0) { $first_day = 7;}
 		//-- Number of weeks in month, even with only 1 day
 		//$n_weeks = date("W", mktime(0, 0, 0, $month_selected, $n_days, $year_selected)) - date("W", mktime(0, 0, 0, $month_selected, 1, $year_selected)) + 1;
 		$week_last_day = 1+(date("z", mktime(0, 0, 0, $month_selected, $n_days, $year_selected))+1)/7;
@@ -404,7 +404,7 @@ if ($year_selected && $month_selected)
 				if ($col == 7) {
 					$t->set_var("week_hours", Hours2HoursMins($week_hours));
 					$t->set_var("week_color", "#FAFAFA");
-					if ($w_working_days != 0) $w_hours_per_day = $week_hours/$w_working_days; else $w_hours_per_day = 0;
+					if (ToNumber($w_working_days) != 0) $w_hours_per_day = $week_hours/$w_working_days; else $w_hours_per_day = 0;
 					$t->set_var("w_hours_per_day", Hours2HoursMins($w_hours_per_day));
 					$month_hours += $week_hours;
 					$week_hours = 0;
@@ -535,8 +535,8 @@ if ($year_selected && $month_selected)
 				$task_id = $db->f("task_id");
 				$time_period = $start_time . " - " . $end_time;
 				$spent_hours = $db->f("spent_hours");
-				$mins = sprintf("%02d", round(($spent_hours - floor($spent_hours)) * 60));
-				$hours = floor($spent_hours) . ":$mins ";
+				$mins = sprintf("%02d", round((ToNumber($spent_hours) - floor(ToNumber($spent_hours))) * 60));
+				$hours = floor(ToNumber($spent_hours)) . ":$mins ";
 
 				if ($user_id) {
 					if ($tmp_date!=$date and $tmp_date) {
@@ -558,7 +558,7 @@ if ($year_selected && $month_selected)
 					$t->set_var("time_period", $time_period);
 					$t->set_var("spent_hours", $hours);
 
-					$day_hours += $spent_hours;
+					$day_hours += ToNumber($spent_hours);
 					$tmp_date = $date;
 					$tmp_person = $person;
 				}
@@ -587,7 +587,7 @@ if ($year_selected && $month_selected)
 					$t->set_var("time_period", $time_period);
 					$t->set_var("spent_hours", $hours);
 
-					$day_hours += $spent_hours;
+					$day_hours += ToNumber($spent_hours);
 					$tmp_date = $date;
 					$tmp_person=$person;
 				}
@@ -650,7 +650,7 @@ $sql = "SELECT start_date, user_id, CONCAT(first_name, ' ', last_name) AS user_n
 						$db2->query($sql2);
 						if ($db2->next_record())
 						{
-						  $total_holidays = floor ($db2->f("total_holidays"));
+						  $total_holidays = floor (ToNumber($db2->f("total_holidays")));
 							$t->set_var("total_holidays", $total_holidays);
 						}
 
@@ -659,11 +659,11 @@ $sql = "SELECT start_date, user_id, CONCAT(first_name, ' ', last_name) AS user_n
 						$db2->query($sql2);
 						if ($db2->next_record())
 						{
-							$t->set_var("total_holidays_year", floor($db2->f("total_holidays")));
+							$t->set_var("total_holidays_year", floor(ToNumber($db2->f("total_holidays"))));
 						}
 
 						$t->set_var("this_year",$today_year);
-						$t->set_var("avail_holidays", $total_holidays - $used_holidays);
+						$t->set_var("avail_holidays", $total_holidays - ToNumber($used_holidays));
 						$t->parse("holiday_summary", true);
 
 

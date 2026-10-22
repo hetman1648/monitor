@@ -90,6 +90,7 @@ class PHPUnit_GUI_SetupDecorator
     *
     *
     */
+    function __construct() { $a = func_get_args(); self::PHPUnit_GUI_SetupDecorator(...$a); } // PHP 8: "PHPUnit_GUI_SetupDecorator()" is no longer a constructor
     function PHPUnit_GUI_SetupDecorator(&$gui)
     {
         $this->_gui = &$gui;
@@ -118,7 +119,7 @@ class PHPUnit_GUI_SetupDecorator
     */
     function getSuitesFromDir($dir, $filenamePattern = '', $exclude = array())
     {
-        if ($dir{strlen($dir)-1} == DIRECTORY_SEPARATOR) {
+        if ($dir[strlen($dir)-1] == DIRECTORY_SEPARATOR) {
             $dir = substr($dir, 0, -1);
         }
 
@@ -129,7 +130,7 @@ class PHPUnit_GUI_SetupDecorator
             include_once($aFile);
 
             if (class_exists($className)) {
-                $suites[] =& new PHPUnit_TestSuite($className);
+                $suites[] = new PHPUnit_TestSuite($className);
             } else {
                 trigger_error("$className could not be found in $dir$aFile!");
             }
