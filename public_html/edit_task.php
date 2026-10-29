@@ -1904,6 +1904,23 @@ $user_name = GetSessionParam("UserName");
             overflow-y: auto;
         }
 
+        /* Composer dropdowns have no search box: show more of the list (type a name to jump) */
+        #userSelectMsg .custom-select-dropdown,
+        #statusSelectMsg .custom-select-dropdown {
+            max-height: 300px;
+        }
+        #userSelectMsg .custom-select-options,
+        #statusSelectMsg .custom-select-options {
+            max-height: 290px;
+        }
+
+        .custom-select-typed {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: #667eea;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
         .custom-select-option {
             padding: 8px 12px;
             cursor: pointer;
@@ -1920,7 +1937,14 @@ $user_name = GetSessionParam("UserName");
             color: #fff;
         }
 
+        /* current value: a tint, so the keyboard/filter highlight (what Enter picks) stands out */
         .custom-select-option.selected {
+            background: #eef0fc;
+            color: #4c51bf;
+            font-weight: 600;
+        }
+
+        .custom-select-option.selected.highlighted {
             background: #667eea;
             color: #fff;
         }
@@ -2747,6 +2771,9 @@ $user_name = GetSessionParam("UserName");
             background: #252d3d; color: #e2e8f0; text-align: left;
         }
         html.dark-mode .message-status { background: #1c2333; color: #8b949e; }
+        html.dark-mode .custom-select-typed { color: #a5b4fc; border-color: #2d333b; }
+        html.dark-mode .custom-select-option.highlighted,
+        html.dark-mode .custom-select-option.selected.highlighted { background: #667eea; color: #fff; }
         html.dark-mode .message-attachments { border-top-color: #2d333b; }
         html.dark-mode .message-attachment-delete { background: rgba(0, 0, 0, 0.65); }
         html.dark-mode .message-attachment-delete:hover { background: #e53e3e; }
@@ -3377,9 +3404,6 @@ $user_name = GetSessionParam("UserName");
                                         ?></span>
                                     </div>
                                     <div class="custom-select-dropdown">
-                                        <div class="custom-select-search">
-                                            <input type="text" placeholder="Search..." class="select-search-input">
-                                        </div>
                                         <div class="custom-select-options">
                                             <?php foreach ($users as $u): ?>
                                             <div class="custom-select-option <?php echo $u['user_id'] == $reply_to_user_id ? 'selected' : ''; ?>" 
@@ -3399,9 +3423,6 @@ $user_name = GetSessionParam("UserName");
                                         <span><?php echo htmlspecialchars($task['status_desc']); ?></span>
                                     </div>
                                     <div class="custom-select-dropdown">
-                                        <div class="custom-select-search">
-                                            <input type="text" placeholder="Search..." class="select-search-input">
-                                        </div>
                                         <div class="custom-select-options">
                                             <?php foreach ($statuses as $s): 
                                                 if ($s['status_id'] == 1 && $task['task_status_id'] != 1) continue;
@@ -3712,7 +3733,8 @@ $user_name = GetSessionParam("UserName");
         }
     });
 
-    // Submit message with Enter or Cmd+Enter/Ctrl+Enter when focus is in other message form fields (Assign to, Status, Completion)
+    // Submit message with Enter or Cmd+Enter/Ctrl+Enter when focus is in other message form fields (Assign to, Status, Completion);
+    // a dropdown's trigger closes its list first on Cmd/Ctrl+Enter, so that sends even mid-pick
     document.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
         var active = document.activeElement;
@@ -3792,6 +3814,63 @@ $user_name = GetSessionParam("UserName");
             });
         }
 
+        // Opening without a search box: clear any previous typing, start from the current choice
+        var openOption = null; // the value when the list opened, for Esc to go back to
+        function highlightSelected() {
+            typeBuffer = '';
+            filterOptions('');
+            showTyped();
+            openOption = select.querySelector('.custom-select-option.selected');
+            var visible = getVisibleOptions();
+            for (var i = 0; i < visible.length; i++) {
+                if (visible[i].classList.contains('selected')) { updateHighlight(i); return; }
+            }
+        }
+
+        // Type to filter (no search box): the list narrows to options containing the typed text and the
+        // best match is highlighted, so Enter picks it - name start first, then a word start (surname), then the first left
+        var typeBuffer = '';
+        var typedLine = null;
+        function showTyped() {
+            if (!typedLine) {
+                if (!typeBuffer) return;
+                typedLine = document.createElement('div');
+                typedLine.className = 'custom-select-typed';
+                dropdown.insertBefore(typedLine, dropdown.firstChild);
+            }
+            var visibleCount = getVisibleOptions().length;
+            typedLine.textContent = typeBuffer ? '“' + typeBuffer + '”' + (visibleCount ? '' : ' – no match') : '';
+            typedLine.style.display = typeBuffer ? '' : 'none';
+        }
+        function typeFilter() {
+            filterOptions(typeBuffer);
+            showTyped();
+            var visible = getVisibleOptions();
+            options.forEach(function(o) { o.classList.remove('highlighted'); });
+            highlightedIndex = -1;
+            if (!visible.length) return;
+            var texts = visible.map(function(o) { return o.textContent.trim().toLowerCase(); });
+            var best = 0, i;
+            for (i = 0; i < texts.length; i++) { if (texts[i].indexOf(typeBuffer) === 0) { best = i; break; } }
+            if (i === texts.length) {
+                for (i = 0; i < texts.length; i++) { if ((' ' + texts[i]).indexOf(' ' + typeBuffer) !== -1) { best = i; break; } }
+            }
+            updateHighlight(best);
+            applyHighlighted();
+        }
+
+        // Typing/arrowing makes the highlighted option the value straight away (trigger text + hidden input),
+        // like a native select; the list stays open and Esc restores openOption
+        function applyHighlighted() {
+            var visible = getVisibleOptions();
+            var option = visible[highlightedIndex];
+            if (!option) return;
+            options.forEach(function(o) { o.classList.remove('selected'); });
+            option.classList.add('selected');
+            trigger.querySelector('span').textContent = option.textContent.trim();
+            if (hiddenInput) hiddenInput.value = option.dataset.value;
+        }
+
         // Update highlight
         function updateHighlight(newIndex) {
             var visible = getVisibleOptions();
@@ -3824,6 +3903,7 @@ $user_name = GetSessionParam("UserName");
                         filterOptions('');
                     } else {
                         trigger.focus();
+                        highlightSelected();
                     }
                 }
             }
@@ -3853,18 +3933,40 @@ $user_name = GetSessionParam("UserName");
                     filterOptions('');
                 } else {
                     trigger.focus();
+                    highlightSelected();
                 }
             }
         });
 
         // Keyboard navigation on trigger
         trigger.addEventListener('keydown', function(e) {
+            // Cmd/Ctrl+Enter: keep the current pick, close the list and let the event reach the composer's
+            // Enter handler, which sends the message (it skips Enters while a list is open)
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                select.classList.remove('open');
+                return;
+            }
+            // printable key (a space only mid-name, e.g. "svitlana s"): filter, opening the list if needed
+            if (!searchInput && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key !== ' ' || typeBuffer !== '')) {
+                e.preventDefault();
+                if (!select.classList.contains('open')) trigger.click();
+                typeBuffer += e.key.toLowerCase();
+                typeFilter();
+                return;
+            }
+            if (!searchInput && e.key === 'Backspace' && select.classList.contains('open') && typeBuffer !== '') {
+                e.preventDefault();
+                typeBuffer = typeBuffer.slice(0, -1);
+                typeFilter();
+                return;
+            }
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 if (!select.classList.contains('open')) {
                     trigger.click();
                 } else {
-                    // Select highlighted option
+                    // Select highlighted option; this Enter must not also reach the composer's Enter-to-send handler
+                    e.stopPropagation();
                     var visible = getVisibleOptions();
                     if (highlightedIndex >= 0 && highlightedIndex < visible.length) {
                         selectOption(visible[highlightedIndex]);
@@ -3872,6 +3974,16 @@ $user_name = GetSessionParam("UserName");
                 }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
+                if (select.classList.contains('open') && openOption) {
+                    selectOption(openOption); // undo what typing/arrows picked
+                    openOption = null;
+                } else {
+                    select.classList.remove('open');
+                }
+            } else if (e.key === 'Tab' && select.classList.contains('open')) {
+                // tabbing away keeps the highlighted choice, like a native select
+                var visibleTab = getVisibleOptions();
+                if (highlightedIndex >= 0 && highlightedIndex < visibleTab.length) selectOption(visibleTab[highlightedIndex], true);
                 select.classList.remove('open');
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -3880,11 +3992,13 @@ $user_name = GetSessionParam("UserName");
                 } else {
                     var visible = getVisibleOptions();
                     updateHighlight(Math.min(highlightedIndex + 1, visible.length - 1));
+                    applyHighlighted();
                 }
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (select.classList.contains('open')) {
                     updateHighlight(Math.max(highlightedIndex - 1, 0));
+                    applyHighlighted();
                 }
             }
         });
@@ -3898,14 +4012,14 @@ $user_name = GetSessionParam("UserName");
             });
         });
 
-        function selectOption(option) {
+        function selectOption(option, keepFocus) {
             if (window._msgComposerDebug) console.log('[MsgComposer] selectOption', select.id, 'value:', option.dataset.value);
             options.forEach(function(o) { o.classList.remove('selected', 'highlighted'); });
             option.classList.add('selected');
             trigger.querySelector('span').textContent = option.textContent.trim();
             if (hiddenInput) hiddenInput.value = option.dataset.value;
             select.classList.remove('open');
-            trigger.focus();
+            if (!keepFocus) trigger.focus();
         }
 
         // Search filtering
@@ -3938,6 +4052,7 @@ $user_name = GetSessionParam("UserName");
                     updateHighlight(Math.max(highlightedIndex - 1, 0));
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
+                    e.stopPropagation(); // picking an option must not send the message
                     // Select highlighted option, or first visible if none highlighted
                     if (highlightedIndex >= 0 && highlightedIndex < visible.length) {
                         selectOption(visible[highlightedIndex]);
