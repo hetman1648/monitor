@@ -2046,6 +2046,24 @@ $user_name = GetSessionParam("UserName");
             color: #a0aec0;
         }
 
+        .copy-msg-link-btn {
+            background: none;
+            border: none;
+            padding: 0 4px;
+            margin-left: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            line-height: 1;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+            vertical-align: baseline;
+        }
+
+        .message-item:hover .copy-msg-link-btn,
+        .copy-msg-link-btn:focus {
+            opacity: 1;
+        }
+
         .message-assigned {
             color: #667eea;
             font-weight: 500;
@@ -3422,7 +3440,7 @@ $user_name = GetSessionParam("UserName");
                         <p style="text-align: center; color: #718096; padding: 40px;">No messages yet. Be the first to add one!</p>
                     <?php else: ?>
                         <?php foreach ($messages as $index => $msg): ?>
-                        <div class="message-item" id="msg-<?php echo $index; ?>">
+                        <div class="message-item" id="message-<?php echo (int) $msg['message_id']; ?>" data-message-id="<?php echo (int) $msg['message_id']; ?>">
                             <div class="message-header">
                                 <div class="message-author">
                                     <div class="message-avatar">
@@ -3435,6 +3453,7 @@ $user_name = GetSessionParam("UserName");
                                             <?php if ($msg['r_first_name']): ?>
                                             <span class="message-assigned">→ <?php echo htmlspecialchars($msg['r_first_name'] . ' ' . $msg['r_last_name']); ?></span>
                                             <?php endif; ?>
+                                            <button type="button" class="copy-msg-link-btn" onclick="copyMessageLink(this)" title="Copy link to this message">🔗</button>
                                         </span>
                                     </div>
                                 </div>
@@ -4498,7 +4517,7 @@ $user_name = GetSessionParam("UserName");
         formData.append('offset', messagesLoaded);
         formData.append('limit', messagesPerPage);
         
-        fetch('ajax_responder.php', { method: 'POST', body: formData, credentials: 'include' })
+        return fetch('ajax_responder.php', { method: 'POST', body: formData, credentials: 'include' })
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success && data.messages && data.messages.length > 0) {
@@ -4529,6 +4548,58 @@ $user_name = GetSessionParam("UserName");
         });
     }
     
+    // Copy a permalink to one message (edit_task.php?task_id=N#message-ID)
+    function copyMessageLink(btn) {
+        var item = btn.closest('.message-item');
+        if (!item) return;
+        var url = '<?php echo "https://" . $_SERVER['HTTP_HOST'] . "/edit_task.php?task_id=" . $task_id; ?>#message-' + item.getAttribute('data-message-id');
+        var done = function() {
+            btn.innerHTML = '✓';
+            setTimeout(function() { btn.innerHTML = '🔗'; }, 2000);
+            showCopyToast('Message link copied to clipboard');
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(done).catch(function() { fallbackCopy(url); done(); });
+        } else {
+            fallbackCopy(url);
+            done();
+        }
+        function fallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+    }
+
+    // Opened via a message link: page through "Load More" until the message is loaded, then scroll to it
+    function showLinkedMessage() {
+        var m = /^#message-(\d+)$/.exec(location.hash);
+        if (!m) return;
+        var el = document.getElementById('message-' + m[1]);
+        if (el) {
+            el.classList.remove('message-highlight');
+            void el.offsetWidth;
+            el.classList.add('message-highlight');
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        if (messagesLoaded < messagesTotal && document.getElementById('loadMoreBtn')) {
+            var before = messagesLoaded;
+            var p = loadMoreMessages();
+            // stop if a page brought nothing (request failed) so we don't retry forever
+            if (p) p.then(function() { if (messagesLoaded > before) showLinkedMessage(); });
+        }
+    }
+    window.addEventListener('hashchange', showLinkedMessage);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showLinkedMessage);
+    } else {
+        showLinkedMessage();
+    }
+
     function buildMessageHTML(msg, attachments, index) {
         var firstName = msg.first_name || '';
         var lastName = msg.last_name || '';
@@ -4537,13 +4608,13 @@ $user_name = GetSessionParam("UserName");
         var statusBadge = msg.status_caption ? '<span class="message-status">' + escapeHtml(msg.status_caption) + '</span>' : '';
         var highlightClass = msg._highlight ? ' message-highlight' : '';
         
-        var html = '<div class="message-item' + highlightClass + '" id="msg-' + index + '">';
+        var html = '<div class="message-item' + highlightClass + '" id="message-' + parseInt(msg.message_id, 10) + '" data-message-id="' + parseInt(msg.message_id, 10) + '">';
         html += '<div class="message-header">';
         html += '<div class="message-author">';
         html += '<div class="message-avatar">' + initials + '</div>';
         html += '<div class="message-author-info">';
         html += '<span class="message-author-name">' + escapeHtml(firstName + ' ' + lastName) + '</span>';
-        html += '<span class="message-date">' + (msg.formatted_date || '') + assignedTo + '</span>';
+        html += '<span class="message-date">' + (msg.formatted_date || '') + assignedTo + '<button type="button" class="copy-msg-link-btn" onclick="copyMessageLink(this)" title="Copy link to this message">🔗</button></span>';
         html += '</div></div>';
         html += statusBadge;
         html += '</div>';
