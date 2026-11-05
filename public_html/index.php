@@ -2364,7 +2364,7 @@ while ($db->next_record()) {
         .bulk-bar .bulk-btn-cancel:hover { color:#fff; }
 
         /* Bulk dropdown panel */
-        .bulk-dropdown { display:none; position:absolute; bottom:calc(100% + 6px); left:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 8px 30px rgba(0,0,0,0.15); min-width:200px; max-height:300px; overflow-y:auto; padding:6px 0; z-index:100; }
+        .bulk-dropdown { display:none; position:fixed; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 8px 30px rgba(0,0,0,0.15); min-width:200px; max-height:300px; overflow-y:auto; padding:6px 0; z-index:100; }
         .bulk-dropdown.show { display:block; }
         .bulk-dropdown .bd-search { padding:6px 10px; }
         .bulk-dropdown .bd-search input { width:100%; padding:5px 8px; border:1px solid #e2e8f0; border-radius:5px; font-size:0.82rem; font-family:inherit; outline:none; }
@@ -2954,8 +2954,8 @@ while ($db->next_record()) {
                     <div class="bulk-bar" id="bulkBar">
                         <span class="bulk-count" id="bulkCount">0</span> tasks selected
                         <div class="bulk-actions">
-                            <button class="bulk-btn" id="bulkStatusBtn" onclick="toggleBulkDropdown('status')">Change Status</button>
-                            <button class="bulk-btn" id="bulkReassignBtn" onclick="toggleBulkDropdown('reassign')">Reassign</button>
+                            <button class="bulk-btn" id="bulkStatusBtn" onclick="toggleBulkDropdown('status', event)">Change Status</button>
+                            <button class="bulk-btn" id="bulkReassignBtn" onclick="toggleBulkDropdown('reassign', event)">Reassign</button>
                             <button class="bulk-btn danger" id="bulkCloseBtn" onclick="bulkCloseTasks()">Close</button>
                             <button class="bulk-btn-cancel" onclick="clearSelection()">Clear</button>
                         </div>
@@ -4396,15 +4396,15 @@ while ($db->next_record()) {
     var _activeBulkDropdown = null;
 
     function closeBulkDropdowns() {
-        document.querySelectorAll('.bulk-dropdown').forEach(function(d) { d.classList.remove('show'); });
+        document.querySelectorAll('.bulk-dropdown').forEach(function(d) { d.remove(); });
         _activeBulkDropdown = null;
     }
 
-    function toggleBulkDropdown(type) {
+    function toggleBulkDropdown(type, ev) {
+        // the document click handler closes dropdowns; don't let the opening click reach it
+        if (ev) ev.stopPropagation();
         var btn = (type === 'status') ? document.getElementById('bulkStatusBtn') : document.getElementById('bulkReassignBtn');
-        // Check if dropdown already exists under this button
-        var existing = btn.querySelector('.bulk-dropdown');
-        if (existing && existing.classList.contains('show')) {
+        if (_activeBulkDropdown && _activeBulkDropdown.dataset.type === type) {
             closeBulkDropdowns();
             return;
         }
@@ -4426,8 +4426,14 @@ while ($db->next_record()) {
             }
         }
         dd.innerHTML = html;
-        btn.style.position = 'relative';
-        btn.appendChild(dd);
+        dd.dataset.type = type;
+        // fixed on <body>: .card has overflow:hidden, which clipped a dropdown nested in the button
+        document.body.appendChild(dd);
+        var r = btn.getBoundingClientRect();
+        var w = dd.offsetWidth;
+        dd.style.top = (r.bottom + 6) + 'px';
+        dd.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+        dd.style.maxHeight = Math.max(150, Math.min(300, window.innerHeight - r.bottom - 16)) + 'px';
         _activeBulkDropdown = dd;
 
         // Search filter
@@ -4557,6 +4563,7 @@ while ($db->next_record()) {
 
     // Close bulk dropdowns on outside click
     document.addEventListener('click', function() { closeBulkDropdowns(); });
+    window.addEventListener('scroll', function(e) { if (_activeBulkDropdown && !_activeBulkDropdown.contains(e.target)) closeBulkDropdowns(); }, true);
 
     // ==================== Context Menu ====================
     (function() {
